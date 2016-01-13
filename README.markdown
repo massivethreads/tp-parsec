@@ -1,4 +1,4 @@
-Task-parallel version of PERSEC
+Task-parallel version of PARSEC
 -------------------------------
 
 # Original PARSEC
