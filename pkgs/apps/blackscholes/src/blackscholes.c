@@ -39,6 +39,10 @@ using namespace std;
 using namespace tbb;
 #endif //ENABLE_TBB
 
+#ifdef ENABLE_TASK
+#include "tpswitch/tpswitch.h"
+#endif
+
 // Multi-threaded header for Windows
 #ifdef WIN32
 #pragma warning(disable : 4305)
@@ -256,6 +260,32 @@ struct mainWork {
 //////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
 
+#ifdef ENABLE_TASK
+void bs_task(int start, int end) {
+    if(end - start < 50){
+        for (int i=start; i<end; i++) {
+            fptype price = BlkSchlsEqEuroNoDiv( sptprice[i], strike[i],
+                                                rate[i], volatility[i], otime[i],
+                                                otype[i], 0);
+            prices[i] = price;
+#ifdef ERR_CHK
+            fptype priceDelta = data[i].DGrefval - price;
+            if( fabs(priceDelta) >= 1e-4 ){
+                printf("Error on %d. Computed=%.5f, Ref=%.5f, Delta=%.5f\n",
+                       i, price, data[i].DGrefval, priceDelta);
+                numError ++;
+            }
+#endif
+        }
+    }else{
+        mk_task_group;
+        create_task0(spawn bs_task(start, start + (end-start)/2));
+        call_task(spawn bs_task(start + (end-start)/2, end));
+        wait_tasks;
+    }
+}
+#endif
+
 #ifdef ENABLE_TBB
 int bs_thread(void *tid_ptr) {
     int j;
@@ -268,8 +298,22 @@ int bs_thread(void *tid_ptr) {
 
     return 0;
 }
-#else // !ENABLE_TBB
-
+#else //ENABLE_TBB
+#ifdef ENABLE_TASK
+int bs_thread(void *tid_ptr) {
+    int j;
+    int tid = *(int *)tid_ptr;
+    int start = tid * (numOptions / nThreads);
+    int end = start + (numOptions / nThreads);
+    for (j=0; j<NUM_RUNS; j++) {
+        mk_task_group;
+        create_task0(spawn bs_task(start, start + (end-start)/2));
+        call_task(spawn bs_task(start + (end-start)/2, end));
+        wait_tasks;
+    }
+    return 0;
+}
+#else //ENABLE_TASK
 #ifdef WIN32
 DWORD WINAPI bs_thread(LPVOID tid_ptr){
 #else
@@ -310,6 +354,7 @@ int bs_thread(void *tid_ptr) {
 
     return 0;
 }
+#endif //ENABLE_TASK
 #endif //ENABLE_TBB
 
 int main (int argc, char **argv)
@@ -324,7 +369,7 @@ int main (int argc, char **argv)
 #ifdef PARSEC_VERSION
 #define __PARSEC_STRING(x) #x
 #define __PARSEC_XSTRING(x) __PARSEC_STRING(x)
-        printf("PARSEC Benchmark Suite Version "__PARSEC_XSTRING(PARSEC_VERSION)"\n");
+        printf("PARSEC Benchmark Suite Version " __PARSEC_XSTRING(PARSEC_VERSION)"\n");
 	fflush(NULL);
 #else
         printf("PARSEC Benchmark Suite\n");
@@ -360,7 +405,7 @@ int main (int argc, char **argv)
       nThreads = numOptions;
     }
 
-#if !defined(ENABLE_THREADS) && !defined(ENABLE_OPENMP) && !defined(ENABLE_TBB)
+#if !defined(ENABLE_THREADS) && !defined(ENABLE_OPENMP) && !defined(ENABLE_TBB) &&!defined(ENABLE_TASK)
     if(nThreads != 1) {
         printf("Error: <nthreads> must be 1 (serial version)\n");
         exit(1);
@@ -458,9 +503,15 @@ int main (int argc, char **argv)
     int tid=0;
     bs_thread(&tid);
 #else //ENABLE_TBB
+#ifdef ENABLE_TASK
     //serial version
     int tid=0;
     bs_thread(&tid);
+#else
+    //serial version
+    int tid=0;
+    bs_thread(&tid);
+#endif // ENABLE_TASK
 #endif //ENABLE_TBB
 #endif //ENABLE_OPENMP
 #endif //ENABLE_THREADS
