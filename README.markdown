@@ -14,23 +14,25 @@ Task-parallel version of PARSEC
 2. Uncompress it and overwrite all files.
 3. ```$ cd parsec/bin/```
 4. ```parsec/bin$ ./parsecmgmt -a run -p [all|blackscholes|bodytrack...] -n $THREAD_NUM```
+
 -------------------------------
 
 # Task parallel PARSEC
 
 ## Readme
 1. It may (fully?) support ```parsecmgmt``` without any modification for now.
-2. I only checked a Massivethreads version, but easily extend.
+2. I only checked Massivethreads, Intel TBB, OpenMP, and QThreads version, but easily extend I hope.
 3. We use ```tp_switch.h```, ```compile.mk```, and ```urun``` mechanism.
-4. It doesn't work for Cilk, because I didn't write cilk_return_void cilk_static, etc
-5. It currenctly need some efforts to support icc.
+4. It doesn't work for Cilk, because I didn't write any cilk_return_void cilk_static, etc
+5. It currenctly needs some efforts to support icc.
 6. A little tricky.
-7. You must know the better solution. Please teach me...
+7. If you know better solution. please tell us.
  
 ## How to build and run?
-1. Clone repository: ```git clone -b trial_blackscholes git@gitlab.eidos.ic.i.u-tokyo.ac.jp:parallel/tp-parsec.git```
+1. Clone repository: ```git clone git@gitlab.eidos.ic.i.u-tokyo.ac.jp:parallel/tp-parsec.git```
 2. Download a parallel2 repository in tp-parsec/toolkit/parallel2 ```checkout svn+ssh://vega/repos/parallel2```
 3. Make & Make install
+
 ```
 tp-parsec$ cd toolkit/parallel2/sys/src/
 src$ make
@@ -38,6 +40,8 @@ src$ make install
 ```
 
 4. Build & Run
+
+```
 tp-parsec$ cd bin
 bin$ parallel2_dir={tp-parsec/toolkit/parallel2} ./parsecmgmt -a build -p blackscholes -c gcc-task_mth
 bin$ parallel2_dir={tp-parsec/toolkit/parallel2} ./parsecmgmt -a run -p blackscholes -c gcc-task_mth -n 4
@@ -47,6 +51,7 @@ bin$ parallel2_dir={tp-parsec/toolkit/parallel2} ./parsecmgmt -a run -p blacksch
 ```
 
 5. (Optional) add larger inputs
+
 ```
 # download native-size input.
 tp-parsec$ wget http://parsec.cs.princeton.edu/download/3.0/parsec-3.0-input-native.tar.gz
@@ -158,7 +163,7 @@ install:
 ## How did you rewrite source codes?
 
 Please see ```blackscholes.c``` for example, especially around ```ENABLE_TASK```.
-Just ``` #include <tpswitch/tpswitch.h> ``` works well.
+Just adding ``` #include <tpswitch/tpswitch.h> ``` works well.
 
 ## Tips
 
