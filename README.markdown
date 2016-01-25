@@ -14,7 +14,6 @@ Task-parallel version of PARSEC
 2. Uncompress it and overwrite all files.
 3. ```$ cd parsec/bin/```
 4. ```parsec/bin$ ./parsecmgmt -a run -p [all|blackscholes|bodytrack...] -n $THREAD_NUM```
-
 -------------------------------
 
 # Task parallel PARSEC
@@ -39,31 +38,41 @@ src$ make install
 ```
 
 4. Build & Run
-```
-cd tp-parsec/bin
-tp-parsec$ parallel2_dir={tp-parsec/toolkit/parallel2} ./parsecmgmt -a build -p blackscholes -c gcc-task_mth
-tp-parsec$ parallel2_dir={tp-parsec/toolkit/parallel2} ./parsecmgmt -a run -p blackscholes -c gcc-task_mth -n 4
+tp-parsec$ cd bin
+bin$ parallel2_dir={tp-parsec/toolkit/parallel2} ./parsecmgmt -a build -p blackscholes -c gcc-task_mth
+bin$ parallel2_dir={tp-parsec/toolkit/parallel2} ./parsecmgmt -a run -p blackscholes -c gcc-task_mth -n 4
 # for example
-# tp-parsec$ parallel2_dir=~/tp-parsec/toolkit/parallel2 ./parsecmgmt -a build -p blackscholes -c gcc-task_mth
-# tp-parsec$ parallel2_dir=~/tp-parsec/toolkit/parallel2 ./parsecmgmt -a run -p blackscholes -c gcc-task_mth -n 4
+# bin$ parallel2_dir=~/tp-parsec/toolkit/parallel2 ./parsecmgmt -a build -p blackscholes -c gcc-task_mth
+# bin$ parallel2_dir=~/tp-parsec/toolkit/parallel2 ./parsecmgmt -a run -p blackscholes -c gcc-task_mth -n 4
 ```
 
-5. Add larger inputs
+5. (Optional) add larger inputs
+```
+# download native-size input.
 tp-parsec$ wget http://parsec.cs.princeton.edu/download/3.0/parsec-3.0-input-native.tar.gz
+tp-parsec$ tar xvzf parsec-3.0-input-native.tar.gz
+tp-parsec$ rsync -a parsec-3.0/* .
+tp-parsec$ rm -r parsec-3.0
+```
 
-Looks very easy.
-
-## Temporary rule I used
+## Temporary rule
 * Use ```tpswitch/tpswitch.h```.
 * ```ENABLE_TASK``` is defined in the code.
 * For makefile, task version is inserted into ```${target_task}``` (e.g., mth, omp, tbb ..., supported by compile.mk)
 * parallel2's root directory is assigned into ```${parallel2_dir}```
 * config convention is ```gcc-task_{target_task}``` (e.g., ```gcc-task_mth```)
 
+## How to evaluate correctness of code transformation?
+
+There seems no common way to check correctness of the output.
+For instance, blackscholes employs a chk_err flag, but bodytrack does nothing.
+
+It is strongly demanded to develop methods to check it.
+
 ## How did you add new task parallel system?
-Currently, only supports Massivethreads version.
-* Add BOTH ```tp-parsec/config/gcc-task_{target_task}.bldconf``` and ```{application}/config/gcc-task_{target_task}.bldconf```
-Please check the Massivethreads version.
+
+* Add ```{application}/config/gcc-task_{target_task}.bldconf```
+* Also add ```tp-parsec/config/gcc-task_{target_task}.bldconf``` unless it exists.
 
 ## How did you write Makefile?
 * Copy original ```Makefile``` to ```Makefile.orig```
