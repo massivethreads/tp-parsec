@@ -1,0 +1,2 @@
+#!/bin/bash
+source ${PARSECDIR}/config/gcc.bldconf
