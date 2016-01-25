@@ -33,19 +33,23 @@ Task-parallel version of PARSEC
 2. Download a parallel2 repository in tp-parsec/toolkit/parallel2 ```checkout svn+ssh://vega/repos/parallel2```
 3. Make & Make install
 ```
-cd tp-parsec/toolkit/parallel2/sys/src/
-make
-make install
+tp-parsec$ cd toolkit/parallel2/sys/src/
+src$ make
+src$ make install
 ```
 
 4. Build & Run
 ```
 cd tp-parsec/bin
-parallel2_dir={tp-parsec/toolkit/parallel2} ./parsecmgmt -a build -p blackscholes -c gcc-task_mth
-parallel2_dir={tp-parsec/toolkit/parallel2} ./parsecmgmt -a run -p blackscholes -c gcc-task_mth -n 4
+tp-parsec$ parallel2_dir={tp-parsec/toolkit/parallel2} ./parsecmgmt -a build -p blackscholes -c gcc-task_mth
+tp-parsec$ parallel2_dir={tp-parsec/toolkit/parallel2} ./parsecmgmt -a run -p blackscholes -c gcc-task_mth -n 4
 # for example
-# parallel2_dir=~/tp-parsec/toolkit/parallel2 ./parsecmgmt -a build -p blackscholes -c gcc-task_mth -n 4
+# tp-parsec$ parallel2_dir=~/tp-parsec/toolkit/parallel2 ./parsecmgmt -a build -p blackscholes -c gcc-task_mth
+# tp-parsec$ parallel2_dir=~/tp-parsec/toolkit/parallel2 ./parsecmgmt -a run -p blackscholes -c gcc-task_mth -n 4
 ```
+
+5. Add larger inputs
+tp-parsec$ wget http://parsec.cs.princeton.edu/download/3.0/parsec-3.0-input-native.tar.gz
 
 Looks very easy.
 
