@@ -30,37 +30,15 @@ Task-parallel version of PARSEC
  
 ## How to build and run?
 1. Clone repository: ```git clone -b trial_blackscholes git@gitlab.eidos.ic.i.u-tokyo.ac.jp:parallel/tp-parsec.git```
-2. Download a parallel2 repository in tp-parsec/toolkit/parallel2 ```tp-parsec/toolkit/svn checkout svn+ssh://vega/repos/parallel2```
-3. Modification a bit is necessary.
-
-```
-#tp-parsec/toolkit/parallel2/sys/src/tools/tools.mk
-- dirs+=a2sql
-+ #dirs+=a2sql
-- dirs+=smart_gnuplotter
-+  #dirs+=smart_gnuplotter
-```
-
-```
-#tp-parsec/toolkit/parallel2/sys/src/mth/mth.mk
-- git clone git@github.com:massivethreads/massivethreads.git
-+ git clone https://github.com/massivethreads/massivethreads.git
-```
-
-```
-#tp-parsec/toolkit/parallel2/sys/src/tools/common_include/common.cc
-- #include <myth.h>
-+ #include <myth/myth.h>
-```
-
-4. Make & Make install
+2. Download a parallel2 repository in tp-parsec/toolkit/parallel2 ```checkout svn+ssh://vega/repos/parallel2```
+3. Make & Make install
 ```
 cd tp-parsec/toolkit/parallel2/sys/src/
 make
 make install
 ```
 
-5. Build & Run
+4. Build & Run
 ```
 cd tp-parsec/bin
 parallel2_dir={tp-parsec/toolkit/parallel2} ./parsecmgmt -a build -p blackscholes -c gcc-task_mth
