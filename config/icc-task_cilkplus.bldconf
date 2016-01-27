@@ -1,0 +1,3 @@
+#!/bin/bash
+source ${PARSECDIR}/config/icc-task.bldconf
+export to_cilkplus_link_opts=-lpthread

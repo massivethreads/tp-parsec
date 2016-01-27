@@ -1,0 +1,62 @@
+#!/bin/bash
+#
+# icc.bldconf - file containing global information necessary to build
+#               PARSEC with the Intel C compiler
+#
+# Copyright (C) 2006-2009 Princeton University
+# Written by Christian Bienia (Initial version)
+#            Christian Fensch (Sparc/Solaris port)
+
+# Compilation and linking options
+# These are the global options we'll use to build the benchmark suite. Each
+# package also has a local build configuration file defining the exact
+# arguments and environment to use.
+
+
+# Compilers and preprocessors
+export CC="${CC_HOME}/bin/icc"
+export CXX="${CC_HOME}/bin/icpc"
+export CPP="${CC_HOME}/bin/cpp"
+export CXXCPP=""
+
+export GNUTOOL_HOME="/usr"
+export BINUTIL_HOME="/usr"
+export GCC_HOME="/usr"
+export BINARY_PREFIX=""
+
+# GNU Binutils
+export LD="${BINUTIL_HOME}/bin/${BINARY_PREFIX}ld"
+export AS="${BINUTIL_HOME}/bin/${BINARY_PREFIX}as"
+export AR="${BINUTIL_HOME}/bin/${BINARY_PREFIX}ar"
+export RANLIB="${BINUTIL_HOME}/bin/${BINARY_PREFIX}ranlib"
+export STRIP="${BINUTIL_HOME}/bin/${BINARY_PREFIX}strip"
+
+# GNU Tools
+export M4="${GNUTOOL_HOME}/bin/${BINARY_PREFIX}m4"
+export MAKE="${GNUTOOL_HOME}/bin/${BINARY_PREFIX}make"
+
+# Arguments to use
+export CFLAGS="-gcc-name=${GCC_HOME}/bin/gcc -gcc -I${GCC_HOME}/include/c++/4.2.1 -O3 -funroll-loops -opt-prefetch"
+export CXXFLAGS="-gcc-name=${GCC_HOME}/bin/gcc -gcc -I${GCC_HOME}/include/c++/4.2.1 -O3 -funroll-loops -opt-prefetch -fpermissive -fno-exceptions"
+export CPPFLAGS=""
+export CXXCPPFLAGS=""
+export LDFLAGS="-L${CC_HOME}/lib64 -L${CC_HOME}/lib"
+export LIBS="${CC_HOME}/lib/intel64/"
+export EXTRA_LIBS=""
+
+# Add PARSEC version to compiler flags
+if [ -f "${PARSECDIR}/version" ]; then
+  CFLAGS="${CFLAGS} -DPARSEC_VERSION=$(${CAT} ${PARSECDIR}/version)"
+  CXXFLAGS="${CXXFLAGS} -DPARSEC_VERSION=$(${CAT} ${PARSECDIR}/version)"
+fi
+
+# Java
+export JAVA_HOME="/usr"
+export JAVAC="${JAVA_HOME}/bin/javac"
+
+# Version numbers
+CC_ver=$(${CC} --version)
+CXX_ver=$(${CXX} --version)
+LD_ver=$(${LD} --version)
+JAVAC_ver=$(${JAVAC} -version 2>&1)
+
