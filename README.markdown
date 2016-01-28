@@ -19,17 +19,17 @@ Task-parallel version of PARSEC
 
 # Task parallel PARSEC
 
+I completed implementation of all task versions of ```blackscholes```.
+
+I've checked the correctness of its transformation.
+
 ## Readme
 * 1. It may (fully?) support ```parsecmgmt``` without any modification for now.
 * 2. I checked Massivethreads (icc/gcc), Intel TBB (icc/gcc), OpenMP (icc/gcc), QThreads (icc/gcc), and CilkPlus (icc only) version.
-* 3. We use ```tp_switch.h```, ```compile.mk```, and ```urun``` mechanism.
+* 3. We use ```common.h``, ```tpswitch.h```, ```compile.mk```, and ```urun``` mechanism.
 * 4. It currenctly needs some efforts to support icc.
 * 5. A little tricky.
 * 6. If you know better solution. please tell us.
- 
-## Known bugs (or To Do).
-* 1. ```tp_switch``` + ```urun``` cannot change a thread number of Intel TBB (always use max cores). ```init_runtime``` must be introduced.
- * I confirmed that appropriately inserting ```task_scheduler_init``` can solve this problem.
 
 ## How to build and run?
 * 1. Clone repository: ```git clone git@gitlab.eidos.ic.i.u-tokyo.ac.jp:parallel/tp-parsec.git```
@@ -80,14 +80,15 @@ tp-parsec$ rm -r parsec-3.0
 # bin$ parallel2_dir={tp-parsec/toolkit/parallel2} CC_HOME={/opt/intel} ./parsecmgmt -a run -p blackscholes -c icc-task_cilkplus -n 4 -i native
 ```
 
-## Temporary rule
+## Temporary Conventions
 * Use ```tpswitch/tpswitch.h```.
 * ```ENABLE_TASK``` is defined in the code.
-* For makefile, task version is inserted into ```${target_task}``` (e.g., mth, omp, tbb ..., supported by compile.mk)
-  * Though QThreads can be successfully build, SEGV occurs while running.
+* For makefile, task version is inserted into ```${target_task}``` (e.g., mth, omp, tbb, qth ..., supported by compile.mk)
+ * Now everything except simple Cilk works well (icc/gcc-mth/omp/tbb/qth & icc-cilkplus)
 * parallel2's root directory is assigned into ```${parallel2_dir}```
-* config convention is ```gcc-task_{target_task}``` (e.g., ```gcc-task_mth```)
+* config convention is ```{compiler}-task_{target_task}``` (e.g., ```gcc-task_mth```)
 * ```g``` is assigned to ```${platform}``` for gcc compilation, while ```i``` is for icc in Makefile.
+
 ## How to evaluate correctness of code transformation?
 
 There seems no common way to check correctness of the output.
@@ -185,11 +186,12 @@ install:
 
 ## How did you rewrite source codes?
 
-Please see ```blackscholes.c``` for example, especially around ```ENABLE_TASK```.
+Please look at ```blackscholes.c``` for example, especially around ```ENABLE_TASK```.
 
-Don't forget to add ```cilk_begin``` and ```cilk_void_return```.
-
-Just adding ``` #include <tpswitch/tpswitch.h> ``` works well.
+Don't forget to ...
+* add ```cilk_begin``` and ```cilk_void_return```.
+* include both ```#include <tpswitch/tpswitch.h>``` and ```#include <common.h>```
+* write ```init_runtime(&argv,&argc);``` at the beginning of ```main()```, surrounded by ```#ifdef ENABLE_TASK```
 
 ## Tips
 
