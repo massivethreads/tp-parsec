@@ -27,6 +27,10 @@ Task-parallel version of PARSEC
 * 5. A little tricky.
 * 6. If you know better solution. please tell us.
  
+## Known bugs (or To Do).
+* 1. ```tp_switch``` + ```urun``` cannot change a thread number of Intel TBB (always use max cores). ```init_runtime``` must be introduced.
+ * I confirmed that appropriately inserting ```task_scheduler_init``` can solve this problem.
+
 ## How to build and run?
 * 1. Clone repository: ```git clone git@gitlab.eidos.ic.i.u-tokyo.ac.jp:parallel/tp-parsec.git```
 * 2. Download a parallel2 repository in tp-parsec/toolkit/parallel2 ```checkout svn+ssh://vega/repos/parallel2```
