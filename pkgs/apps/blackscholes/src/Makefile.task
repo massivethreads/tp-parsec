@@ -36,7 +36,8 @@ NCO = -DNCO=2 -Dfptype=double
 endif
 
 app_root       = ${PARSECDIR}/pkgs/apps/blackscholes
-icc_dir       ?= ${ICC_DIR}
+icc_dir       ?= ${CC_HOME}
+icc           ?= ${icc_dir}/compiler/bin/icc
 default_all    : ${task_target}_exes
 src_dir       ?= $(app_root)/src
 exe_prefix    ?= $(app_root)/inst/${PARSECPLAT}/${TARGET}
@@ -49,13 +50,14 @@ targets  := blackscholes
 
 include $(parallel2_dir)/sys/src/tools/makefiles/compile.mk
 
+
 clean:
 	rm -f -r $(app_root)/inst/${PARSECPLAT}/*
 
 install:
 	mkdir -p $(app_root)/inst/${PARSECPLAT}/bin
 	mv -f $(exe_prefix)* $(app_root)/inst/${PARSECPLAT}/bin/$(TARGET)_${task_target}
-	echo "\$${parallel2_dir}/sys/inst/g/bin/urun -t ${task_target} -p \$$1 -f g \$$(dirname \$$0)/$(TARGET)_${task_target} \$$1 \$$2 \$$3" > $(app_root)/inst/${PARSECPLAT}/bin/$(TARGET)
+	echo "\$${parallel2_dir}/sys/inst/${platform}/bin/urun -t ${task_target} -p \$$1 -f g \$$(dirname \$$0)/$(TARGET)_${task_target} \$$1 \$$2 \$$3" > $(app_root)/inst/${PARSECPLAT}/bin/$(TARGET)
 	chmod 775 $(app_root)/inst/${PARSECPLAT}/bin/$(TARGET)
 
 

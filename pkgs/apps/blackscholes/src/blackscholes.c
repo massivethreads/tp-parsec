@@ -40,6 +40,7 @@ using namespace tbb;
 #endif //ENABLE_TBB
 
 #ifdef ENABLE_TASK
+#include "common.h"
 #include "tpswitch/tpswitch.h"
 #endif
 
@@ -262,6 +263,7 @@ struct mainWork {
 
 #ifdef ENABLE_TASK
 void bs_task(int start, int end) {
+    cilk_begin;
     if(end - start < 50){
         for (int i=start; i<end; i++) {
             fptype price = BlkSchlsEqEuroNoDiv( sptprice[i], strike[i],
@@ -283,6 +285,7 @@ void bs_task(int start, int end) {
         call_task(spawn bs_task(start + (end-start)/2, end));
         wait_tasks;
     }
+    cilk_void_return;
 }
 #endif
 
@@ -300,7 +303,8 @@ int bs_thread(void *tid_ptr) {
 }
 #else //ENABLE_TBB
 #ifdef ENABLE_TASK
-int bs_thread(void *tid_ptr) {
+void bs_thread_void(void *tid_ptr) {
+    cilk_begin;
     int j;
     int tid = *(int *)tid_ptr;
     int start = tid * (numOptions / nThreads);
@@ -311,6 +315,10 @@ int bs_thread(void *tid_ptr) {
         call_task(spawn bs_task(start + (end-start)/2, end));
         wait_tasks;
     }
+    cilk_void_return;
+}
+int bs_thread(void *tid_ptr) {
+    bs_thread_void(tid_ptr);
     return 0;
 }
 #else //ENABLE_TASK
@@ -377,6 +385,10 @@ int main (int argc, char **argv)
 #endif //PARSEC_VERSION
 #ifdef ENABLE_PARSEC_HOOKS
    __parsec_bench_begin(__parsec_blackscholes);
+#endif
+
+#ifdef ENABLE_TASK
+   init_runtime(&argc,&argv);
 #endif
 
    if (argc != 4)
