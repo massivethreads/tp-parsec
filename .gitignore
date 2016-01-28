@@ -1,0 +1,9 @@
+*~
+*.swp
+
+*/*/*/run
+*/*/*/inst
+*/*/*/obj
+log
+
+toolkit/parallel2

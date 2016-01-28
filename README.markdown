@@ -26,14 +26,14 @@ I've checked the correctness of its transformation.
 ## Readme
 * 1. It may (fully?) support ```parsecmgmt``` without any modification for now.
 * 2. I checked Massivethreads (icc/gcc), Intel TBB (icc/gcc), OpenMP (icc/gcc), QThreads (icc/gcc), and CilkPlus (icc only) version.
-* 3. We use ```common.h``, ```tpswitch.h```, ```compile.mk```, and ```urun``` mechanism.
+* 3. We use ```common.h```, ```tpswitch.h```, ```compile.mk```, and ```urun``` mechanism.
 * 4. It currenctly needs some efforts to support icc.
 * 5. A little tricky.
 * 6. If you know better solution. please tell us.
 
 ## How to build and run?
 * 1. Clone repository: ```git clone git@gitlab.eidos.ic.i.u-tokyo.ac.jp:parallel/tp-parsec.git```
-* 2. Download a parallel2 repository in tp-parsec/toolkit/parallel2 ```checkout svn+ssh://vega/repos/parallel2```
+* 2. Download a parallel2 repository in tp-parsec/toolkit/parallel2: ```svn checkout svn+ssh://vega/repos/parallel2```
 * 3. Make & Make install
 
 ```
@@ -43,7 +43,7 @@ src$ make install
 ```
 
 * 4. (Optional) If you want to create icc version, type following commands.
- 
+
 ```
 # icc is located in /opt/intel/ for some environments (e.g. magellan).
 tp-parsec$ cd toolkit/parallel2/sys/src/
@@ -103,7 +103,7 @@ It is strongly demanded to develop methods to check it.
 
 ## How did you write Makefile?
 * 1. Copy original ```Makefile``` to ```Makefile.orig```
-* 2. Rewrite ```Makefile``` as follows: 
+* 2. Rewrite ```Makefile``` as follows:
 
 ```
 ifeq "$(version)" "task"
@@ -196,5 +196,3 @@ Don't forget to ...
 ## Tips
 
 * You can clean the binaries by ```-a uninstall```
-
-
