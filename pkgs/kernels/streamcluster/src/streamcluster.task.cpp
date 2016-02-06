@@ -568,16 +568,16 @@ pFL(Points * points, int * feasible, int numfeasible, double z, long * k, double
     /* randomize order in which centers are considered */    
     intshuffle(feasible, numfeasible);
 
-    mk_task_group;
+    //mk_task_group;
     for (i = 0; i < iter; i++) {
       x = i % numfeasible;
       //fprintf(stderr,"Iteration %d z=%lf, change=%lf\n",i,z,change);
       //change += pgain(feasible[x], points, z, k);
-      //pgain(feasible[x], points, z, k, changes + i);
-      create_task0(spawn pgain(feasible[x], points, z, k, changes + i));
+      pgain(feasible[x], points, z, k, changes + i);
+      //create_task0(spawn pgain(feasible[x], points, z, k, changes + i));
       //fprintf(stderr,"*** change: %lf, z=%lf\n",change,z);
     }
-    wait_tasks;
+    //wait_tasks;
     for (i = 0; i < iter; i++)
       change += changes[i];
     cost -= change;
