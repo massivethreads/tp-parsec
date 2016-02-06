@@ -1,0 +1,72 @@
+# Makefile for streamcluster
+
+parallel2_dir?=${HOME}/parallel2
+ICC_DIR?=/opt/intel
+APP_DIR=${PARSECDIR}/pkgs/kernels/streamcluster
+
+TARGET = streamcluster
+OBJS   = streamcluster.o
+
+OPTS += -DENABLE_TASK
+LINK_OPTS += -ltbb
+
+ifeq ($(USE_TBBMALLOC),1)
+	OPTS += -DUSE_TBBMALLOC
+	LINK_OPTS += -ltbbmalloc
+endif
+
+ifeq ($(DAG_RECORDER),2)
+	OPTS += -DDAG_RECORDER=2
+	LINK_OPTS += -ldr -lpthread
+endif
+
+
+
+default_all    : ${task_target}_exes
+
+
+
+targets := $(TARGET)
+
+exe_prefix    ?= $(APP_DIR)/inst/${PARSECPLAT}/${TARGET}
+src_dir       ?= $(APP_DIR)/src
+obj_dir       ?= $(APP_DIR)/obj/${PARSECPLAT}
+icc_dir       ?= ${ICC_DIR}
+
+#ifeq ($(DAG_RECORDER),2)
+#	exe_prefix := $(exe_prefix)-dr
+#	obj_dir := $(obj_dir)-dr
+#endif
+
+c_srcs   :=
+cxx_srcs :=
+cpp_srcs := streamcluster.cpp
+
+c_opts   :=
+cxx_opts :=
+cpp_opts := $(OPTS)
+
+link_opts := $(LINK_OPTS)
+to_serial_link_opts := $(link_opts)
+to_omp_link_opts := $(link_opts)
+to_tbb_link_opts := $(link_opts)
+to_cilk_link_opts := $(link_opts)
+to_cilkplus_link_opts := $(link_opts)
+to_mth_link_opts := $(link_opts)
+to_qth_link_opts := $(link_opts)
+to_nanox_link_opts := $(link_opts)
+
+include $(parallel2_dir)/sys/src/tools/makefiles/compile.mk
+
+
+
+clean:
+	rm -f -r $(APP_DIR)/inst/${PARSECPLAT}/*
+
+install:
+	mkdir -p $(APP_DIR)/inst/${PARSECPLAT}/bin
+	mv -f $(exe_prefix)* $(APP_DIR)/inst/${PARSECPLAT}/bin/$(TARGET)_${task_target}
+	echo "${parallel2_dir}/sys/src/tools/urun/urun -f ${platform} -t ${task_target} -p \$$9 \$$(dirname \$$0)/$(TARGET)_${task_target} \$$1 \$$2 \$$3 \$$4 \$$5 \$$6 \$$7 \$$8 \$$9" > $(APP_DIR)/inst/${PARSECPLAT}/bin/$(TARGET)
+	chmod 775 $(APP_DIR)/inst/${PARSECPLAT}/bin/$(TARGET)
+
+
