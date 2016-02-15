@@ -7,7 +7,12 @@ APP_DIR=${PARSECDIR}/pkgs/kernels/streamcluster
 TARGET = streamcluster
 OBJS   = streamcluster.o
 
+#OPTS += -O0 -g
+#OPTS += -pg
+OPTS += -O3 -funroll-loops -fprefetch-loop-arrays
 OPTS += -DENABLE_TASK
+
+#LINK_OPTS += -pg 
 LINK_OPTS += -ltbb
 
 ifeq ($(USE_TBBMALLOC),1)
@@ -42,8 +47,8 @@ c_srcs   :=
 cxx_srcs :=
 cpp_srcs := streamcluster.cpp
 
-c_opts   :=
-cxx_opts :=
+c_opts   := $(OPTS)
+cxx_opts := $(OPTS)
 cpp_opts := $(OPTS)
 
 link_opts := $(LINK_OPTS)

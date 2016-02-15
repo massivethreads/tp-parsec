@@ -343,6 +343,9 @@ intshuffle(int * intarray, int length) {
 }
 
 /* compute Euclidean distance squared between two points */
+
+//float dist(Point p1, Point p2, int dim) __attribute__ ((noinline));
+
 float
 dist(Point p1, Point p2, int dim) {
   int i;
@@ -457,7 +460,7 @@ pgain(long x, Points * points, double z, long int * numcenters, double * result)
     for (p = 0; p < (NUM_DIVISIONS) - 1; p++)
       create_task0(spawn center_table_count(p, stride, points, work_mem));
     call_task(spawn center_table_count(p, stride, points, work_mem));
-    wait_tasks;    
+    wait_tasks;
     
     int accum = 0;
     for (p = 0; p < (NUM_DIVISIONS); p++) {
@@ -552,10 +555,8 @@ pFL(Points * points, int * feasible, int numfeasible, double z, long * k, double
   long numberOfPoints;
 
 #if USE_TBBMALLOC
-  printf("is using tbbmalloc.\n");
   double * changes = (double *) memoryDouble.allocate(iter * sizeof(double));
 #else  
-  printf("is not using tbbmalloc.\n");
   double * changes = (double *) malloc(iter * sizeof(double));
 #endif  
   
