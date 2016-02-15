@@ -1,0 +1,31 @@
+
+PREFIX=${PARSECDIR}/pkgs/apps/blackscholes/inst/${PARSECPLAT}/LRT
+
+#LRT_SOURCES = Init.cxx FrameBuffer.cxx FrameBuffer/PBOFrameBuffer.cxx FrameBuffer/GLTextureFB.cxx render.cxx test/api_static_cube/static_cube.cxx
+LRT_SOURCES = Init.cxx FrameBuffer.cxx FrameBuffer/PBOFrameBuffer.cxx FrameBuffer/GLTextureFB.cxx render.cxx ../MiniView/rtview.cxx
+
+TARGET      = raytrace
+APP_DIR     = ${PARSECDIR}/pkgs/apps/raytrace
+icc_dir    ?= ${CCHOME}
+icc        ?= ${icc_dir}/compiler/bin/icc
+default_all : ${task_target}_exes
+src_dir    ?= ${APP_DIR}/obj/${PARSECPLAT}/LRT
+exe_prefix ?= ${APP_DIR}/inst/${PARSECPLAT}/${TARGET}
+obj_dir    ?= ${APP_DIR}/obj/${PARSECPLAT}/LRT
+
+c_srcs     :=
+cxx_srcs   := ${LRT_SOURCES}
+cxx_opts   := -DENABLE_TASK ${CXXFLAGS} -I${PARSECDIR}/pkgs/libs/mesa/inst/${PARSECPLAT}/include -I${obj_dir}/.. -I${obj_dir}/../RTTL -I${obj_dir}/../RTTL/common -I${obj_dir}/../RTTL/BVH -I${obj_dir}/../SG -I${obj_dir}/../LRT/include -I${obj_dir}/../LRT
+
+link_opts  := -L${PARSECDIR}/pkgs/libs/mesa/inst/${PARSECPLAT}/lib -L${obj_dir}/../lib -lRTTL -lglut ${GL_LIBS} ${GLUT_glut_LIBRARY} ${LIBS} -lrt
+to_${task_target}_link_opts := ${link_opts}
+targets    := raytrace
+app_name   := rtview
+
+include ${parallel2_dir}/sys/src/tools/makefiles/compile.mk
+
+install:
+	mkdir -p $(APP_DIR)/inst/${PARSECPLAT}/bin
+	mv -f $(exe_prefix)* $(APP_DIR)/inst/${PARSECPLAT}/bin/$(TARGET)_${task_target}
+	echo "\$${parallel2_dir}/sys/inst/${platform}/bin/urun -t ${task_target} -p \$$4 -f g -- \$$(dirname \$$0)/$(TARGET)_${task_target} \$$1 \$$2 \$$3 \$$4 \$$5 \$$6 \$$7 \$$8 \$$9" > $(APP_DIR)/inst/${PARSECPLAT}/bin/$(app_name)
+	chmod 775 $(APP_DIR)/inst/${PARSECPLAT}/bin/$(app_name)
