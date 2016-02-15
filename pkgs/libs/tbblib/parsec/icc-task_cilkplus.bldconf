@@ -1,0 +1,5 @@
+#!/bin/bash
+
+BASEPATH="$(cd $(dirname $BASH_SOURCE); pwd)"
+source ${BASEPATH}/icc.bldconf
+
