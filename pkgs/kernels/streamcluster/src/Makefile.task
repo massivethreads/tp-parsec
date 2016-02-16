@@ -1,7 +1,7 @@
 # Makefile for streamcluster
 
-#parallel2_dir?=${HOME}/parallel2
-#ICC_DIR?=/opt/intel
+parallel2_dir?=${HOME}/parallel2
+CC_HOME?=/opt/intel
 
 APP_DIR=${PARSECDIR}/pkgs/kernels/streamcluster
 
@@ -45,10 +45,12 @@ icc_dir       ?= ${CC_HOME}
 #endif
 
 c_srcs   :=
+cc_srcs  :=
 cxx_srcs :=
 cpp_srcs := streamcluster.cpp
 
 c_opts   := $(OPTS)
+cc_opts  := $(OPTS)
 cxx_opts := $(OPTS)
 cpp_opts := $(OPTS)
 
