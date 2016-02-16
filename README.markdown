@@ -13,7 +13,7 @@ Task-parallel version of PARSEC
 * 1. At first, download native input from the official page, or here: http://parsec.cs.princeton.edu/download/3.0/parsec-3.0-input-native.tar.gz
 * 2. Uncompress it and overwrite all files.
 * 3. ```$ cd parsec/bin/```
-* 4. ```parsec/bin$ ./parsecmgmt -a run -p [all|blackscholes|bodytrack...] -n $THREAD_NUM``` -i [test|simdev|...|native]
+* 4. ```parsec/bin$ ./parsecmgmt -a run -p [all|blackscholes|bodytrack...] -n $THREAD_NUM -i [test|simdev|...|native]```
 
 -------------------------------
 
@@ -76,18 +76,19 @@ tp-parsec$ wget http://parsec.cs.princeton.edu/download/3.0/parsec-3.0-input-nat
 tp-parsec$ tar xvzf parsec-3.0-input-native.tar.gz
 tp-parsec$ rsync -a parsec-3.0/* .
 tp-parsec$ rm -r parsec-3.0
-# For evaluation
+# for evaluation
 # bin$ parallel2_dir={tp-parsec/toolkit/parallel2} CC_HOME={/opt/intel} ./parsecmgmt -a run -p blackscholes -c icc-task_cilkplus -n 4 -i native
 ```
 
 ## Temporary Conventions
 * Use ```tpswitch/tpswitch.h```.
-* ```ENABLE_TASK``` is defined in the code.
-* For makefile, task version is inserted into ```${target_task}``` (e.g., mth, omp, tbb, qth ..., supported by compile.mk)
+* ```ENABLE_TASK``` is defined in the code for task version. Use ```#ifdef```.
+* For makefile, task version is inserted into ```${target_task}``` (e.g., mth, omp, tbb, qth, cilkplus are supported by compile.mk)
  * Now everything except simple Cilk works well (icc/gcc-mth/omp/tbb/qth & icc-cilkplus)
 * parallel2's root directory is assigned into ```${parallel2_dir}```
-* config convention is ```{compiler}-task_{target_task}``` (e.g., ```gcc-task_mth```)
-* ```g``` is assigned to ```${platform}``` for gcc compilation, while ```i``` is for icc in Makefile.
+* A name convention of config files is ```{compiler}-task_{target_task}``` (e.g., ```gcc-task_mth```)
+* ```g``` is assigned into ```${platform}``` for gcc compilation, while ```i``` is for icc in Makefile.
+* ```${CC_HOME}``` is an environment variable storing a path to icc. PARSEC seems to use this convention.
 
 ## How to evaluate correctness of code transformation?
 
@@ -180,7 +181,7 @@ clean:
 install:
         mkdir -p $(app_root)/inst/${PARSECPLAT}/bin
         mv -f $(exe_prefix)* $(app_root)/inst/${PARSECPLAT}/bin/$(TARGET)_${task_target}
-        echo "\$${parallel2_dir}/sys/inst/${platform}/bin/urun -t ${task_target} -p \$$1 -f g \$$(dirname \$$0)/$(TARGET)_${task_target} \$$1 \$$2 \$$3" > $(app_root)/inst/${PARSECPLAT}/bin/$(TARGET)
+        echo "\$${parallel2_dir}/sys/inst/${platform}/bin/urun -t ${task_target} -p \$$1 -f ${platform} -- \$$(dirname \$$0)/$(TARGET)_${task_target} \$$1 \$$2 \$$3" > $(app_root)/inst/${PARSECPLAT}/bin/$(TARGET)
         chmod 775 $(app_root)/inst/${PARSECPLAT}/bin/$(TARGET)
 ```
 
@@ -192,6 +193,10 @@ Don't forget to ...
 * add ```cilk_begin``` and ```cilk_void_return```.
 * include both ```#include <tpswitch/tpswitch.h>``` and ```#include <common.h>```
 * write ```init_runtime(&argv,&argc);``` at the beginning of ```main()```, surrounded by ```#ifdef ENABLE_TASK```
+
+## How to live together with CMake and compile.mk?
+
+At present, I have no good idea. An example of ```raytrace``` shows how I struggled to forcedly combine them.
 
 ## Tips
 
