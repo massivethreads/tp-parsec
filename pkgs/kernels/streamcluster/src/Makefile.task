@@ -1,7 +1,8 @@
 # Makefile for streamcluster
 
-parallel2_dir?=${HOME}/parallel2
-ICC_DIR?=/opt/intel
+#parallel2_dir?=${HOME}/parallel2
+#ICC_DIR?=/opt/intel
+
 APP_DIR=${PARSECDIR}/pkgs/kernels/streamcluster
 
 TARGET = streamcluster
@@ -36,7 +37,7 @@ targets := $(TARGET)
 exe_prefix    ?= $(APP_DIR)/inst/${PARSECPLAT}/${TARGET}
 src_dir       ?= $(APP_DIR)/src
 obj_dir       ?= $(APP_DIR)/obj/${PARSECPLAT}
-icc_dir       ?= ${ICC_DIR}
+icc_dir       ?= ${CC_HOME}
 
 #ifeq ($(DAG_RECORDER),2)
 #	exe_prefix := $(exe_prefix)-dr
@@ -71,7 +72,7 @@ clean:
 install:
 	mkdir -p $(APP_DIR)/inst/${PARSECPLAT}/bin
 	mv -f $(exe_prefix)* $(APP_DIR)/inst/${PARSECPLAT}/bin/$(TARGET)_${task_target}
-	echo "${parallel2_dir}/sys/src/tools/urun/urun -f ${platform} -t ${task_target} -p \$$9 \$$(dirname \$$0)/$(TARGET)_${task_target} \$$1 \$$2 \$$3 \$$4 \$$5 \$$6 \$$7 \$$8 \$$9" > $(APP_DIR)/inst/${PARSECPLAT}/bin/$(TARGET)
+	echo "${parallel2_dir}/sys/src/tools/urun/urun -f ${platform} -t ${task_target} -p \$$9 -- \$$(dirname \$$0)/$(TARGET)_${task_target} \$$1 \$$2 \$$3 \$$4 \$$5 \$$6 \$$7 \$$8 \$$9" > $(APP_DIR)/inst/${PARSECPLAT}/bin/$(TARGET)
 	chmod 775 $(APP_DIR)/inst/${PARSECPLAT}/bin/$(TARGET)
 
 
