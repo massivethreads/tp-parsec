@@ -147,7 +147,12 @@ __forceinline int __builtin_expect(int a, int p) { return a; }
 #endif
 
 /// Defined if all SSE ops are emulated (SSE-less implementation).
-#define RT_EMULATE_SSE
+
+#ifndef ENABLE_TASK
+	//We unwillingly disable this pragma.  
+	#define RT_EMULATE_SSE
+#endif
+
 #ifdef  RT_EMULATE_SSE
 #include "RTEmulatedSSE.hxx"
 
