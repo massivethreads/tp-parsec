@@ -21,6 +21,12 @@
 # include "RTTL/Grid/Grid.hxx"
 #endif
 
+
+#ifdef ENABLE_TASK
+# include "common.h"
+# include "tpswitch/tpswitch.h"
+#endif
+
 #define NORMALIZE_PRIMARY_RAYS
 
 #define RAY_PACKET_LAYOUT_TRIANGLE    STORE_NEAR_FAR_DISTANCE | MIN_MAX_RECIPROCAL
@@ -84,10 +90,10 @@ public:
   inline void setCameraAspect(float aspect) { m_cameraAspectRatio = aspect; };
 
   inline void setCamera(const RTVec3f &origin,
-			const RTVec3f &direction,
-			const RTVec3f &up,
-			const float angle,
-			const float aspect)
+                        const RTVec3f &direction,
+                        const RTVec3f &up,
+                        const float angle,
+                        const float aspect)
   {
     m_cameraOrigin = origin;
     m_cameraDirection = direction.normalize();
@@ -138,9 +144,9 @@ protected:
   /* textures */
 
   _INLINE void initSharedThreadData(Camera *camera,
-				    const int resX,
-				    const int resY,
-				    LRT::FrameBuffer *frameBuffer)
+                                    const int resX,
+                                    const int resY,
+                                    LRT::FrameBuffer *frameBuffer)
   {
     const float left = -camera->m_cameraAspectRatio * 0.5f;
     const float top  = 0.5f;
@@ -173,8 +179,15 @@ protected:
 
   template <class MESH, const int LAYOUT>
   _INLINE void renderTile(LRT::FrameBuffer *frameBuffer,
-			  const int startX,const int startY,
-			  const int resX,const int resY);
+                          const int startX,const int startY,
+                          const int resX,const int resY);
+
+#ifdef ENABLE_TASK
+  template <class MESH, const int LAYOUT>
+  /*_INLINE*/ void renderTileTask(LRT::FrameBuffer *frameBuffer,
+                          const int startX,const int startY,
+                          const int resX,const int resY);
+#endif
 
 public:
 
@@ -211,8 +224,8 @@ public:
   void buildSpatialIndexStructure();
 
   void renderFrame(Camera *camera,
-		   LRT::FrameBuffer *frameBuffer,
-		   const int resX,const int resY);
+                   LRT::FrameBuffer *frameBuffer,
+                   const int resX,const int resY);
 
   _INLINE int numPrimitives() const
   {
@@ -241,8 +254,8 @@ _ALIGN(DEFAULT_ALIGNMENT) AtomicCounter Context::m_tileCounter;
 
 /*! get four pixels in sse-float-format, converts those to RGB-uchar */
 _INLINE sse_i convert_fourPixels_to_fourRBGAuchars(const sse_f& red,
-						   const sse_f& green,
-						   const sse_f& blue)
+                                                   const sse_f& green,
+                                                   const sse_f& blue)
 {
   sse_i r  = _mm_cvtps_epi32(red   * factor);
   sse_i g  = _mm_cvtps_epi32(green * factor);
@@ -270,10 +283,10 @@ static const sse_i bias    = convert<sse_i>(12);
 
 template <int N, int LAYOUT, int MULTIPLE_ORIGINS, int SHADOW_RAYS, class Mesh>
 _INLINE void Shade_RandomID(RayPacket<N, LAYOUT, MULTIPLE_ORIGINS, SHADOW_RAYS> &packet,
-			    const Mesh &mesh,
-			    const RTMaterial *const mat,
-			    RTTextureObject_RGBA_UCHAR **texture,
-			    sse_i *const dest)
+                            const Mesh &mesh,
+                            const RTMaterial *const mat,
+                            RTTextureObject_RGBA_UCHAR **texture,
+                            sse_i *const dest)
 {
   FOR_ALL_SIMD_VECTORS_IN_PACKET
     {
@@ -287,10 +300,10 @@ _INLINE void Shade_RandomID(RayPacket<N, LAYOUT, MULTIPLE_ORIGINS, SHADOW_RAYS> 
 
 template <int N, int LAYOUT, int MULTIPLE_ORIGINS, int SHADOW_RAYS, class Mesh>
 _INLINE void Shade_PrimitiveID(RayPacket<N, LAYOUT, MULTIPLE_ORIGINS, SHADOW_RAYS> &packet,
-			       const Mesh &mesh,
-			       const RTMaterial *const mat,
-			       RTTextureObject_RGBA_UCHAR **texture,
-			       sse_i *const dest)
+                               const Mesh &mesh,
+                               const RTMaterial *const mat,
+                               RTTextureObject_RGBA_UCHAR **texture,
+                               sse_i *const dest)
 {
   FOR_ALL_SIMD_VECTORS_IN_PACKET
     {
@@ -301,10 +314,10 @@ _INLINE void Shade_PrimitiveID(RayPacket<N, LAYOUT, MULTIPLE_ORIGINS, SHADOW_RAY
 
 template <int N, int LAYOUT, int MULTIPLE_ORIGINS, int SHADOW_RAYS, class Mesh>
 _INLINE void Shade_ShaderID(RayPacket<N, LAYOUT, MULTIPLE_ORIGINS, SHADOW_RAYS> &packet,
-			    const Mesh &mesh,
-			    const RTMaterial *const mat,
-			    RTTextureObject_RGBA_UCHAR **texture,
-			    sse_i *const dest)
+                            const Mesh &mesh,
+                            const RTMaterial *const mat,
+                            RTTextureObject_RGBA_UCHAR **texture,
+                            sse_i *const dest)
 {
   FOR_ALL_SIMD_VECTORS_IN_PACKET
     {
@@ -318,10 +331,10 @@ _INLINE void Shade_ShaderID(RayPacket<N, LAYOUT, MULTIPLE_ORIGINS, SHADOW_RAYS> 
 
 template <int N, int LAYOUT, int MULTIPLE_ORIGINS, int SHADOW_RAYS, class Mesh>
 _INLINE void Shade_Diffuse(RayPacket<N, LAYOUT, MULTIPLE_ORIGINS, SHADOW_RAYS> &packet,
-			   const Mesh &mesh,
-			   const RTMaterial *const mat,
-			   RTTextureObject_RGBA_UCHAR **texture,
-			   sse_i *const dest)
+                           const Mesh &mesh,
+                           const RTMaterial *const mat,
+                           RTTextureObject_RGBA_UCHAR **texture,
+                           sse_i *const dest)
 {
   RTVec_t<3, sse_f> diffuse;
   FOR_ALL_SIMD_VECTORS_IN_PACKET
@@ -334,10 +347,10 @@ _INLINE void Shade_Diffuse(RayPacket<N, LAYOUT, MULTIPLE_ORIGINS, SHADOW_RAYS> &
 
 template <int N, int LAYOUT, int MULTIPLE_ORIGINS, int SHADOW_RAYS, class Mesh>
 _INLINE void Shade_Normal(RayPacket<N, LAYOUT, MULTIPLE_ORIGINS, SHADOW_RAYS> &packet,
-			  const Mesh &mesh,
-			  const RTMaterial *const mat,
-			  RTTextureObject_RGBA_UCHAR **texture,
-			  sse_i *const dest)
+                          const Mesh &mesh,
+                          const RTMaterial *const mat,
+                          RTTextureObject_RGBA_UCHAR **texture,
+                          sse_i *const dest)
 {
   RTVec_t<3, sse_f> normal;
   FOR_ALL_SIMD_VECTORS_IN_PACKET
@@ -349,10 +362,10 @@ _INLINE void Shade_Normal(RayPacket<N, LAYOUT, MULTIPLE_ORIGINS, SHADOW_RAYS> &p
 
 template <int N, int LAYOUT, int MULTIPLE_ORIGINS, int SHADOW_RAYS, class Mesh>
 _INLINE void Shade_EyeLight(RayPacket<N, LAYOUT, MULTIPLE_ORIGINS, SHADOW_RAYS> &packet,
-			    const Mesh &mesh,
-			    const RTMaterial *const mat,
-			    RTTextureObject_RGBA_UCHAR **texture,                
-			    sse_i *const dest)
+                            const Mesh &mesh,
+                            const RTMaterial *const mat,
+                            RTTextureObject_RGBA_UCHAR **texture,                
+                            sse_i *const dest)
 {
   RTVec_t<3, sse_f> normal;
   const sse_f fixedColor = convert<sse_f>(0.6f);
@@ -370,10 +383,10 @@ _INLINE void Shade_EyeLight(RayPacket<N, LAYOUT, MULTIPLE_ORIGINS, SHADOW_RAYS> 
 
 template <int N, int LAYOUT, int MULTIPLE_ORIGINS, int SHADOW_RAYS, class Mesh>
 _INLINE void Shade_TxtCoord(RayPacket<N, LAYOUT, MULTIPLE_ORIGINS, SHADOW_RAYS> &packet,
-			    const Mesh &mesh,
-			    const RTMaterial *const mat,
-			    RTTextureObject_RGBA_UCHAR **texture,
-			    sse_i *const dest)
+                            const Mesh &mesh,
+                            const RTMaterial *const mat,
+                            RTTextureObject_RGBA_UCHAR **texture,
+                            sse_i *const dest)
 {
   RTVec_t<2, sse_f> txt;
   RTVec_t<4, sse_f> texel;
@@ -389,10 +402,10 @@ _INLINE void Shade_TxtCoord(RayPacket<N, LAYOUT, MULTIPLE_ORIGINS, SHADOW_RAYS> 
 
 template <int N, int LAYOUT, int MULTIPLE_ORIGINS, int SHADOW_RAYS, class Mesh>
 _INLINE void Shade_Texture(RayPacket<N, LAYOUT, MULTIPLE_ORIGINS, SHADOW_RAYS> &packet,
-			   const Mesh &mesh,
-			   const RTMaterial *const mat,
-			   RTTextureObject_RGBA_UCHAR **texture,
-			   sse_i *const dest)
+                           const Mesh &mesh,
+                           const RTMaterial *const mat,
+                           RTTextureObject_RGBA_UCHAR **texture,
+                           sse_i *const dest)
 {
   RTVec_t<2, sse_f> txt;
   RTVec_t<4, sse_f> texel;
@@ -599,11 +612,11 @@ int Context::task(int jobID, int threadId)
       int ey = min(sy+TILE_WIDTH,m_threadData.resY);
 
       if (m_geometryMode == MINIRT_POLYGONAL_GEOMETRY)
-	renderTile<StandardTriangleMesh,RAY_PACKET_LAYOUT_TRIANGLE>(m_threadData.frameBuffer,sx,sy,ex,ey);
+        renderTile<StandardTriangleMesh,RAY_PACKET_LAYOUT_TRIANGLE>(m_threadData.frameBuffer,sx,sy,ex,ey);
       else if (m_geometryMode == MINIRT_SUBDIVISION_SURFACE_GEOMETRY)
-	renderTile<DirectedEdgeMesh,RAY_PACKET_LAYOUT_SUBDIVISION>(m_threadData.frameBuffer,sx,sy,ex,ey);
+        renderTile<DirectedEdgeMesh,RAY_PACKET_LAYOUT_SUBDIVISION>(m_threadData.frameBuffer,sx,sy,ex,ey);
       else
-	FATAL("unknown mesh type");
+        FATAL("unknown mesh type");
     }
 
   return THREAD_RUNNING;
@@ -614,18 +627,20 @@ int Context::task(int jobID, int threadId)
   changed that to wrap frame buffer handling in its own class. _that_
   many virtual functions should be allowed, I guess ;-) */
 void Context::renderFrame(Camera *camera,
-			 LRT::FrameBuffer *frameBuffer,
+                         LRT::FrameBuffer *frameBuffer,
                          const int resX,const int resY)
 {
     assert(camera);
   if (m_threadsCreated == false)
     {
       if (m_threads > 1)
-	{
-	  cout << "-> starting " << m_threads << " threads..." << flush;
-	  createThreads(m_threads);
-	  cout << "done" << endl << flush;
-	}
+        {
+          cout << "-> starting " << m_threads << " threads..." << flush;
+#ifndef ENABLE_TASK
+          createThreads(m_threads);
+#endif
+          cout << "done" << endl << flush;
+        }
       m_threadsCreated = true;
     }
 
@@ -633,7 +648,14 @@ void Context::renderFrame(Camera *camera,
   initSharedThreadData(camera,resX,resY,frameBuffer);
 
   BVH_STAT_COLLECTOR(BVHStatCollector::global.reset());
-
+#ifdef ENABLE_TASK
+    if (m_geometryMode == MINIRT_POLYGONAL_GEOMETRY)
+      renderTileTask<StandardTriangleMesh,RAY_PACKET_LAYOUT_TRIANGLE>(frameBuffer,0,0,resX,resY);
+    else if (m_geometryMode == MINIRT_SUBDIVISION_SURFACE_GEOMETRY)
+      renderTileTask<DirectedEdgeMesh,RAY_PACKET_LAYOUT_SUBDIVISION>(frameBuffer,0,0,resX,resY);
+    else
+      FATAL("unknown mesh type");
+#else
   if (m_threads>1)
     {
       Context::m_tileCounter.reset();
@@ -647,7 +669,7 @@ void Context::renderFrame(Camera *camera,
       renderTile<DirectedEdgeMesh,RAY_PACKET_LAYOUT_SUBDIVISION>(frameBuffer,0,0,resX,resY);
     else
       FATAL("unknown mesh type");
-    
+#endif    
   BVH_STAT_COLLECTOR(BVHStatCollector::global.print());
   frameBuffer->doneWithFrame();
 }
@@ -656,10 +678,10 @@ void Context::renderFrame(Camera *camera,
 
 template <class MESH, const int LAYOUT>
 void Context::renderTile(LRT::FrameBuffer *frameBuffer,
-			const int startX, 
-			const int startY,
-			const int endX,
-			const int endY)
+                        const int startX, 
+                        const int startY,
+                        const int endX,
+                        const int endY)
 {
   const int MULTIPLE_ORIGINS = 0;
   const int SHADOW_RAYS = 0;
@@ -675,43 +697,135 @@ void Context::renderTile(LRT::FrameBuffer *frameBuffer,
   for (int y=startY; y+PACKET_WIDTH<=endY; y+=PACKET_WIDTH)
     for (int x=startX; x+PACKET_WIDTH<=endX; x+=PACKET_WIDTH)
       {
-	/* init all rays within packet */
-	const sse_f sx = _mm_set_ps1((float)x);
-	const sse_f sy = _mm_set_ps1((float)y);
-	const sse_f delta = _mm_set_ps1(PACKET_WIDTH-1);
-	FOR_ALL_SIMD_VECTORS_IN_PACKET
-	  {
-	    const sse_f dx = _mm_add_ps(sx,_mm_load_ps(&coordX[i*SIMD_WIDTH]));
-	    const sse_f dy = _mm_add_ps(sy,_mm_load_ps(&coordY[i*SIMD_WIDTH]));
-	    packet.directionX(i) = _mm_add_ps(_mm_add_ps(_mm_mul_ps(dx,m_threadData.xAxis[0]),
-							 _mm_mul_ps(dy,m_threadData.zAxis[0])),
-					      m_threadData.imagePlaneOrigin[0]);
-	    packet.directionY(i) = _mm_add_ps(_mm_add_ps(_mm_mul_ps(dx,m_threadData.xAxis[1]),
-							 _mm_mul_ps(dy,m_threadData.zAxis[1])),
-					      m_threadData.imagePlaneOrigin[1]);
-	    packet.directionZ(i) = _mm_add_ps(_mm_add_ps(_mm_mul_ps(dx,m_threadData.xAxis[2]),
-							 _mm_mul_ps(dy,m_threadData.zAxis[2])),
-					      m_threadData.imagePlaneOrigin[2]);
+        /* init all rays within packet */
+        const sse_f sx = _mm_set_ps1((float)x);
+        const sse_f sy = _mm_set_ps1((float)y);
+        const sse_f delta = _mm_set_ps1(PACKET_WIDTH-1);
+        FOR_ALL_SIMD_VECTORS_IN_PACKET
+          {
+            const sse_f dx = _mm_add_ps(sx,_mm_load_ps(&coordX[i*SIMD_WIDTH]));
+            const sse_f dy = _mm_add_ps(sy,_mm_load_ps(&coordY[i*SIMD_WIDTH]));
+            packet.directionX(i) = _mm_add_ps(_mm_add_ps(_mm_mul_ps(dx,m_threadData.xAxis[0]),
+                                                         _mm_mul_ps(dy,m_threadData.zAxis[0])),
+                                              m_threadData.imagePlaneOrigin[0]);
+            packet.directionY(i) = _mm_add_ps(_mm_add_ps(_mm_mul_ps(dx,m_threadData.xAxis[1]),
+                                                         _mm_mul_ps(dy,m_threadData.zAxis[1])),
+                                              m_threadData.imagePlaneOrigin[1]);
+            packet.directionZ(i) = _mm_add_ps(_mm_add_ps(_mm_mul_ps(dx,m_threadData.xAxis[2]),
+                                                         _mm_mul_ps(dy,m_threadData.zAxis[2])),
+                                              m_threadData.imagePlaneOrigin[2]);
 #if defined(NORMALIZE_PRIMARY_RAYS)
-	    const sse_f invLength = rsqrt(packet.directionX(i) * packet.directionX(i) + packet.directionY(i) * packet.directionY(i) + packet.directionZ(i) * packet.directionZ(i));
-	    packet.directionX(i) *= invLength;
-	    packet.directionY(i) *= invLength;
-	    packet.directionZ(i) *= invLength;
+            const sse_f invLength = rsqrt(packet.directionX(i) * packet.directionX(i) + packet.directionY(i) * packet.directionY(i) + packet.directionZ(i) * packet.directionZ(i));
+            packet.directionX(i) *= invLength;
+            packet.directionY(i) *= invLength;
+            packet.directionZ(i) *= invLength;
 #endif                
-	    packet.originX(i) = m_threadData.origin[0];
-	    packet.originY(i) = m_threadData.origin[1];
-	    packet.originZ(i) = m_threadData.origin[2];
-	  }
-	packet.computeReciprocalDirectionsAndInitMinMax();
-	packet.reset();
-	TraverseBVH<SIMD_VECTORS_PER_PACKET, LAYOUT, MULTIPLE_ORIGINS, SHADOW_RAYS, MESH>(packet,m_bvh->node,m_bvh->item,mesh);
+            packet.originX(i) = m_threadData.origin[0];
+            packet.originY(i) = m_threadData.origin[1];
+            packet.originZ(i) = m_threadData.origin[2];
+          }
+        packet.computeReciprocalDirectionsAndInitMinMax();
+        packet.reset();
+        TraverseBVH<SIMD_VECTORS_PER_PACKET, LAYOUT, MULTIPLE_ORIGINS, SHADOW_RAYS, MESH>(packet,m_bvh->node,m_bvh->item,mesh);
 
- 	//SHADE(RandomID);
- 	SHADE(EyeLight);
+         //SHADE(RandomID);
+         SHADE(EyeLight);
 
-	frameBuffer->writeBlock(x,y,PACKET_WIDTH,PACKET_WIDTH,rgb32);
+        frameBuffer->writeBlock(x,y,PACKET_WIDTH,PACKET_WIDTH,rgb32);
       }
 }
+#ifdef ENABLE_TASK
+template <class MESH, const int LAYOUT>
+void Context::renderTileTask(LRT::FrameBuffer *frameBuffer,
+                        const int startX, 
+                        const int startY,
+                        const int endX,
+                        const int endY)
+{
+  cilk_begin;
+  const int CUTOFF_X=PACKET_WIDTH;
+  const int CUTOFF_Y=PACKET_WIDTH;
+  if(endX-startX>CUTOFF_X||endY-startY>CUTOFF_Y){
+    //To escape a comma-in-macro problem.  
+    #define renderTileTaskFunc renderTileTask<MESH,LAYOUT> 
+    //Not cut-off: divide-and-conquer
+    if(endX-startX<endY-startY){
+      //Divide Y-axis.
+      int startY1=startY;
+      int endY1=startY1+((endY-startY)/(2*PACKET_WIDTH))*PACKET_WIDTH;
+      int startY2=endY1;
+      int endY2=endY;
+      mk_task_group;
+      create_task0(spawn renderTileTaskFunc(frameBuffer,startX,startY1,endX,endY1));
+      call_task   (spawn renderTileTaskFunc(frameBuffer,startX,startY2,endX,endY2));
+      wait_tasks;
+    }else{
+      //Divide X-axis.
+      int startX1=startX;
+      int endX1=startX1+((endX-startX)/(2*PACKET_WIDTH))*PACKET_WIDTH;
+      int startX2=endX1;
+      int endX2=endX;
+      mk_task_group;
+      create_task0(spawn renderTileTaskFunc(frameBuffer,startX1,startY,endX1,endY));
+      call_task   (spawn renderTileTaskFunc(frameBuffer,startX2,startY,endX2,endY));
+      wait_tasks;
+    }
+    #undef renderTileTaskFunc
+    cilk_void_return;
+  }
+  //Applied cut-off: leaf of task
+  for (int y=startY; y+PACKET_WIDTH<=endY; y+=PACKET_WIDTH)
+    for (int x=startX; x+PACKET_WIDTH<=endX; x+=PACKET_WIDTH)
+      {
+
+        const int MULTIPLE_ORIGINS = 0;
+        const int SHADOW_RAYS = 0;
+        RayPacket<SIMD_VECTORS_PER_PACKET, LAYOUT, MULTIPLE_ORIGINS, SHADOW_RAYS> packet;
+        _ALIGN(DEFAULT_ALIGNMENT) sse_i rgb32[SIMD_VECTORS_PER_PACKET];
+
+        const MESH &mesh = *dynamic_cast<MESH*>(m_mesh);
+        const RTMaterial *const mat = m_material.size() ? &*m_material.begin() : NULL;
+        RTTextureObject_RGBA_UCHAR **texture = m_texture.size() ?  &*m_texture.begin() : NULL;
+
+        /* init all rays within packet */
+        const sse_f sx = _mm_set_ps1((float)x);
+        const sse_f sy = _mm_set_ps1((float)y);
+        const sse_f delta = _mm_set_ps1(PACKET_WIDTH-1);
+        FOR_ALL_SIMD_VECTORS_IN_PACKET
+          {
+            const sse_f dx = _mm_add_ps(sx,_mm_load_ps(&coordX[i*SIMD_WIDTH]));
+            const sse_f dy = _mm_add_ps(sy,_mm_load_ps(&coordY[i*SIMD_WIDTH]));
+            packet.directionX(i) = _mm_add_ps(_mm_add_ps(_mm_mul_ps(dx,m_threadData.xAxis[0]),
+                                                         _mm_mul_ps(dy,m_threadData.zAxis[0])),
+                                              m_threadData.imagePlaneOrigin[0]);
+            packet.directionY(i) = _mm_add_ps(_mm_add_ps(_mm_mul_ps(dx,m_threadData.xAxis[1]),
+                                                         _mm_mul_ps(dy,m_threadData.zAxis[1])),
+                                              m_threadData.imagePlaneOrigin[1]);
+            packet.directionZ(i) = _mm_add_ps(_mm_add_ps(_mm_mul_ps(dx,m_threadData.xAxis[2]),
+                                                         _mm_mul_ps(dy,m_threadData.zAxis[2])),
+                                              m_threadData.imagePlaneOrigin[2]);
+#if defined(NORMALIZE_PRIMARY_RAYS)
+            const sse_f invLength = rsqrt(packet.directionX(i) * packet.directionX(i) + packet.directionY(i) * packet.directionY(i) + packet.directionZ(i) * packet.directionZ(i));
+            packet.directionX(i) *= invLength;
+            packet.directionY(i) *= invLength;
+            packet.directionZ(i) *= invLength;
+#endif                
+            packet.originX(i) = m_threadData.origin[0];
+            packet.originY(i) = m_threadData.origin[1];
+            packet.originZ(i) = m_threadData.origin[2];
+          }
+        packet.computeReciprocalDirectionsAndInitMinMax();
+        packet.reset();
+        TraverseBVH<SIMD_VECTORS_PER_PACKET, LAYOUT, MULTIPLE_ORIGINS, SHADOW_RAYS, MESH>(packet,m_bvh->node,m_bvh->item,mesh);
+
+         //SHADE(RandomID);
+         SHADE(EyeLight);
+
+        frameBuffer->writeBlock(x,y,PACKET_WIDTH,PACKET_WIDTH,rgb32);
+      }
+  cilk_void_return;
+}
+#endif
 
 
 
@@ -750,11 +864,11 @@ LRTvoid lrtSetRenderThreads(LRTContext context, LRTuint nthreads)
 
 
 LRTvoid lrtLookAt(LRTCamera camera, 
-		  RTfloat eyeX, RTfloat eyeY, RTfloat eyeZ, 
-		  RTfloat centerX, RTfloat centerY, RTfloat centerZ, 
-		  RTfloat upX, RTfloat upY, RTfloat upZ,
-		  RTfloat angle,
-		  RTfloat aspect)
+                  RTfloat eyeX, RTfloat eyeY, RTfloat eyeZ, 
+                  RTfloat centerX, RTfloat centerY, RTfloat centerZ, 
+                  RTfloat upX, RTfloat upY, RTfloat upZ,
+                  RTfloat angle,
+                  RTfloat aspect)
 {
   // actually, I don't think the camera is part of the context -- you
   // might well imagine rendering the same 'scene' (i.e., context,
@@ -863,8 +977,8 @@ LRTvoid lrtRenderFrame(LRTFrameBufferHandle _fb,
 
   //   cout << "rendering in res " << flush << frameBuffer->res << endl;
   context->renderFrame((Camera*)_camera,
-		       frameBuffer,
-		       frameBuffer->res.x,
-		       frameBuffer->res.y);
+                       frameBuffer,
+                       frameBuffer->res.x,
+                       frameBuffer->res.y);
 }
 
