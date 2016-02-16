@@ -13,7 +13,7 @@
 #endif
 
 #ifndef GRAIN_SIZE
-#define GRAIN_SIZE 1
+#define GRAIN_SIZE 50
 #endif
 
 #include <tbb/tbb.h>
