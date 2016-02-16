@@ -2,3 +2,4 @@
 
 source ${PARSECDIR}/pkgs/libs/mesa/parsec/gcc.bldconf
 
+build_conf="${build_conf} CC=icc CXX=icpc"
