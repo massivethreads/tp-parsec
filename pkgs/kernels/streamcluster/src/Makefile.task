@@ -10,8 +10,9 @@ OBJS   = streamcluster.o
 
 #OPTS += -O0 -g
 #OPTS += -pg
-OPTS += -O3 -funroll-loops -fprefetch-loop-arrays
+#OPTS += -O3 -funroll-loops -fprefetch-loop-arrays
 OPTS += -DENABLE_TASK
+OPTS += $(CXXFLAGS)
 
 #LINK_OPTS += -pg 
 LINK_OPTS += -ltbb
