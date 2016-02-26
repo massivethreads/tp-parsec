@@ -71,6 +71,8 @@ static int * center_table; //index table of centers
 
 static int nproc; //# of threads
 
+static int env_grain_size;
+
 #if USE_TBBMALLOC
 tbb::cache_aligned_allocator<float> memoryFloat;
 tbb::cache_aligned_allocator<Point> memoryPoint;
@@ -368,8 +370,8 @@ pspeedy(Points * points, float z, long * kcenter) {
   {
     CenterCreate c(points);
     //int grain_size = points->num / ((NUM_DIVISIONS));
-    //tbb::parallel_for(tbb::blocked_range<int>(0, points->num, GRAIN_SIZE), c);
-    mtbb::parallel_for<tbb::blocked_range<int>, CenterCreate>(tbb::blocked_range<int>(0, points->num, GRAIN_SIZE), c);
+    //tbb::parallel_for(tbb::blocked_range<int>(0, points->num, env_grain_size), c);
+    mtbb::parallel_for<tbb::blocked_range<int>, CenterCreate>(tbb::blocked_range<int>(0, points->num, env_grain_size), c);
   }
     
   *kcenter = 1;
@@ -385,14 +387,14 @@ pspeedy(Points * points, float z, long * kcenter) {
         (*kcenter)++;
         c.i = i;
         //fprintf(stderr,"** New center for i=%d\n",i);
-        //tbb::parallel_reduce(tbb::blocked_range<int>(0, points->num, GRAIN_SIZE), c);
-        mtbb::parallel_for<tbb::blocked_range<int>, CenterOpen>(tbb::blocked_range<int>(0, points->num, GRAIN_SIZE), c);
+        //tbb::parallel_reduce(tbb::blocked_range<int>(0, points->num, env_grain_size), c);
+        mtbb::parallel_for<tbb::blocked_range<int>, CenterOpen>(tbb::blocked_range<int>(0, points->num, env_grain_size), c);
       }
     }
 
     c.type = 1; /* Once last time for actual reduction */
-    //tbb::parallel_reduce(tbb::blocked_range<int>(0, points->num, GRAIN_SIZE), c);
-    mtbb::parallel_reduce<tbb::blocked_range<int>, CenterOpen>(tbb::blocked_range<int>(0, points->num, GRAIN_SIZE), c);
+    //tbb::parallel_reduce(tbb::blocked_range<int>(0, points->num, env_grain_size), c);
+    mtbb::parallel_reduce<tbb::blocked_range<int>, CenterOpen>(tbb::blocked_range<int>(0, points->num, env_grain_size), c);
 
     totalcost = z * (*kcenter);
     totalcost += c.getTotalCost();
@@ -696,8 +698,8 @@ pkmedian(Points * points, long kmin, long kmax, long * kfinal, int pid, pthread_
   //fprintf(stderr,"%i points in %i dimensions\n", numberOfPoints, ptDimension);
 
   HizReduction h(points);
-  //tbb::parallel_reduce(tbb::blocked_range<int>(0, points->num, GRAIN_SIZE), h);
-  mtbb::parallel_reduce<tbb::blocked_range<int>,HizReduction>(tbb::blocked_range<int>(0, points->num, GRAIN_SIZE), h);
+  //tbb::parallel_reduce(tbb::blocked_range<int>(0, points->num, env_grain_size), h);
+  mtbb::parallel_reduce<tbb::blocked_range<int>,HizReduction>(tbb::blocked_range<int>(0, points->num, env_grain_size), h);
   hiz = h.getHiz();
   
   loz = 0.0;
@@ -717,14 +719,18 @@ pkmedian(Points * points, long kmin, long kmax, long * kfinal, int pid, pthread_
     return cost;
   }
 
+  mk_task_group;
+
   shuffle(points);
-  cost = pspeedy(points, z, &k);
+  create_task1( cost, spawn { cost = pspeedy(points, z, &k); } );
+  wait_tasks;
 
   i=0;
 
   /* give speedy SP chances to get at least kmin/2 facilities */
   while ((k < kmin) && (i < SP)) {
-    cost = pspeedy(points, z, &k);
+    create_task1( cost, spawn { cost = pspeedy(points, z, &k); } );
+    wait_tasks;
     i++;
   }
 
@@ -737,7 +743,8 @@ pkmedian(Points * points, long kmin, long kmax, long * kfinal, int pid, pthread_
     }
     
     shuffle(points);
-    cost =  pspeedy(points, z, &k);
+    create_task1( cost, spawn { cost =  pspeedy(points, z, &k); });
+    wait_tasks;
     i++;
   }
 
@@ -754,10 +761,12 @@ pkmedian(Points * points, long kmin, long kmax, long * kfinal, int pid, pthread_
 
 
   while (1) {
+    mk_task_group;
+    
     /* first get a rough estimate on the FL solution */
     lastcost = cost;
-    cost = pFL(points, feasible, numfeasible,
-               z, &k, cost, (long) (ITER * kmax * log((double) kmax)), 0.1);
+    create_task1( cost, spawn { cost = pFL(points, feasible, numfeasible, z, &k, cost, (long) (ITER * kmax * log((double) kmax)), 0.1); } );
+    wait_tasks;
 
     /* if number of centers seems good, try a more accurate FL */
     if (((k <= (1.1) * kmax) && (k >= (0.9) * kmin)) ||
@@ -765,8 +774,8 @@ pkmedian(Points * points, long kmin, long kmax, long * kfinal, int pid, pthread_
       
       /* may need to run a little longer here before halting without
          improvement */
-      cost = pFL(points, feasible, numfeasible,
-                 z, &k, cost, (long) (ITER * kmax * log((double) kmax)), 0.001);
+      create_task1( cost, spawn { cost = pFL(points, feasible, numfeasible, z, &k, cost, (long) (ITER * kmax * log((double) kmax)), 0.001); });
+      wait_tasks;
     }
 
     if (k > kmax) {
@@ -1084,7 +1093,9 @@ streamCluster(PStream * stream, long kmin, long kmax, int dim, long chunksize, l
   center_table = (int*)malloc(centers.num*sizeof(int));
 #endif
 
-  localSearch( &centers, kmin, kmax, &kfinal ); // parallel
+  mk_task_group;
+  create_task2( centers, kfinal, spawn localSearch( &centers, kmin, kmax, &kfinal ) ); // parallel
+  wait_tasks;
   contcenters( &centers );
   outcenterIDs( &centers, centerIDs, outfile );
 }
@@ -1137,6 +1148,13 @@ main(int argc, char ** argv) {
   strcpy(outfilename, argv[8]);
   nproc = atoi(argv[9]);
 
+  env_grain_size = GRAIN_SIZE;
+  char * str_grain_size = getenv("GRAIN_SIZE");
+  if (str_grain_size) {
+    env_grain_size = atol(str_grain_size);
+  }
+  printf("env_grain_size = %ld\n", env_grain_size);
+  
   srand48(SEED);
   PStream * stream;
   if( n > 0 ) {
