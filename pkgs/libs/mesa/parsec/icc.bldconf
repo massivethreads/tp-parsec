@@ -1,5 +1,4 @@
 #!/bin/bash
 
 source ${PARSECDIR}/pkgs/libs/mesa/parsec/gcc.bldconf
-
-build_conf="${build_conf} CC=icc CXX=icpc"
+build_conf="${build_conf} CC=${CC_HOME}/bin/icc CXX=${CC_HOME}/bin/icpc CPP=cpp LIBS="

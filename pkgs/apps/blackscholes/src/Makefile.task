@@ -37,7 +37,7 @@ endif
 
 app_root       = ${PARSECDIR}/pkgs/apps/blackscholes
 icc_dir       ?= ${CC_HOME}
-icc           ?= ${icc_dir}/compiler/bin/icc
+icc           ?= ${icc_dir}/bin/icc
 default_all    : ${task_target}_exes
 src_dir       ?= $(app_root)/src
 exe_prefix    ?= $(app_root)/inst/${PARSECPLAT}/${TARGET}

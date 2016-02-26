@@ -15,6 +15,11 @@
 #include <hooks.h>
 #endif
 
+#ifdef ENABLE_TASK
+#include "common.h"
+#include "tpswitch/tpswitch.h"
+#endif
+
 using namespace RTTL;
 using namespace LRT;
 
@@ -345,6 +350,10 @@ int main(int argc, char* argv[])
 #ifdef ENABLE_PARSEC_HOOKS
   atexit(__parsec_bench_end);
   __parsec_bench_begin(__parsec_raytrace);
+#endif
+
+#if defined(ENABLE_TASK) && !defined(TO_CILKPLUS)
+   init_runtime(&argc,&argv);
 #endif
 
   rtInit(&argc, argv);

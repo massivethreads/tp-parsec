@@ -747,7 +747,7 @@ void Context::renderTileTask(LRT::FrameBuffer *frameBuffer,
   const int CUTOFF_Y=PACKET_WIDTH;
   if(endX-startX>CUTOFF_X||endY-startY>CUTOFF_Y){
     //To escape a comma-in-macro problem.  
-    #define renderTileTaskFunc renderTileTask<MESH,LAYOUT> 
+    #define renderTileTaskFunc (renderTileTask<MESH,LAYOUT>) 
     //Not cut-off: divide-and-conquer
     if(endX-startX<endY-startY){
       //Divide Y-axis.
