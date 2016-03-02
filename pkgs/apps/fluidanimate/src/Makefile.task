@@ -1,0 +1,41 @@
+
+PREFIX=${PARSECDIR}/pkgs/apps/fluidanimate/inst/${PARSECPLAT}
+
+CXXFLAGS += -Wno-invalid-offsetof
+
+TARGET   = fluidanimate
+CXXFLAGS += -pthread -D_GNU_SOURCE -D__XOPEN_SOURCE=600
+
+ostype=$(findstring solaris, ${PARSECPLAT})
+
+ifeq "$(ostype)" "solaris"
+    CXXFLAGS += -DSPARC_SOLARIS
+endif
+
+app_root       = ${PARSECDIR}/pkgs/apps/${TARGET}
+icc_dir       ?= ${CC_HOME}
+icc           ?= ${icc_dir}/bin/icc
+default_all    : ${task_target}_exes
+src_dir       ?= $(app_root)/src
+exe_prefix    ?= $(app_root)/inst/${PARSECPLAT}/${TARGET}
+obj_dir       ?= $(app_root)/obj/${PARSECPLAT}
+
+c_srcs   := 
+c_opts   := $(CXXFLAGS)
+cpp_srcs := 
+cxx_srcs := task.cxx cellpool.cxx
+cxx_opts := $(CXXFLAGS)
+targets  := $(TARGET)
+
+include $(parallel2_dir)/sys/src/tools/makefiles/compile.mk
+
+clean:
+	rm -f -r $(app_root)/inst/${PARSECPLAT}/*
+
+install:
+	mkdir -p $(app_root)/inst/${PARSECPLAT}/bin
+	mv -f $(exe_prefix)* $(app_root)/inst/${PARSECPLAT}/bin/$(TARGET)_${task_target}
+	echo "\$${parallel2_dir}/sys/inst/${platform}/bin/urun -t ${task_target} -p \$$1 -f ${platform} -- \$$(dirname \$$0)/$(TARGET)_${task_target} \$$1 \$$2 \$$3 \$$4" > $(app_root)/inst/${PARSECPLAT}/bin/$(TARGET)
+	chmod 775 $(app_root)/inst/${PARSECPLAT}/bin/$(TARGET)
+
+
