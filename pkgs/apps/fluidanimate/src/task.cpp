@@ -1131,7 +1131,6 @@ void DivConqTask(int from, int to, void(*f)(int)) {
   }
   cilk_void_return;
 }
-
 void AdvanceFrameMT(int tasknum)
 {
   //swap src and dest arrays with particles
@@ -1206,6 +1205,10 @@ int main(int argc, char *argv[])
 #endif //PARSEC_VERSION
 #ifdef ENABLE_PARSEC_HOOKS
   __parsec_bench_begin(__parsec_fluidanimate);
+#endif
+
+#ifndef TO_CILKPLUS
+   init_runtime(&argc,&argv);
 #endif
 
   if(argc < 4 || argc >= 6)

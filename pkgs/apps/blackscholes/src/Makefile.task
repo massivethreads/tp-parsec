@@ -35,7 +35,7 @@ ifdef double
 NCO = -DNCO=2 -Dfptype=double
 endif
 
-app_root       = ${PARSECDIR}/pkgs/apps/blackscholes
+app_root       = ${PARSECDIR}/pkgs/apps/${TARGET}
 icc_dir       ?= ${CC_HOME}
 icc           ?= ${icc_dir}/bin/icc
 default_all    : ${task_target}_exes
@@ -46,7 +46,7 @@ obj_dir       ?= $(app_root)/obj/${PARSECPLAT}
 c_srcs   := 
 cxx_srcs := blackscholes.cxx
 cxx_opts := $(CXXFLAGS) $(MT) $(NCO) $(FUNC) $(ERR) -DENABLE_TASK
-targets  := blackscholes
+targets  := ${TARGET}
 
 include $(parallel2_dir)/sys/src/tools/makefiles/compile.mk
 
