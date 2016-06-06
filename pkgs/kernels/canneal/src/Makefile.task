@@ -1,7 +1,7 @@
 PREFIX=${PARSECDIR}/pkgs/kernels/canneal/inst/${PARSECPLAT}
 
 CSRC    = $(SRC)
-TARGET  = canneal 
+TARGET  = canneal
 
 LIBS:=$(LIBS) -lm
 
@@ -13,13 +13,9 @@ src_dir       ?= $(app_root)/src
 exe_prefix    ?= $(app_root)/inst/${PARSECPLAT}/${TARGET}
 obj_dir       ?= $(app_root)/obj/${PARSECPLAT}
 
-c_srcs   :=
-cpp_srcs := annealer_thread.cpp rng.cpp netlist.cpp main.cpp netlist_elem.cpp 
-cpp_opts := $(CXXFLAGS) $(MT) $(NCO) $(FUNC) $(ERR) -DENABLE_TASK  
-cxx_opts := $(CXXFLAGS) $(MT) $(NCO) $(FUNC) $(ERR) -DENABLE_TASK 
-cc_opts := $(CXXFLAGS) $(MT) $(NCO) $(FUNC) $(ERR) -DENABLE_TASK 
+cpp_srcs := annealer_thread.cpp rng.cpp netlist.cpp main.cpp netlist_elem.cpp
+cpp_opts := $(CXXFLAGS) $(LDFLAGS) $(LIBS) -DENABLE_TASK
 targets  := ${TARGET}
-
 
 include $(parallel2_dir)/sys/src/tools/makefiles/compile.mk
 
