@@ -42,6 +42,11 @@
 #include <hooks.h>
 #endif
 
+#ifdef ENABLE_TASK
+#include "tpswitch/tpswitch.h"
+#include "common.h"
+#endif
+
 #include "annealer_types.h"
 #include "annealer_thread.h"
 #include "netlist.h"
@@ -63,6 +68,9 @@ int main (int argc, char * const argv[]) {
 #endif //PARSEC_VERSION
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_bench_begin(__parsec_canneal);
+#endif
+#ifdef ENABLE_TASK
+	init_runtime(&argv,&argc);
 #endif
 
 	srandom(3);
@@ -119,10 +127,19 @@ int main (int argc, char * const argv[]) {
 		pthread_join(threads[i], NULL);
 	}
 #else
+#ifdef ENABLE_TASK
+	for(int i=0; i<num_threads; i++){
+		create_task1(thread_in,entry_pt);
+	}
+	wait_tasks();
+
+#else
 	a_thread.Run();
 #endif
+#endif
+
 #ifdef ENABLE_PARSEC_HOOKS
-	__parsec_roi_end();
+E	__parsec_roi_end();
 #endif
 	
 	cout << "Final routing is: " << my_netlist.total_routing_cost() << endl;
