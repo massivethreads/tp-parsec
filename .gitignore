@@ -4,6 +4,15 @@
 */*/*/run
 */*/*/inst
 */*/*/obj
+*input_native.tar
+*input_simsmall.tar
+*input_simmedium.tar
+*input_simlarge.tar
 log
 
 toolkit/parallel2
+
+# gtags
+GPATH
+GRTAGS
+GTAGS
