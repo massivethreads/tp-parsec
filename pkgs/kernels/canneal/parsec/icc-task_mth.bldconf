@@ -1,0 +1,6 @@
+#!/bin/bash
+BASEPATH="$(cd $(dirname $BASH_SOURCE); pwd)"
+source ${BASEPATH}/icc.bldconf
+del_ver_build_env=`echo "${build_env}"|sed -e "s/^version=[a-zA-Z_0-9]\+ //"|sed -e "s/ version=[a-zA-Z_0-9]\+//"|sed -e "s/^version=[a-zA-Z_0-9]\+$//"`
+build_env="${del_ver_build_env} version=task task_target=mth platform=i"
+
