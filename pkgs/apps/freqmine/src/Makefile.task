@@ -3,8 +3,9 @@ PREFIX=${PARSECDIR}/pkgs/apps/freqmine/inst/${PARSECPLAT}
 TARGET  = freqmine
 
 CXXFLAGS += -Wno-deprecated
-
 CXXFLAGS += -O2
+
+LIBS:=$(LIBS) -lm
 
 app_root       = ${PARSECDIR}/pkgs/apps/freqmine
 icc_dir       ?= ${CC_HOME}
@@ -15,7 +16,7 @@ exe_prefix    ?= $(app_root)/inst/${PARSECPLAT}/${TARGET}
 obj_dir       ?= $(app_root)/obj/${PARSECPLAT}
 
 cpp_srcs := fpmax.cpp data.cpp fp_tree.cpp buffer.cpp fsout.cpp fp_node.cpp wtime.cpp
-cpp_opts := $(CXXFLAGS) -DENABLE_TASK
+cpp_opts := $(CXXFLAGS) $(LDFLAGS) $(LIBS) -DENABLE_TASK
 targets  := freqmine
 
 include $(parallel2_dir)/sys/src/tools/makefiles/compile.mk

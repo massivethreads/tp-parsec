@@ -1,5 +1,5 @@
 /*
-   Author:  Jianfei Zhu  
+   Author:  Jianfei Zhu
             Concordia University
    Date:    Feb. 10, 2004
 
@@ -64,6 +64,11 @@ static int omp_get_max_threads() {return 1;}
 #include <hooks.h>
 #endif
 
+#ifdef ENABLE_TASK
+#include "tpswitch/tpswitch.h"
+#include <common.h>
+#endif
+
 #define LINT sizeof(int)
 
 int** ITlen;
@@ -71,7 +76,7 @@ int** bran;
 int** prefix;
 
 int* order_item;		// given order i, order_item[i] gives itemname
-int* item_order;		// given item i, item_order[i] gives its new order 
+int* item_order;		// given item i, item_order[i] gives its new order
 						//	order_item[item_order[i]]=i; item_order[order_item[i]]=i;
 int** compact;
 int** supp;
@@ -91,13 +96,13 @@ int **new_data_num;
 void printLen()
 {
 	int i, j;
-	int workingthread=omp_get_max_threads(); 
+	int workingthread=omp_get_max_threads();
 
 	for (j = 1; j < workingthread; j ++)
 		for (i = 0; i < ITEM_NO; i ++)
 		ITlen[0][i] += ITlen[j][i];
 	for(i=ITEM_NO-1; i>=0&&ITlen[0][i]==0; i--);
-	for(j=0; j<=i; j++) 
+	for(j=0; j<=i; j++)
 		printf("%d\n", ITlen[0][j]);
 }
 
@@ -111,7 +116,7 @@ int main(int argc, char **argv)
 #ifdef PARSEC_VERSION
 #define __PARSEC_STRING(x) #x
 #define __PARSEC_XSTRING(x) __PARSEC_STRING(x)
-        printf("PARSEC Benchmark Suite Version "__PARSEC_XSTRING(PARSEC_VERSION)"\n");
+        printf("PARSEC Benchmark Suite Version " __PARSEC_XSTRING(PARSEC_VERSION)"\n");
 	fflush(NULL);
 #else
         printf("PARSEC Benchmark Suite\n");
@@ -120,7 +125,10 @@ int main(int argc, char **argv)
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_bench_begin(__parsec_freqmine);
 #endif
-	
+#if defined(ENABLE_TASK) && !defined(TO_CILKPLUS)
+	init_runtime(&argc,&argv);
+#endif
+
 	if (argc < 3)
 	{
 	  cout << "usage: " << argv[0] << " <infile> <MINSUP> [<outfile>]\n";
@@ -175,7 +183,7 @@ int main(int argc, char **argv)
 
 		if (fout)
 			fptree->generate_all(fptree->itemno, 0, fout);
-		
+
 		printLen();
 		return 0;
 	}
@@ -197,13 +205,13 @@ int main(int argc, char **argv)
 	delete [] fp_tree_buf;
 	delete []order_item;
 	delete []item_order;
-							
+
 	wtime(&tend);
 	printf ("the data preparation cost %f seconds, the FPgrowth cost %f seconds\n", tdatap - tstart, tend - tdatap);
 
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_bench_end();
 #endif
-	
+
 	return 0;
 }
