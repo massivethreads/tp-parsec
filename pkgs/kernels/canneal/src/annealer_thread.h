@@ -31,7 +31,7 @@
 #ifndef ANNEALER_THREAD_H
 #define ANNEALER_THREAD_H
 
-#ifdef ENABLE_THREADS
+#if defined ENABLE_THREADS || defined ENABLE_TASK
 #include <pthread.h>
 #endif
 
@@ -65,13 +65,13 @@ public:
 	_number_temp_steps(number_temp_steps)
 	{
 		assert(_netlist != NULL);
-#ifdef ENABLE_THREADS
+#if defined ENABLE_THREADS || defined ENABLE_TASK
 		pthread_barrier_init(&_barrier, NULL, nthreads);
 #endif
 	};
 	
 	~annealer_thread() {
-#ifdef ENABLE_THREADS
+#if defined ENABLE_THREADS || defined ENABLE_TASK
 		pthread_barrier_destroy(&_barrier);
 #endif
 	}					
@@ -88,7 +88,7 @@ protected:
 	int _moves_per_thread_temp;
 	int _start_temp;
 	int _number_temp_steps;
-#ifdef ENABLE_THREADS
+#if defined ENABLE_THREADS || defined ENABLE_TASK
 	pthread_barrier_t _barrier;
 #endif
 };

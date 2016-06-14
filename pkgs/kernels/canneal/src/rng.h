@@ -35,6 +35,9 @@
 #ifdef ENABLE_THREADS
 #include <pthread.h>
 #endif
+#ifdef ENABLE_TASK
+#include <common.h>
+#endif
 
 #include "MersenneTwister.h"
 
@@ -42,10 +45,14 @@ class Rng
 {
 public:
 	Rng() {
-#ifdef ENABLE_THREADS
+#if defined ENABLE_THREADS
 		pthread_mutex_lock(&seed_lock);
 		_rng = new MTRand(seed++);
 		pthread_mutex_unlock(&seed_lock);
+#elif defined ENABLE_TASK
+		lock_set(seed_lock);
+		_rng = new MTRand(seed++);
+		lock_unset(seed_lock);
 #else
 		_rng = new MTRand(seed++);
 #endif //ENABLE_THREADS
@@ -59,7 +66,11 @@ public:
 protected:
 	//use same random seed for each run
 	static unsigned int seed;
+#if defined ENABLE_THREADS
 	static pthread_mutex_t seed_lock;
+#elif defined ENABLE_TASK
+	lock_t seed_lock;
+#endif
 	MTRand *_rng;
 };
 

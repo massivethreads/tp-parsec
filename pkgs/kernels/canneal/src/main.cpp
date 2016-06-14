@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <vector>
+#include <functional>
 
 #ifdef ENABLE_THREADS
 #include <pthread.h>
@@ -42,10 +43,18 @@
 #include <hooks.h>
 #endif
 
+
 #ifdef ENABLE_TASK
+#include <tbb/tbb.h>
 #include "tpswitch/tpswitch.h"
 #include "common.h"
 #endif
+
+// Multi-threaded OpenMP header
+#ifdef ENABLE_OPENMP
+#include <omp.h>
+#endif
+
 
 #include "annealer_types.h"
 #include "annealer_thread.h"
@@ -55,14 +64,15 @@
 using namespace std;
 
 void* entry_pt(void*);
+void run_tasks(int, void*);
 
 
 
-int main (int argc, char * const argv[]) {
+int main (int argc, char * argv[]) {
 #ifdef PARSEC_VERSION
 #define __PARSEC_STRING(x) #x
 #define __PARSEC_XSTRING(x) __PARSEC_STRING(x)
-        cout << "PARSEC Benchmark Suite Version "__PARSEC_XSTRING(PARSEC_VERSION) << endl << flush;
+        cout << "PARSEC Benchmark Suite Version " __PARSEC_XSTRING(PARSEC_VERSION) << endl << flush;
 #else
         cout << "PARSEC Benchmark Suite" << endl << flush;
 #endif //PARSEC_VERSION
@@ -70,7 +80,7 @@ int main (int argc, char * const argv[]) {
 	__parsec_bench_begin(__parsec_canneal);
 #endif
 #ifdef ENABLE_TASK
-	init_runtime(&argv,&argc);
+	init_runtime(&argc, &argv);
 #endif
 
 	srandom(3);
@@ -84,10 +94,12 @@ int main (int argc, char * const argv[]) {
 	int num_threads = atoi(argv[1]);
 	cout << "Threadcount: " << num_threads << endl;
 #ifndef ENABLE_THREADS
+#ifndef ENABLE_TASK
 	if (num_threads != 1){
 		cout << "NTHREADS must be 1 (serial version)" <<endl;
 		exit(1);
 	}
+#endif 
 #endif
 		
 	//argument 2 is the num moves / temp
@@ -117,7 +129,8 @@ int main (int argc, char * const argv[]) {
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_roi_begin();
 #endif
-#ifdef ENABLE_THREADS
+
+#if defined ENABLE_THREADS
 	std::vector<pthread_t> threads(num_threads);
 	void* thread_in = static_cast<void*>(&a_thread);
 	for(int i=0; i<num_threads; i++){
@@ -126,20 +139,16 @@ int main (int argc, char * const argv[]) {
 	for (int i=0; i<num_threads; i++){
 		pthread_join(threads[i], NULL);
 	}
+#elif defined ENABLE_TASK
+	void* thread_in = static_cast<void*>(&a_thread);
+	run_tasks(num_threads,thread_in);	
 #else
-#ifdef ENABLE_TASK
-	for(int i=0; i<num_threads; i++){
-		create_task1(thread_in,entry_pt);
-	}
-	wait_tasks();
-
-#else
+	// original serial version
 	a_thread.Run();
-#endif
 #endif
 
 #ifdef ENABLE_PARSEC_HOOKS
-E	__parsec_roi_end();
+	__parsec_roi_end();
 #endif
 	
 	cout << "Final routing is: " << my_netlist.total_routing_cost() << endl;
@@ -150,6 +159,19 @@ E	__parsec_roi_end();
 
 	return 0;
 }
+
+#ifdef ENABLE_TASK
+void run_tasks(int num_threads, void* thread_in)
+{
+	cilk_begin;
+	mk_task_group;
+	for(int i=0; i<num_threads; i++){
+		create_task1(thread_in,entry_pt);
+	}
+	wait_tasks;
+	cilk_void_return;
+}
+#endif
 
 void* entry_pt(void* data)
 {

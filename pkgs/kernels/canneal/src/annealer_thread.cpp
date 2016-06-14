@@ -26,7 +26,7 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifdef ENABLE_THREADS
+#if defined ENABLE_THREADS || defined ENABLE_TASK
 #include <pthread.h>
 #endif
 
@@ -86,7 +86,7 @@ void annealer_thread::Run()
 			}
 		}
 		temp_steps_completed++;
-#ifdef ENABLE_THREADS
+#if defined ENABLE_THREADS || defined ENABLE_TASK
 		pthread_barrier_wait(&_barrier);
 #endif
 	}
