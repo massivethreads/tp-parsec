@@ -65,6 +65,7 @@ static int omp_get_max_threads() {return 1;}
 #endif
 
 #ifdef ENABLE_TASK
+#include <tbb/tbb.h>
 #include "tpswitch/tpswitch.h"
 #include <common.h>
 #endif

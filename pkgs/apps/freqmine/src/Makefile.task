@@ -5,7 +5,7 @@ TARGET  = freqmine
 CXXFLAGS += -Wno-deprecated
 CXXFLAGS += -O2
 
-LIBS:=$(LIBS) -lm
+LIBS:=$(LIBS) -lm -ltbb
 
 app_root       = ${PARSECDIR}/pkgs/apps/freqmine
 icc_dir       ?= ${CC_HOME}
