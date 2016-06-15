@@ -166,7 +166,7 @@ void run_tasks(int num_threads, void* thread_in)
 	cilk_begin;
 	mk_task_group;
 	for(int i=0; i<num_threads; i++){
-		create_task1(thread_in,entry_pt);
+		create_task1(thread_in,spawn entry_pt(thread_in));
 	}
 	wait_tasks;
 	cilk_void_return;
