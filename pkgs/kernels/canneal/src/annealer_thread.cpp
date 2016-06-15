@@ -30,6 +30,8 @@
 #include <pthread.h>
 #endif
 
+#undef sync
+
 #include <cassert>
 #include "annealer_thread.h"
 #include "location_t.h"
@@ -86,7 +88,7 @@ void annealer_thread::Run()
 			}
 		}
 		temp_steps_completed++;
-#if defined ENABLE_THREADS || defined ENABLE_TASK
+#if (defined ENABLE_THREADS || defined ENABLE_TASK) && !defined TO_SERIAL
 		pthread_barrier_wait(&_barrier);
 #endif
 	}

@@ -65,13 +65,13 @@ public:
 	_number_temp_steps(number_temp_steps)
 	{
 		assert(_netlist != NULL);
-#if defined ENABLE_THREADS || defined ENABLE_TASK
+#if (defined ENABLE_THREADS || defined ENABLE_TASK) && !defined TO_SERIAL
 		pthread_barrier_init(&_barrier, NULL, nthreads);
 #endif
 	};
 	
 	~annealer_thread() {
-#if defined ENABLE_THREADS || defined ENABLE_TASK
+#if (defined ENABLE_THREADS || defined ENABLE_TASK) && !defined TO_SERIAL
 		pthread_barrier_destroy(&_barrier);
 #endif
 	}					
