@@ -45,7 +45,7 @@ obj_dir       ?= $(app_root)/obj/${PARSECPLAT}
 
 c_srcs   := 
 cxx_srcs := blackscholes.cxx
-cxx_opts := $(CXXFLAGS) $(MT) $(NCO) $(FUNC) $(ERR) -DENABLE_TASK
+cxx_opts := -std=c++11 $(CXXFLAGS) $(MT) $(NCO) $(FUNC) $(ERR) -DENABLE_TASK
 targets  := ${TARGET}
 
 include $(parallel2_dir)/sys/src/tools/makefiles/compile.mk

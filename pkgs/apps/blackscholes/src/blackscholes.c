@@ -38,10 +38,14 @@ MAIN_ENV
 using namespace std;
 using namespace tbb;
 #endif //ENABLE_TBB
-
 #ifdef ENABLE_TASK
+
+#if !defined(PFOR_TO_ALLATONCE) && !defined(PFOR_TO_BISECTION) && !defined(PFOR_TO_ORIGINAL)
+  #define PFOR_TO_ORIGINAL 1
+#endif
+
 #include "common.h"
-#include "tpswitch/tpswitch.h"
+
 #endif
 
 // Multi-threaded header for Windows
@@ -261,34 +265,6 @@ struct mainWork {
 //////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
 
-#ifdef ENABLE_TASK
-void bs_task(int start, int end) {
-    cilk_begin;
-    if(end - start < 50){
-        for (int i=start; i<end; i++) {
-            fptype price = BlkSchlsEqEuroNoDiv( sptprice[i], strike[i],
-                                                rate[i], volatility[i], otime[i],
-                                                otype[i], 0);
-            prices[i] = price;
-#ifdef ERR_CHK
-            fptype priceDelta = data[i].DGrefval - price;
-            if( fabs(priceDelta) >= 1e-4 ){
-                printf("Error on %d. Computed=%.5f, Ref=%.5f, Delta=%.5f\n",
-                       i, price, data[i].DGrefval, priceDelta);
-                numError ++;
-            }
-#endif
-        }
-    }else{
-        mk_task_group;
-        create_task0(spawn bs_task(start, start + (end-start)/2));
-        call_task(spawn bs_task(start + (end-start)/2, end));
-        wait_tasks;
-    }
-    cilk_void_return;
-}
-#endif
-
 #ifdef ENABLE_TBB
 int bs_thread(void *tid_ptr) {
     int j;
@@ -303,6 +279,32 @@ int bs_thread(void *tid_ptr) {
 }
 #else //ENABLE_TBB
 #ifdef ENABLE_TASK
+
+void bs_thread(void *tid_ptr) {
+    int tid = *(int *)tid_ptr;
+    int start = tid * (numOptions / nThreads);
+    int end = start + (numOptions / nThreads);
+    const int GRAIN_SIZE = 40;
+    for(int j=0; j<NUM_RUNS; j++) {
+        pfor(int, start, end, 1, GRAIN_SIZE, {
+            for (int i = FIRST_; i < LAST_;i++) { 
+                fptype price = BlkSchlsEqEuroNoDiv( sptprice[i], strike[i], rate[i],
+                                                    volatility[i], otime[i], otype[i], 0);
+                prices[i] = price;
+#ifdef ERR_CHK
+                fptype priceDelta = data[i].DGrefval - price;
+                if( fabs(priceDelta) >= 1e-4 ) {
+	            printf("Error on %d. Computed=%.5f, Ref=%.5f, Delta=%.5f\n",
+                           i, price, data[i].DGrefval, priceDelta);
+                    numError ++;
+                }
+#endif
+            }
+	});
+    }
+}
+
+/*
 void bs_thread_void(void *tid_ptr) {
     cilk_begin;
     int j;
@@ -321,6 +323,8 @@ int bs_thread(void *tid_ptr) {
     bs_thread_void(tid_ptr);
     return 0;
 }
+*/
+
 #else //ENABLE_TASK
 #ifdef WIN32
 DWORD WINAPI bs_thread(LPVOID tid_ptr){
@@ -407,6 +411,7 @@ int main (int argc, char **argv)
       exit(1);
     }
     rv = fscanf(file, "%i", &numOptions);
+
     if(rv != 1) {
       printf("ERROR: Unable to read from file `%s'.\n", inputFile);
       fclose(file);
@@ -470,7 +475,7 @@ int main (int argc, char **argv)
         otime[i]      = data[i].t;
     }
 
-    printf("Size of data: %d\n", numOptions * (sizeof(OptionData) + sizeof(int)));
+    printf("Size of data: %d\n", int(numOptions * (sizeof(OptionData) + sizeof(int))));
 
 #ifdef ENABLE_PARSEC_HOOKS
     __parsec_roi_begin();
