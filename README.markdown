@@ -47,8 +47,8 @@ src$ make install
 ```
 # icc is located in /opt/intel/ for some environments (e.g. magellan).
 tp-parsec$ cd toolkit/parallel2/sys/src/
-src$ PATH=$PATH:/opt/intel/composer_xe_2013_sp1/bin/ platform=i make
-src$ PATH=$PATH:/opt/intel/composer_xe_2013_sp1/bin/ platform=i make
+src$ PATH=$PATH:/opt/intel/bin/ make platform=i
+src$ PATH=$PATH:/opt/intel/bin/ make platform=i install
 ```
 
 * 5. Build & Run
