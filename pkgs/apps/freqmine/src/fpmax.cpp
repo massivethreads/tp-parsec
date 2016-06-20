@@ -64,12 +64,6 @@ static int omp_get_max_threads() {return 1;}
 #include <hooks.h>
 #endif
 
-#ifdef ENABLE_TASK
-#include <tbb/tbb.h>
-#include "tpswitch/tpswitch.h"
-#include <common.h>
-#endif
-
 #define LINT sizeof(int)
 
 int** ITlen;

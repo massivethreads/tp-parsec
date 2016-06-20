@@ -1,5 +1,5 @@
 /*
-   Author:  Jianfei Zhu  
+   Author:  Jianfei Zhu
             Concordia University
    Date:    Feb. 10, 2004
 
@@ -36,7 +36,7 @@ THE POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 #include <math.h>
 #include <unistd.h>
-#include <sched.h>  
+#include <sched.h>
 #include <sys/syscall.h>
 #include "buffer.h"
 #include "common.h"
@@ -53,7 +53,7 @@ static int omp_get_thread_num() {return 0;}
 int ***currentnodeiter;
 Fnode ***nodestack;
 int **itemstack;
-int** origin; 
+int** origin;
 Fnode ***hashtable;
 int **hot_node_count;
 int *hot_node_depth;
@@ -141,7 +141,7 @@ template <class T> void transform_FPTree_into_FPArray(FP_tree *fptree, int threa
 				int *nodeiter = local_currentnodeiter[itemname];
 				local_currentnodeiter[itemname] += 2;
 				nodeiter[0] = kept_itemiter;
-				nodeiter[1] = itemcount;	
+				nodeiter[1] = itemcount;
 				kept_itemiter --;
 			}
 			else {
@@ -183,7 +183,7 @@ template <class T> void first_transform_FPTree_into_FPArray(FP_tree *fptree, T m
 	fptree->MB_nodes = (char**) local_buf->newbuf(1, fptree->itemno * (sizeof(int*) + sizeof(int) * 2));
 	fptree->MC_nodes = (int*)(fptree->MB_nodes + fptree->itemno);
 	fptree->MR_nodes = (unsigned int*)fptree->MC_nodes + fptree->itemno;
-	int workingthread = omp_get_max_threads();	
+	int workingthread = omp_get_max_threads();
 	int *content_offset_array = new int [workingthread];
 
 	for (j = 0; j < workingthread; j ++) {
@@ -207,13 +207,19 @@ template <class T> void first_transform_FPTree_into_FPArray(FP_tree *fptree, T m
 	}
 	new_data_num[0][0] = sum_new_data_num;
 	T *ItemArray = (T *)local_buf->newbuf(1, new_data_num[0][0] * sizeof(T));
+#ifdef ENABLE_TASK
+    pfor(int, 0, workingthread, 1, GRAIN_SIZE, {
+    for (int j = FIRST_; j < LAST_; j++) {
+#else
 #pragma omp parallel for
 	for (j = 0; j < workingthread; j ++) {
+#endif
 		int kept_itemiter;
 		int itemiter = content_offset_array[j] - 1;
 		int stacktop;
 		int shift_bit;
-		int i, k;
+		int i;
+        int k;
 		Fnode **local_nodestack = nodestack[j];
 		int *local_itemstack = itemstack[j];
 		int **local_currentnodeiter = currentnodeiter[j];
@@ -282,6 +288,9 @@ template <class T> void first_transform_FPTree_into_FPArray(FP_tree *fptree, T m
 			}
 		}
 	}
+#ifdef ENABLE_TASK
+    });
+#endif
 	fptree->ItemArray = (int *) ItemArray;
 }
 
@@ -297,7 +306,7 @@ template <class T> int FPArray_conditional_pattern_base(FP_tree *fptree, int ite
 	int *local_global_table_array = global_table_array[thread];
 	int *local_global_count_array = global_count_array[thread];
 	int *local_global_temp_order_array = global_temp_order_array[thread];
-	
+
 	for (i = 0; i < numnode; i ++) {
 		#ifdef ENABLE_PREFETCHING
 		_mm_prefetch(ItemArray + nodearray[8], _MM_HINT_T0);
@@ -311,7 +320,7 @@ template <class T> int FPArray_conditional_pattern_base(FP_tree *fptree, int ite
 		}
 		local_sum_item_num += j;
 	}
-	sum_item_num[thread][0] = local_sum_item_num;		
+	sum_item_num[thread][0] = local_sum_item_num;
 	j = 0;
 	for(i=0; i<itemname; i++)
 	{
@@ -325,7 +334,7 @@ template <class T> int FPArray_conditional_pattern_base(FP_tree *fptree, int ite
 		}
 		local_supp[i] = 0;
 	}
-			
+
 	return j;
 
 }
@@ -361,9 +370,9 @@ template <class T> void FPArray_scan2_DB(FP_tree*fptree, FP_tree* old_tree, int 
 		for (int j = 0; Trans[j] != mark; j ++) {
 			int item = local_global_order_array[Trans[j]];
 			if (item < num_hot_item) {
-				if (item != -1) 
+				if (item != -1)
 					ntype |= (1 << item);
-			} else {	
+			} else {
 				local_origin[item]=1;
 				has++;
 				if (item > max_itemno)
@@ -387,7 +396,7 @@ template <class T> void FPArray_scan2_DB(FP_tree*fptree, FP_tree* old_tree, int 
 	Fnode *current_node, *parent_node;
 	num_hot_node = 1<<num_hot_item;
 	for (i=num_hot_node-1;i>0;i--) {
-		if (local_hashtable[i] == NULL) 
+		if (local_hashtable[i] == NULL)
 			continue;
 		step = hot_node_index[i];
 		parent = i ^ (1 << step);
@@ -411,7 +420,7 @@ template <class T> void FPArray_scan2_DB(FP_tree*fptree, FP_tree* old_tree, int 
 		local_hot_node_count[i] = 0;
 		fptree->nodenum[step] ++;
 	}
-	new_data_num[thread][0] = local_new_data_num; 
+	new_data_num[thread][0] = local_new_data_num;
 	int local_rightsib_backpatch_count = rightsib_backpatch_count[thread][0];
 	Fnode ***local_rightsib_backpatch_stack = rightsib_backpatch_stack[thread];
 	for (i = 0; i < local_rightsib_backpatch_count; i ++)
@@ -421,7 +430,7 @@ template <class T> void FPArray_scan2_DB(FP_tree*fptree, FP_tree* old_tree, int 
 template <class T1, class T2> void transform_FPArray(T1 *oldItemArray, T2 mark, int size)
 {
 	T2 * newItemArray = (T2 *) oldItemArray;
-	for (int i = 0; i < size; i ++) 
+	for (int i = 0; i < size; i ++)
 		newItemArray[i] = oldItemArray[i] & mark;
 }
 
@@ -476,7 +485,7 @@ void sort(int *array, int* temp, int i, int j)
 
 stack::stack(int length)
 {
-	top= 0; 
+	top= 0;
 	FS = new int[length];
 	counts = NULL;
 }
@@ -490,7 +499,7 @@ void stack::insert(FP_tree* fptree)
 {
 	for(Fnode* node=fptree->Root->leftchild; node!=NULL; node=node->leftchild)
 	{
-		FS[top]=node->itemname; 
+		FS[top]=node->itemname;
 		top++;
 	}
 }
@@ -558,7 +567,7 @@ void FP_tree::database_tiling(int workingthread)
 			for (k = currentnode->top - 1; k >= 0; k --) {
 				if (content[k] == -1) {
 					ntype &= 0xffff;
-					if (has > 0) {					
+					if (has > 0) {
 						if (size - currentpos < has + 1) {
 							newnode->top = currentpos;
 							newnode = (MapFileNode *)fp_tree_buf[thread]->newbuf(1, sizeof(MapFileNode));
@@ -623,7 +632,7 @@ void FP_tree::database_tiling(int workingthread)
 			currentnode->finalize();
 			thread_pos[thread] = currentpos;
 	}
-	
+
 	for (i = 0; i < workingthread; i ++) {
 		thread_pos[i] = 0;
 		int j;
@@ -664,7 +673,7 @@ void FP_tree::database_tiling(int workingthread)
 			local_hot_node_count[i] += hot_node_count[j][i];
 			hot_node_count[j][i] = 0;
 		}
-		if (local_hot_node_count[i] == 0) 
+		if (local_hot_node_count[i] == 0)
 			continue;
 		current_node = (Fnode*)fp_tree_buf[0]->newbuf(1, sizeof(Fnode));
 		current_node->itemname = hot_node_index[i];
@@ -682,7 +691,7 @@ void FP_tree::database_tiling(int workingthread)
 			global_nodenum[0][step] ++;
 			new_data_num[0][0] += hot_node_depth[i] + 1;
 		}
-	}	
+	}
 	threadtranscontent = (unsigned short *) database_buf->newbuf(1, sumworkload * sizeof(short));
 	sort(sumntype, ntypeidarray, 0, hot_node_num - 1);
 	averworkload = sumworkload / 512;
@@ -751,7 +760,7 @@ void FP_tree::scan1_DB(Data* fdat)
 
 	mapfile = (MapFile*)database_buf->newbuf(1, sizeof(MapFile));
 	mapfile->first = NULL;
-	
+
 	counts = fdat->parseDataFile(mapfile);
 
 	order = (int*)fp_buf[thread]->newbuf(1, ITEM_NO * 3 * sizeof(int));
@@ -765,14 +774,14 @@ void FP_tree::scan1_DB(Data* fdat)
 	}
 
 	sort(count, table, 0, ITEM_NO-1);
-	
+
 	for (i =0; i<ITEM_NO&&count[i] >= THRESHOLD; i++);
 
 	itemno = i;
 
 	for (j=0; j<itemno; j++)
 	{
-		count[j]=counts[table[j]];  
+		count[j]=counts[table[j]];
 		order[table[j]]=j;
 	}
 
@@ -791,7 +800,7 @@ void FP_tree::scan1_DB(Data* fdat)
 		order[i]=-1;
 	}
 	ITEM_NO = itemno;
-	
+
 	delete []counts;
 	MC_tree = 0;
 	MR_tree = 0;
@@ -870,10 +879,10 @@ void FP_tree::scan1_DB(Data* fdat)
 		int i;
 #ifdef __linux__
 #ifdef CPU_SETSIZE
-		cpu_set_t cpu_mask; 
+		cpu_set_t cpu_mask;
 		CPU_ZERO(&cpu_mask);
 		CPU_SET(k,&cpu_mask);
-		sched_setaffinity(k,sizeof(cpu_set_t), &cpu_mask); 
+		sched_setaffinity(k,sizeof(cpu_set_t), &cpu_mask);
 #else
 		unsigned long cpu_mask = (unsigned long) 1 << MyRank;
 		printf("NOT CPU_SETSIZE cpu_mask:%d\n", cpu_mask);
@@ -912,7 +921,7 @@ void FP_tree::scan1_DB(Data* fdat)
 			fast_rightsib_table[k][0][i] = NULL;
 		for (i = 1; i < num_hot_node; i ++) {
 			hot_node_count[k][i] = 0;
-			hashtable[k][i] = NULL; 
+			hashtable[k][i] = NULL;
 		}
 		hashtable[k][0] = Root;
 		for (i = 0; i < itemno; i ++) {
@@ -926,7 +935,7 @@ void FP_tree::scan1_DB(Data* fdat)
 	for (i = 0; i < hot_node_num; i ++)
 		ntypeidarray[i] = i;
 }
-	
+
 void FP_tree::insert(int* compact, int counts, int current, int ntype, int thread)
 {
 	Fnode* child;
@@ -991,7 +1000,7 @@ OUT:
 		temp ++;
 		i++;
 		while(i<current)
-		{   
+		{
 			nodenum[compact[i]] ++;
 			local_bran[i]++;
 			temp->itemname = compact[i];
@@ -1132,7 +1141,7 @@ void FP_tree::scan2_DB(int workingthread)
 						temp ++;
 						i++;
 						while(i<has)
-						{	
+						{
 							local_nodenum[compact[i]] ++;
 							local_bran[i]++;
 							temp->itemname = compact[i];
@@ -1155,14 +1164,14 @@ void FP_tree::scan2_DB(int workingthread)
 		threadworkloadnum[thread] = localthreadworkloadnum;
 	}
 	delete database_buf;
-	
+
 	for (int i = 0; i < workingthread; i ++) {
 		int temp = 0;
 		for (j = 0; j  < itemno; j ++)
 			temp += global_nodenum[i][j];
 	}
 	int totalnodes = cal_level_25(0);
-	
+
 #pragma omp parallel for
 	for (j = 0; j < workingthread; j ++) {
 		int local_rightsib_backpatch_count = rightsib_backpatch_count[j][0];
@@ -1193,11 +1202,11 @@ void FP_tree::scan1_DB(int thread, FP_tree* old_tree, int item)
 
 	for(i=0; i<itemno; i++)
 	{
-		local_global_temp_order_array[table[i]]=i; 
+		local_global_temp_order_array[table[i]]=i;
 	}
 	for (i = 0; i < item; i ++)
 		local_global_order_array[i] = local_global_temp_order_array[old_table[i]];
-	
+
 	nodenum = (int*)fp_buf[thread]->newbuf(1, itemno * sizeof(int));
 	for (i = 0; i < itemno; i ++)
 		nodenum[i] = 0;
@@ -1217,7 +1226,7 @@ void FP_tree::powerset(int*prefix, int prefixlen, int* items, int current, int i
 	if(current==itlen)
 	{
 		if(prefixlen!=0)
-		{	
+		{
 				fout->printset(list[thread]->top, list[thread]->FS);
 				fout->printSet(prefixlen, prefix, count[global_temp_order_array[thread][prefix[prefixlen-1]]]);
 		}
@@ -1228,11 +1237,11 @@ void FP_tree::powerset(int*prefix, int prefixlen, int* items, int current, int i
 		prefix[prefixlen++]=items[current++];
 		powerset(prefix, prefixlen, items, current, itlen, fout, thread);
 	}
-}	
+}
 
 void FP_tree::generate_all(int new_item_no, int thread, FSout* fout)const
-{ 
-	powerset(prefix[thread], 0, list[thread]->FS, list[thread]->top, list[thread]->top+new_item_no, fout, thread); 
+{
+	powerset(prefix[thread], 0, list[thread]->FS, list[thread]->top, list[thread]->top+new_item_no, fout, thread);
 }
 
 bool FP_tree::Single_path(int thread)const
@@ -1334,7 +1343,7 @@ int FP_tree::FP_growth_first(FSout* fout)
 			if (new_function_type != function_type) {
 				if (t == 1)
 					transform_FPArray(ItemArray, (unsigned short) 0xffff, first_data_num);
-				if (t == 2) 
+				if (t == 2)
 					transform_FPArray((unsigned short *) ItemArray, (unsigned char) 0xff, first_data_num);
 				function_type = new_function_type;
 			}
@@ -1343,9 +1352,9 @@ int FP_tree::FP_growth_first(FSout* fout)
 		#pragma omp parallel for schedule(dynamic,1)
 		for(sequence=upperbound - 1; sequence>=lowerbound; sequence--)
 		{	int current, new_item_no, listlen;
-			int MC2=0;			
-			unsigned int MR2=0;	
-			char* MB2;		
+			int MC2=0;
+			unsigned int MR2=0;
+			char* MB2;
 			int thread = omp_get_thread_num();
 			//release_node_array_before_mining(sequence, thread, workingthread); remove due to data race
 			memory *local_fp_tree_buf = fp_tree_buf[thread];
@@ -1369,7 +1378,7 @@ int FP_tree::FP_growth_first(FSout* fout)
 			}
 			else
 				new_item_no = 0;
-			
+
 			if(new_item_no==0 || new_item_no == 1)
 			{
 				if(new_item_no==1)
@@ -1399,7 +1408,7 @@ int FP_tree::FP_growth_first(FSout* fout)
 			else if (function_type == 1)
 				FPArray_scan2_DB(fptree, this, sequence, thread, (unsigned short)0xffff);
 			else FPArray_scan2_DB(fptree, this, sequence, thread, (unsigned int)0xffffffff);
-			local_list->top=listlen;							
+			local_list->top=listlen;
 			if(fptree->Single_path(thread))
 			{
 	                        Fnode* node;
@@ -1416,7 +1425,7 @@ int FP_tree::FP_growth_first(FSout* fout)
 					fptree->generate_all(new_item_no, thread, fout);
 				local_list->top--;
 				local_fp_tree_buf->freebuf(fptree->MR_tree, fptree->MC_tree, fptree->MB_tree);
-			}else{             
+			}else{
 				fptree->FP_growth(thread, fout);
 				local_list->top = listlen-1;
 			}
@@ -1431,9 +1440,9 @@ int FP_tree::FP_growth_first(FSout* fout)
 int FP_tree::FP_growth(int thread, FSout* fout)
 {
 	int sequence, current, new_item_no, listlen;
-	int MC2=0;			
-	unsigned int MR2=0;	
-	char* MB2;			
+	int MC2=0;
+	unsigned int MR2=0;
+	char* MB2;
 	int function_type;
 	memory *local_fp_tree_buf = fp_tree_buf[thread];
 	memory *local_fp_buf = fp_buf[thread];
@@ -1472,7 +1481,7 @@ int FP_tree::FP_growth(int thread, FSout* fout)
 		}
 		else
 			new_item_no = 0;
-		
+
 		if(new_item_no==0 || new_item_no == 1)
 		{
 			if(new_item_no==1)
@@ -1501,7 +1510,7 @@ int FP_tree::FP_growth(int thread, FSout* fout)
 		else if (function_type == 1)
 			FPArray_scan2_DB(fptree, this, sequence, thread, (unsigned short)0xffff);
 		else FPArray_scan2_DB(fptree, this, sequence, thread, (unsigned int)0xffffffff);
-		local_list->top=listlen;							
+		local_list->top=listlen;
 		if(fptree->Single_path(thread))
 		{
                         Fnode* node;
@@ -1518,7 +1527,7 @@ int FP_tree::FP_growth(int thread, FSout* fout)
 				fptree->generate_all(new_item_no, thread, fout);
 			local_list->top--;
 			local_fp_tree_buf->freebuf(fptree->MR_tree, fptree->MC_tree, fptree->MB_tree);
-		}else{             
+		}else{
 			fptree->FP_growth(thread, fout);
 			local_list->top = listlen-1;
 		}
@@ -1526,4 +1535,3 @@ int FP_tree::FP_growth(int thread, FSout* fout)
 	}
 	return 0;
 }
-

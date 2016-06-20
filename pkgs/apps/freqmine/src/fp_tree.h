@@ -1,5 +1,5 @@
 /*
-   Author:  Jianfei Zhu  
+   Author:  Jianfei Zhu
             Concordia University
    Date:    Sep. 26, 2003
 
@@ -41,9 +41,18 @@ THE POSSIBILITY OF SUCH DAMAGE.
 #include "fp_node.h"
 #include "fsout.h"
 
+#ifdef ENABLE_TASK
+#if !defined(PFOR_TO_ALLATONCE) && !defined(PFOR_TO_BISECTION) && !defined(PFOR_TO_ORIGINAL)
+  #define PFOR_TO_ORIGINAL 1
+#endif
+#define GRAIN_SIZE 1
+
+#include <common.h>
+#endif  // ENABLE_TASK
+
 #define SORTHRESH 9
 
-  
+
 class FP_tree {
 public:
 	int itemno;		//Header_table
@@ -99,4 +108,3 @@ public:
 };
 
 #endif
-
