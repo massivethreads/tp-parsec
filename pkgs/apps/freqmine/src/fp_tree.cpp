@@ -44,6 +44,34 @@ THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef _OPENMP
 #include <omp.h>
+#elif ENABLE_TASK
+#include <mutex>
+#include <vector>
+std::mutex mtx1, mtx2, mtx;
+static int omp_get_max_threads() {return atoi(getenv("OMP_NUM_THREADS"));}
+// static int omp_get_max_threads() {return 1;}
+// static int omp_get_thread_num() {return 0;}
+static std::vector<bool> threads;
+static int max_threads = -1;
+static int omp_get_thread_num() {
+    mtx.lock();
+    if (max_threads == -1) {
+        max_threads = omp_get_max_threads();
+        threads.resize(max_threads);
+    }
+    int i = 0;
+    while (threads[i]) {
+        i++;
+    }
+    threads[i] = true;
+    mtx.unlock();
+    return i;
+}
+static void unset_thread_num(int i) {
+    mtx.lock();
+    threads[i] = false;
+    mtx.unlock();
+}
 #else
 static int omp_get_max_threads() {return 1;}
 static int omp_get_thread_num() {return 0;}
@@ -543,6 +571,7 @@ void FP_tree::database_tiling(int workingthread)
     pfor(int, 0, mapfile->tablesize, 1, 50, {
             for (int i = FIRST_; i < LAST_; i++)
 #else
+    // printf("mapfile->tablesize: %d\n", mapfile->tablesize);
 #pragma omp parallel for schedule(dynamic, 1)
                 for (i = 0; i < mapfile->tablesize; i ++)
 #endif
@@ -639,6 +668,9 @@ void FP_tree::database_tiling(int workingthread)
                         newnode->top = currentpos;
                         currentnode->finalize();
                         thread_pos[thread] = currentpos;
+#ifdef ENABLE_TASK
+                        unset_thread_num(thread);
+#endif
                     }
 #ifdef ENABLE_TASK
         });
@@ -780,7 +812,11 @@ void FP_tree::scan1_DB(Data* fdat)
 {
     int i,j;
     int *counts;
+#ifdef ENABLE_TASK
+    int thread = 0;
+#else
     int thread = omp_get_thread_num();
+#endif
 
     mapfile = (MapFile*)database_buf->newbuf(1, sizeof(MapFile));
     mapfile->first = NULL;
@@ -1095,6 +1131,7 @@ void FP_tree::scan2_DB(int workingthread)
     pfor(int, 0, mergedworknum, 1, 50, {
             for (int j = FIRST_; j < LAST_; j++)
 #else
+    // printf("mergedworknum: %d\n", mergedworknum);
 #pragma omp parallel for schedule(dynamic,1)
                 for (j = 0; j < mergedworknum; j++)
 #endif
@@ -1204,6 +1241,9 @@ void FP_tree::scan2_DB(int workingthread)
                         }
                         rightsib_backpatch_count[thread][0] = local_rightsib_backpatch_count;
                         threadworkloadnum[thread] = localthreadworkloadnum;
+#ifdef ENABLE_TASK
+                        unset_thread_num(thread);
+#endif
                     }
 #ifdef ENABLE_TASK
         });
@@ -1217,13 +1257,22 @@ void FP_tree::scan2_DB(int workingthread)
     }
     int totalnodes = cal_level_25(0);
 
+#ifdef ENABLE_TASK
+    pfor(int, 0, workingthread, 1, GRAIN_SIZE, {
+            for (int j = FIRST_; j < LAST_; j++)
+#else
 #pragma omp parallel for
-    for (j = 0; j < workingthread; j ++) {
-        int local_rightsib_backpatch_count = rightsib_backpatch_count[j][0];
-        Fnode ***local_rightsib_backpatch_stack = rightsib_backpatch_stack[j];
-        for (int i = 0; i < local_rightsib_backpatch_count; i ++)
-            *local_rightsib_backpatch_stack[i] = NULL;
-    }
+                for (j = 0; j < workingthread; j ++)
+#endif
+                    {
+                        int local_rightsib_backpatch_count = rightsib_backpatch_count[j][0];
+                        Fnode ***local_rightsib_backpatch_stack = rightsib_backpatch_stack[j];
+                        for (int i = 0; i < local_rightsib_backpatch_count; i ++)
+                            *local_rightsib_backpatch_stack[i] = NULL;
+                    }
+#ifdef ENABLE_TASK
+        });
+#endif
     wtime(&tend);
     //    printf("Creating the first tree from source file cost %f seconds\n", tend - tstart);
     //       printf("we have %d nodes in the initial FP tree\n", totalnodes);
@@ -1308,13 +1357,20 @@ void FP_tree::release_node_array_after_mining(int sequence, int thread, int work
             current = thread_finish_status[i];
     }
     {
+#ifdef ENABLE_TASK
+        mtx1.lock();
+#else
 #pragma omp critical
+#endif
         {
             if (current < released_pos) {
                 released_pos = current;
                 fp_node_sub_buf->freebuf(MR_nodes[current], MC_nodes[current], MB_nodes[current]);
             }
         }
+#ifdef ENABLE_TASK
+        mtx1.unlock();
+#endif
     }
 
 }
@@ -1330,13 +1386,20 @@ void FP_tree::release_node_array_before_mining(int sequence, int thread, int wor
     }
     current ++;
     {
+#ifdef ENABLE_TASK
+        mtx2.lock();
+#else
 #pragma omp critical
+#endif
         {
             if (current < released_pos) {
                 released_pos = current;
                 fp_node_sub_buf->freebuf(MR_nodes[current], MC_nodes[current], MB_nodes[current]);
             }
         }
+#ifdef ENABLE_TASK
+        mtx2.unlock();
+#endif
     }
 
 }
@@ -1394,13 +1457,23 @@ int FP_tree::FP_growth_first(FSout* fout)
             }
         }
 
+        // printf("upperbound: %d, lowerbound: %d\n", upperbound, lowerbound);
+// #ifdef ENABLE_TASK
+//         pfor(int, lowerbound, upperbound, 1, GRAIN_SIZE, {
+//                 for (int sequence = FIRST_; sequence < LAST_; sequence++)
+// #else
 #pragma omp parallel for schedule(dynamic,1)
         for(sequence=upperbound - 1; sequence>=lowerbound; sequence--)
-            {    int current, new_item_no, listlen;
+// #endif
+            {
+                int current;
+                int new_item_no;
+                int listlen;
                 int MC2=0;
                 unsigned int MR2=0;
                 char* MB2;
-                int thread = omp_get_thread_num();
+                // int thread = omp_get_thread_num();
+                int thread = 0;
                 //release_node_array_before_mining(sequence, thread, workingthread); remove due to data race
                 memory *local_fp_tree_buf = fp_tree_buf[thread];
                 memory *local_fp_buf = fp_buf[thread];
@@ -1460,7 +1533,8 @@ int FP_tree::FP_growth_first(FSout* fout)
                         for(node=fptree->Root->leftchild; node!=NULL; node=node->leftchild)
                             local_list->FS[local_list->top++] = fptree->table[node->itemname];
                         local_list->top = listlen;
-                        int i1, i2;
+                        int i1;
+                        int i2;
                         int temp = 1;
                         for (i1 = 1, i2 = new_item_no; i1 <= new_item_no; i1 ++, i2 --) {
                             temp = (temp * i2) / i1;
@@ -1475,7 +1549,13 @@ int FP_tree::FP_growth_first(FSout* fout)
                     local_list->top = listlen-1;
                 }
                 release_node_array_after_mining(sequence, thread, workingthread);
+// #ifdef ENABLE_TASK
+//                 unset_thread_num(thread);
+// #endif
             }
+// #ifdef ENABLE_TASK
+//         });
+// #endif
     }
     wtime(&tend);
     // printf("the major FP_growth cost %f vs %f seconds\n", tend - tstart, temp_time - tstart);
