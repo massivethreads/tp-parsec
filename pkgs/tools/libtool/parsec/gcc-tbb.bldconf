@@ -7,5 +7,5 @@ source ${PARSECDIR}/pkgs/tools/libtool/parsec/gcc.bldconf
 # Package dependencies
 # NOTE: libtool itself does not depend on tbb but the
 # library is added globally and hence we must add it
-build_deps="tbb"
+build_deps="tbblib"
 
