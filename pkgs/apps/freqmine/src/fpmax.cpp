@@ -57,8 +57,7 @@ using namespace std;
 #ifdef _OPENMP
 #include <omp.h>
 #elif ENABLE_TASK
-static int omp_get_max_threads() {return atoi(getenv("OMP_NUM_THREADS")) * 1;}
-// static int omp_get_max_threads() {return 1;}
+static int omp_get_max_threads() {return atoi(getenv("OMP_NUM_THREADS")) * 100;}
 #else
 static int omp_get_max_threads() {return 1;}
 #endif //_OPENMP

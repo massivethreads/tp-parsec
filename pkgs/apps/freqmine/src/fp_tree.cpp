@@ -48,30 +48,8 @@ THE POSSIBILITY OF SUCH DAMAGE.
 #include <mutex>
 #include <vector>
 std::mutex mtx1, mtx2, mtx;
-static int omp_get_max_threads() {return atoi(getenv("OMP_NUM_THREADS"));}
-// static int omp_get_max_threads() {return 1;}
-// static int omp_get_thread_num() {return 0;}
-static std::vector<bool> threads;
-static int max_threads = -1;
-static int omp_get_thread_num() {
-    mtx.lock();
-    if (max_threads == -1) {
-        max_threads = omp_get_max_threads();
-        threads.resize(max_threads);
-    }
-    int i = 0;
-    while (threads[i]) {
-        i++;
-    }
-    threads[i] = true;
-    mtx.unlock();
-    return i;
-}
-static void unset_thread_num(int i) {
-    mtx.lock();
-    threads[i] = false;
-    mtx.unlock();
-}
+static int omp_get_max_threads() {return atoi(getenv("OMP_NUM_THREADS")) * 100;}
+static int omp_get_thread_num() {return get_worker_num();}
 #else
 static int omp_get_max_threads() {return 1;}
 static int omp_get_thread_num() {return 0;}
@@ -568,7 +546,7 @@ void FP_tree::database_tiling(int workingthread)
             origin[i][j] = 1;
     }
 #ifdef ENABLE_TASK
-    pfor(int, 0, mapfile->tablesize, 1, 50, {
+    pfor(int, 0, mapfile->tablesize, 1, GRAIN_SIZE, {
             for (int i = FIRST_; i < LAST_; i++)
 #else
     // printf("mapfile->tablesize: %d\n", mapfile->tablesize);
@@ -585,6 +563,7 @@ void FP_tree::database_tiling(int workingthread)
                         unsigned short *newcontent;
                         int currentpos;
                         int thread = omp_get_thread_num();
+                        // int thread = i;
                         int *local_origin = origin[thread];
                         int *local_ntype = ntypearray[thread];
                         int ntype;
@@ -668,9 +647,6 @@ void FP_tree::database_tiling(int workingthread)
                         newnode->top = currentpos;
                         currentnode->finalize();
                         thread_pos[thread] = currentpos;
-#ifdef ENABLE_TASK
-                        unset_thread_num(thread);
-#endif
                     }
 #ifdef ENABLE_TASK
         });
@@ -812,11 +788,7 @@ void FP_tree::scan1_DB(Data* fdat)
 {
     int i,j;
     int *counts;
-#ifdef ENABLE_TASK
-    int thread = 0;
-#else
     int thread = omp_get_thread_num();
-#endif
 
     mapfile = (MapFile*)database_buf->newbuf(1, sizeof(MapFile));
     mapfile->first = NULL;
@@ -1128,7 +1100,7 @@ void FP_tree::scan2_DB(int workingthread)
     database_tiling(workingthread);
     Fnode **local_hashtable = hashtable[0];
 #ifdef ENABLE_TASK
-    pfor(int, 0, mergedworknum, 1, 50, {
+    pfor(int, 0, mergedworknum, 1, GRAIN_SIZE, {
             for (int j = FIRST_; j < LAST_; j++)
 #else
     // printf("mergedworknum: %d\n", mergedworknum);
@@ -1241,9 +1213,6 @@ void FP_tree::scan2_DB(int workingthread)
                         }
                         rightsib_backpatch_count[thread][0] = local_rightsib_backpatch_count;
                         threadworkloadnum[thread] = localthreadworkloadnum;
-#ifdef ENABLE_TASK
-                        unset_thread_num(thread);
-#endif
                     }
 #ifdef ENABLE_TASK
         });
@@ -1472,8 +1441,7 @@ int FP_tree::FP_growth_first(FSout* fout)
                 int MC2=0;
                 unsigned int MR2=0;
                 char* MB2;
-                // int thread = omp_get_thread_num();
-                int thread = 0;
+                int thread = omp_get_thread_num();
                 //release_node_array_before_mining(sequence, thread, workingthread); remove due to data race
                 memory *local_fp_tree_buf = fp_tree_buf[thread];
                 memory *local_fp_buf = fp_buf[thread];
@@ -1549,9 +1517,6 @@ int FP_tree::FP_growth_first(FSout* fout)
                     local_list->top = listlen-1;
                 }
                 release_node_array_after_mining(sequence, thread, workingthread);
-// #ifdef ENABLE_TASK
-//                 unset_thread_num(thread);
-// #endif
             }
 // #ifdef ENABLE_TASK
 //         });
