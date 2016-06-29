@@ -214,8 +214,9 @@ template <class T> void first_transform_FPTree_into_FPArray(FP_tree *fptree, T m
     new_data_num[0][0] = sum_new_data_num;
     T *ItemArray = (T *)local_buf->newbuf(1, new_data_num[0][0] * sizeof(T));
 #ifdef ENABLE_TASK
-    pfor(int, 0, workingthread, 1, GRAIN_SIZE, {
-            for (int j = FIRST_; j < LAST_; j++)
+    pfor(0, workingthread, 1, GRAIN_SIZE,
+         [&] (int innerFirst, int innerLast) {
+             for (int j = innerFirst; j < innerLast; j++)
 #else
 #pragma omp parallel for
                 for (j = 0; j < workingthread; j++)
@@ -546,8 +547,9 @@ void FP_tree::database_tiling(int workingthread)
             origin[i][j] = 1;
     }
 #ifdef ENABLE_TASK
-    pfor(int, 0, mapfile->tablesize, 1, GRAIN_SIZE, {
-            for (int i = FIRST_; i < LAST_; i++)
+    pfor(0, mapfile->tablesize, 1, GRAIN_SIZE,
+         [&] (int innerFirst, int innerLast) {
+             for (int i = innerFirst; i < innerLast; i++)
 #else
     // printf("mapfile->tablesize: %d\n", mapfile->tablesize);
 #pragma omp parallel for schedule(dynamic, 1)
@@ -742,8 +744,9 @@ void FP_tree::database_tiling(int workingthread)
         }
 
 #ifdef ENABLE_TASK
-    pfor(int, 0, workingthread, 1, GRAIN_SIZE, {
-            for (int i = FIRST_; i < LAST_; i++)
+    pfor(0, workingthread, 1, GRAIN_SIZE,
+         [&] (int innerFirst, int innerLast) {
+             for (int i = innerFirst; i < innerLast; i++)
 #else
 #pragma omp parallel for
                 for (i = 0; i < workingthread; i++)
@@ -907,8 +910,9 @@ void FP_tree::scan1_DB(Data* fdat)
     }
     hot_node_depth[0] = 0;
 #ifdef ENABLE_TASK
-    pfor(int, 0, workingthread, 1, GRAIN_SIZE, {
-            for (int k = FIRST_; k < LAST_; k++)
+    pfor(0, workingthread, 1, GRAIN_SIZE,
+         [&] (int innerFirst, int innerLast) {
+             for (int k = innerFirst; k < innerLast; k++)
 #else
 #pragma omp parallel for
                 for (int k = 0; k < workingthread; k++)
@@ -1100,8 +1104,9 @@ void FP_tree::scan2_DB(int workingthread)
     database_tiling(workingthread);
     Fnode **local_hashtable = hashtable[0];
 #ifdef ENABLE_TASK
-    pfor(int, 0, mergedworknum, 1, GRAIN_SIZE, {
-            for (int j = FIRST_; j < LAST_; j++)
+    pfor(0, mergedworknum, 1, GRAIN_SIZE,
+         [&] (int innerFirst, int innerLast) {
+             for (int j = innerFirst; j < innerLast; j++)
 #else
     // printf("mergedworknum: %d\n", mergedworknum);
 #pragma omp parallel for schedule(dynamic,1)
@@ -1227,8 +1232,9 @@ void FP_tree::scan2_DB(int workingthread)
     int totalnodes = cal_level_25(0);
 
 #ifdef ENABLE_TASK
-    pfor(int, 0, workingthread, 1, GRAIN_SIZE, {
-            for (int j = FIRST_; j < LAST_; j++)
+    pfor(0, workingthread, 1, GRAIN_SIZE,
+         [&] (int innerFirst, int innerLast) {
+             for (int j = innerFirst; j < innerLast; j++)
 #else
 #pragma omp parallel for
                 for (j = 0; j < workingthread; j ++)

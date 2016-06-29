@@ -16,7 +16,7 @@ exe_prefix    ?= $(app_root)/inst/${PARSECPLAT}/${TARGET}
 obj_dir       ?= $(app_root)/obj/${PARSECPLAT}
 
 cpp_srcs := fpmax.cpp data.cpp fp_tree.cpp buffer.cpp fsout.cpp fp_node.cpp wtime.cpp
-cpp_opts := -std=c++11 $(CXXFLAGS) $(LDFLAGS) $(LIBS) -DENABLE_TASK
+cpp_opts := -std=c++11 $(CXXFLAGS) $(LDFLAGS) $(LIBS) -DENABLE_TASK -DPFOR2_EXPERIMENTAL
 targets  := freqmine
 
 include $(parallel2_dir)/sys/src/tools/makefiles/compile.mk
