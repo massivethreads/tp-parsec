@@ -1433,13 +1433,14 @@ int FP_tree::FP_growth_first(FSout* fout)
         }
 
         // printf("upperbound: %d, lowerbound: %d\n", upperbound, lowerbound);
-// #ifdef ENABLE_TASK
-//         pfor(int, lowerbound, upperbound, 1, GRAIN_SIZE, {
-//                 for (int sequence = FIRST_; sequence < LAST_; sequence++)
-// #else
+#ifdef ENABLE_TASK
+        pfor_backward(upperbound - 1, lowerbound, -1, GRAIN_SIZE,
+             [&] (int innerFirst, int innerLast) {
+                 for (int sequence = innerFirst; sequence >= innerLast; sequence--)
+#else
 #pragma omp parallel for schedule(dynamic,1)
         for(sequence=upperbound - 1; sequence>=lowerbound; sequence--)
-// #endif
+#endif
             {
                 int current;
                 int new_item_no;
@@ -1524,9 +1525,9 @@ int FP_tree::FP_growth_first(FSout* fout)
                 }
                 release_node_array_after_mining(sequence, thread, workingthread);
             }
-// #ifdef ENABLE_TASK
-//         });
-// #endif
+#ifdef ENABLE_TASK
+        });
+#endif
     }
     wtime(&tend);
     // printf("the major FP_growth cost %f vs %f seconds\n", tend - tstart, temp_time - tstart);
