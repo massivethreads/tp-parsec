@@ -56,11 +56,12 @@ using namespace std;
 
 #ifdef _OPENMP
 #include <omp.h>
+static int get_max_threads() {return omp_get_max_threads();}
 #elif ENABLE_TASK
-static int omp_get_max_threads() {return atoi(getenv("OMP_NUM_THREADS")) * 100;}
+static int get_max_threads() {return atoi(getenv("OMP_NUM_THREADS")) * THREADS_PER_HWTHREAD;}
 #else
-static int omp_get_max_threads() {return 1;}
-#endif //_OPENMP
+static int get_max_threads() {return 1;}
+#endif // ENABLE_TASK
 
 #ifdef ENABLE_PARSEC_HOOKS
 #include <hooks.h>
@@ -93,7 +94,7 @@ int **new_data_num;
 void printLen()
 {
 	int i, j;
-	int workingthread=omp_get_max_threads();
+	int workingthread=get_max_threads();
 
 	for (j = 1; j < workingthread; j ++)
 		for (i = 0; i < ITEM_NO; i ++)
@@ -106,7 +107,7 @@ void printLen()
 int main(int argc, char **argv)
 {
 	double tstart, tdatap, tend;
-	int workingthread=omp_get_max_threads();
+	int workingthread=get_max_threads();
     printf("%d threads\n", workingthread);
 	int i;
 	FP_tree* fptree;

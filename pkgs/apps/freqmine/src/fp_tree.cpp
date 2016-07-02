@@ -44,16 +44,18 @@ THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef _OPENMP
 #include <omp.h>
+static int get_max_threads() {return omp_get_max_threads();}
+static int get_thread_num() {return omp_get_thread_num();}
 #elif ENABLE_TASK
 #include <mutex>
 #include <vector>
-std::mutex mtx1, mtx2, mtx;
-static int omp_get_max_threads() {return atoi(getenv("OMP_NUM_THREADS")) * 100;}
-static int omp_get_thread_num() {return get_worker_num();}
+std::mutex mtx;
+static int get_max_threads() {return atoi(getenv("OMP_NUM_THREADS")) * THREADS_PER_HWTHREAD;}
+static int get_thread_num() {return get_worker_num();}
 #else
-static int omp_get_max_threads() {return 1;}
-static int omp_get_thread_num() {return 0;}
-#endif //_OPENMP
+static int get_max_threads() {return 1;}
+static int get_thread_num() {return 0;}
+#endif // ENABLE_TASK
 
 #define fast_rightsib_table_size 16
 int ***currentnodeiter;
@@ -189,7 +191,7 @@ template <class T> void first_transform_FPTree_into_FPArray(FP_tree *fptree, T m
     fptree->MB_nodes = (char**) local_buf->newbuf(1, fptree->itemno * (sizeof(int*) + sizeof(int) * 2));
     fptree->MC_nodes = (int*)(fptree->MB_nodes + fptree->itemno);
     fptree->MR_nodes = (unsigned int*)fptree->MC_nodes + fptree->itemno;
-    int workingthread = omp_get_max_threads();
+    int workingthread = get_max_threads();
     int *content_offset_array = new int [workingthread];
 
     for (j = 0; j < workingthread; j ++) {
@@ -564,7 +566,7 @@ void FP_tree::database_tiling(int workingthread)
                         int size;
                         unsigned short *newcontent;
                         int currentpos;
-                        int thread = omp_get_thread_num();
+                        int thread = get_thread_num();
                         // int thread = i;
                         int *local_origin = origin[thread];
                         int *local_ntype = ntypearray[thread];
@@ -791,7 +793,7 @@ void FP_tree::scan1_DB(Data* fdat)
 {
     int i,j;
     int *counts;
-    int thread = omp_get_thread_num();
+    int thread = get_thread_num();
 
     mapfile = (MapFile*)database_buf->newbuf(1, sizeof(MapFile));
     mapfile->first = NULL;
@@ -844,7 +846,7 @@ void FP_tree::scan1_DB(Data* fdat)
     if (num_hot_item > itemno)
         num_hot_item = itemno;
     int num_hot_node = 1 << hot_item_num;
-    int workingthread=omp_get_max_threads();
+    int workingthread=get_max_threads();
 
     thread_mapfile = (MapFile **)database_buf->newbuf(1, workingthread*3*sizeof(int*));
     ntypearray = (int **) (thread_mapfile + workingthread);
@@ -1113,7 +1115,7 @@ void FP_tree::scan2_DB(int workingthread)
                 for (j = 0; j < mergedworknum; j++)
 #endif
                     {
-                        int thread = omp_get_thread_num();
+                        int thread = get_thread_num();
                         int localthreadworkloadnum = threadworkloadnum[thread];
                         int *localthreadworkload = threadworkload[thread];
                         int has;
@@ -1332,8 +1334,10 @@ void FP_tree::release_node_array_after_mining(int sequence, int thread, int work
             current = thread_finish_status[i];
     }
     {
+#ifndef _OPENMP
 #ifdef ENABLE_TASK
-        mtx1.lock();
+    mtx.lock();
+#endif
 #else
 #pragma omp critical
 #endif
@@ -1343,8 +1347,10 @@ void FP_tree::release_node_array_after_mining(int sequence, int thread, int work
                 fp_node_sub_buf->freebuf(MR_nodes[current], MC_nodes[current], MB_nodes[current]);
             }
         }
+#ifndef _OPENMP
 #ifdef ENABLE_TASK
-        mtx1.unlock();
+    mtx.unlock();
+#endif
 #endif
     }
 
@@ -1361,8 +1367,10 @@ void FP_tree::release_node_array_before_mining(int sequence, int thread, int wor
     }
     current ++;
     {
+#ifndef _OPENMP
 #ifdef ENABLE_TASK
-        mtx2.lock();
+    mtx.lock();
+#endif
 #else
 #pragma omp critical
 #endif
@@ -1372,8 +1380,10 @@ void FP_tree::release_node_array_before_mining(int sequence, int thread, int wor
                 fp_node_sub_buf->freebuf(MR_nodes[current], MC_nodes[current], MB_nodes[current]);
             }
         }
+#ifndef _OPENMP
 #ifdef ENABLE_TASK
-        mtx2.unlock();
+    mtx.unlock();
+#endif
 #endif
     }
 
@@ -1384,7 +1394,7 @@ int FP_tree::FP_growth_first(FSout* fout)
     int sequence;
     double tstart, tend, temp_time;
     int function_type;
-    int workingthread = omp_get_max_threads();
+    int workingthread = get_max_threads();
 
     wtime(&tstart);
     fp_node_sub_buf = new memory(80, 131072, 2097152 * 4, 2);
@@ -1448,7 +1458,7 @@ int FP_tree::FP_growth_first(FSout* fout)
                 int MC2=0;
                 unsigned int MR2=0;
                 char* MB2;
-                int thread = omp_get_thread_num();
+                int thread = get_thread_num();
                 //release_node_array_before_mining(sequence, thread, workingthread); remove due to data race
                 memory *local_fp_tree_buf = fp_tree_buf[thread];
                 memory *local_fp_buf = fp_buf[thread];

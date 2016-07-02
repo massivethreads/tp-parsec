@@ -45,7 +45,7 @@ THE POSSIBILITY OF SUCH DAMAGE.
 #if !defined(PFOR_TO_ALLATONCE) && !defined(PFOR_TO_BISECTION) && !defined(PFOR_TO_ORIGINAL)
   #define PFOR_TO_ORIGINAL 1
 #endif
-#define GRAIN_SIZE 10
+#define GRAIN_SIZE 1
 
 #include <common.h>
 #endif  // ENABLE_TASK
