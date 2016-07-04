@@ -47,9 +47,12 @@ THE POSSIBILITY OF SUCH DAMAGE.
 static int get_max_threads() {return omp_get_max_threads();}
 static int get_thread_num() {return omp_get_thread_num();}
 #elif ENABLE_TASK
+#ifdef TO_TBB
+tbb::mutex mtx;
+#else
 #include <mutex>
-#include <vector>
 std::mutex mtx;
+#endif // TO_TBB
 static int get_max_threads() {return atoi(getenv("OMP_NUM_THREADS")) * THREADS_PER_HWTHREAD;}
 static int get_thread_num() {return get_worker_num();}
 #else
@@ -549,7 +552,7 @@ void FP_tree::database_tiling(int workingthread)
             origin[i][j] = 1;
     }
 #ifdef ENABLE_TASK
-    pfor(0, mapfile->tablesize, 1, GRAIN_SIZE,
+    pfor(0, mapfile->tablesize, 1, GRAIN_SIZE2,
          [&] (int innerFirst, int innerLast) {
              for (int i = innerFirst; i < innerLast; i++)
 #else
@@ -1106,7 +1109,7 @@ void FP_tree::scan2_DB(int workingthread)
     database_tiling(workingthread);
     Fnode **local_hashtable = hashtable[0];
 #ifdef ENABLE_TASK
-    pfor(0, mergedworknum, 1, GRAIN_SIZE,
+    pfor(0, mergedworknum, 1, GRAIN_SIZE2,
          [&] (int innerFirst, int innerLast) {
              for (int j = innerFirst; j < innerLast; j++)
 #else
@@ -1444,7 +1447,7 @@ int FP_tree::FP_growth_first(FSout* fout)
 
         // printf("upperbound: %d, lowerbound: %d\n", upperbound, lowerbound);
 #ifdef ENABLE_TASK
-        pfor_backward(upperbound - 1, lowerbound, -1, GRAIN_SIZE,
+        pfor_backward(upperbound - 1, lowerbound, -1, GRAIN_SIZE2,
              [&] (int innerFirst, int innerLast) {
                  for (int sequence = innerFirst; sequence >= innerLast; sequence--)
 #else
