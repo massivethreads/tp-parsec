@@ -73,5 +73,5 @@ extern stack** list;
 
 // task-parallel specific constants
 #ifdef ENABLE_TASK
-#define THREADS_PER_HWTHREAD 100
+#define THREADS_PER_HWTHREAD 1
 #endif

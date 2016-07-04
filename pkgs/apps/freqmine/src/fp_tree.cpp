@@ -218,6 +218,8 @@ template <class T> void first_transform_FPTree_into_FPArray(FP_tree *fptree, T m
     }
     new_data_num[0][0] = sum_new_data_num;
     T *ItemArray = (T *)local_buf->newbuf(1, new_data_num[0][0] * sizeof(T));
+    double loop_start, loop_end;
+    wtime(&loop_start);
 #ifdef ENABLE_TASK
     pfor(0, workingthread, 1, GRAIN_SIZE,
          [&] (int innerFirst, int innerLast) {
@@ -304,6 +306,9 @@ template <class T> void first_transform_FPTree_into_FPArray(FP_tree *fptree, T m
 #ifdef ENABLE_TASK
         });
 #endif
+    wtime(&loop_end);
+    printf("first_transform_FPTree_into_FPArray(workingthread): %fs\n", loop_end - loop_start);
+
     fptree->ItemArray = (int *) ItemArray;
 }
 
@@ -551,6 +556,8 @@ void FP_tree::database_tiling(int workingthread)
         for (j = local_num_hot_item; j < local_itemno; j ++)
             origin[i][j] = 1;
     }
+    double loop_start, loop_end;
+    wtime(&loop_start);
 #ifdef ENABLE_TASK
     pfor(0, mapfile->tablesize, 1, GRAIN_SIZE2,
          [&] (int innerFirst, int innerLast) {
@@ -658,6 +665,8 @@ void FP_tree::database_tiling(int workingthread)
 #ifdef ENABLE_TASK
         });
 #endif
+    wtime(&loop_end);
+    printf("database_tiling(mapfile->tablesize: %d): %fs\n", mapfile->tablesize, loop_end - loop_start);
 
     for (i = 0; i < workingthread; i ++) {
         thread_pos[i] = 0;
@@ -748,6 +757,7 @@ void FP_tree::database_tiling(int workingthread)
             }
         }
 
+    wtime(&loop_start);
 #ifdef ENABLE_TASK
     pfor(0, workingthread, 1, GRAIN_SIZE,
          [&] (int innerFirst, int innerLast) {
@@ -787,6 +797,9 @@ void FP_tree::database_tiling(int workingthread)
 #ifdef ENABLE_TASK
         });
 #endif
+    wtime(&loop_end);
+    printf("database_tiling(workingthread): %fs\n", loop_end - loop_start);
+
     delete [] tempntypeoffsetbase;
     delete [] thread_pos;
 }
@@ -914,6 +927,8 @@ void FP_tree::scan1_DB(Data* fdat)
         hot_node_index[i] = j;
     }
     hot_node_depth[0] = 0;
+    double loop_start, loop_end;
+    wtime(&loop_start);
 #ifdef ENABLE_TASK
     pfor(0, workingthread, 1, GRAIN_SIZE,
          [&] (int innerFirst, int innerLast) {
@@ -981,6 +996,8 @@ void FP_tree::scan1_DB(Data* fdat)
 #ifdef ENABLE_TASK
         });
 #endif
+    wtime(&loop_end);
+    printf("scan1_DB(workingthread): %fs\n", loop_end - loop_start);
     mapfile->transform_list_table();
     for (i = 0; i < hot_node_num; i ++)
         ntypeidarray[i] = i;
@@ -1108,6 +1125,8 @@ void FP_tree::scan2_DB(int workingthread)
     wtime(&tstart);
     database_tiling(workingthread);
     Fnode **local_hashtable = hashtable[0];
+    double loop_start, loop_end;
+    wtime(&loop_start);
 #ifdef ENABLE_TASK
     pfor(0, mergedworknum, 1, GRAIN_SIZE2,
          [&] (int innerFirst, int innerLast) {
@@ -1227,6 +1246,9 @@ void FP_tree::scan2_DB(int workingthread)
 #ifdef ENABLE_TASK
         });
 #endif
+    wtime(&loop_end);
+    printf("scan2_DB(mergedworknum: %d): %fs\n", mergedworknum, loop_end - loop_start);
+
     delete database_buf;
 
     for (int i = 0; i < workingthread; i ++) {
@@ -1236,6 +1258,7 @@ void FP_tree::scan2_DB(int workingthread)
     }
     int totalnodes = cal_level_25(0);
 
+    wtime(&loop_start);
 #ifdef ENABLE_TASK
     pfor(0, workingthread, 1, GRAIN_SIZE,
          [&] (int innerFirst, int innerLast) {
@@ -1253,6 +1276,8 @@ void FP_tree::scan2_DB(int workingthread)
 #ifdef ENABLE_TASK
         });
 #endif
+    wtime(&loop_end);
+    printf("scan1_DB(workingthread): %fs\n", loop_end - loop_start);
     wtime(&tend);
     //    printf("Creating the first tree from source file cost %f seconds\n", tend - tstart);
     //       printf("we have %d nodes in the initial FP tree\n", totalnodes);
@@ -1339,8 +1364,12 @@ void FP_tree::release_node_array_after_mining(int sequence, int thread, int work
     {
 #ifndef _OPENMP
 #ifdef ENABLE_TASK
-    mtx.lock();
+#ifdef TO_TBB
+        tbb::mutex::scoped_lock lock(mtx);
+#else
+        std::lock_guard<std::mutex> lock(mtx);
 #endif
+#endif // ENABLE_TASK
 #else
 #pragma omp critical
 #endif
@@ -1350,47 +1379,42 @@ void FP_tree::release_node_array_after_mining(int sequence, int thread, int work
                 fp_node_sub_buf->freebuf(MR_nodes[current], MC_nodes[current], MB_nodes[current]);
             }
         }
-#ifndef _OPENMP
-#ifdef ENABLE_TASK
-    mtx.unlock();
-#endif
-#endif
     }
 
 }
 
-void FP_tree::release_node_array_before_mining(int sequence, int thread, int workingthread)
-{
-    int current, i;
-    thread_begin_status[thread] = sequence;
-    current = 0;
-    for (i = 0; i < workingthread; i ++) {
-        if (current < thread_begin_status[i])
-            current = thread_begin_status[i];
-    }
-    current ++;
-    {
-#ifndef _OPENMP
-#ifdef ENABLE_TASK
-    mtx.lock();
-#endif
-#else
-#pragma omp critical
-#endif
-        {
-            if (current < released_pos) {
-                released_pos = current;
-                fp_node_sub_buf->freebuf(MR_nodes[current], MC_nodes[current], MB_nodes[current]);
-            }
-        }
-#ifndef _OPENMP
-#ifdef ENABLE_TASK
-    mtx.unlock();
-#endif
-#endif
-    }
-
-}
+// this function is not used!
+// void FP_tree::release_node_array_before_mining(int sequence, int thread, int workingthread)
+// {
+//     int current, i;
+//     thread_begin_status[thread] = sequence;
+//     current = 0;
+//     for (i = 0; i < workingthread; i ++) {
+//         if (current < thread_begin_status[i])
+//             current = thread_begin_status[i];
+//     }
+//     current ++;
+//     {
+// #ifndef _OPENMP
+// #ifdef ENABLE_TASK
+//     mtx.lock();
+// #endif
+// #else
+// #pragma omp critical
+// #endif
+//         {
+//             if (current < released_pos) {
+//                 released_pos = current;
+//                 fp_node_sub_buf->freebuf(MR_nodes[current], MC_nodes[current], MB_nodes[current]);
+//             }
+//         }
+// #ifndef _OPENMP
+// #ifdef ENABLE_TASK
+//     mtx.unlock();
+// #endif
+// #endif
+//     }
+// }
 
 int FP_tree::FP_growth_first(FSout* fout)
 {
@@ -1446,6 +1470,8 @@ int FP_tree::FP_growth_first(FSout* fout)
         }
 
         // printf("upperbound: %d, lowerbound: %d\n", upperbound, lowerbound);
+        double loop_start, loop_end;
+        wtime(&loop_start);
 #ifdef ENABLE_TASK
         pfor_backward(upperbound - 1, lowerbound, -1, GRAIN_SIZE2,
              [&] (int innerFirst, int innerLast) {
@@ -1541,6 +1567,8 @@ int FP_tree::FP_growth_first(FSout* fout)
 #ifdef ENABLE_TASK
         });
 #endif
+        wtime(&loop_end);
+        printf("FP_growth_first(t, upperbound, lowerbound: %d, %d, %d): %fs\n", t, upperbound, lowerbound, loop_end - loop_start);
     }
     wtime(&tend);
     // printf("the major FP_growth cost %f vs %f seconds\n", tend - tstart, temp_time - tstart);
