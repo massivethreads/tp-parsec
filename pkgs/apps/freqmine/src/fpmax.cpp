@@ -58,7 +58,13 @@ using namespace std;
 #include <omp.h>
 static int get_max_threads() {return omp_get_max_threads();}
 #elif ENABLE_TASK
-static int get_max_threads() {return atoi(getenv("OMP_NUM_THREADS")) * THREADS_PER_HWTHREAD;}
+static int get_max_threads() {
+    static int max_threads = -1;
+    if (max_threads < 0) {
+        max_threads = atoi(getenv("OMP_NUM_THREADS")) * THREADS_PER_HWTHREAD;
+    }
+    return max_threads;
+}
 #else
 static int get_max_threads() {return 1;}
 #endif // ENABLE_TASK

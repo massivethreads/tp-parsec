@@ -55,7 +55,13 @@ mth::mutex mtx;
 #include <mutex>
 std::mutex mtx;
 #endif // TO_TBB
-static int get_max_threads() {return atoi(getenv("OMP_NUM_THREADS")) * THREADS_PER_HWTHREAD;}
+static int get_max_threads() {
+    static int max_threads = -1;
+    if (max_threads < 0) {
+        max_threads = atoi(getenv("OMP_NUM_THREADS")) * THREADS_PER_HWTHREAD;
+    }
+    return max_threads;
+}
 static int get_thread_num() {return get_worker_num();}
 #else
 static int get_max_threads() {return 1;}
