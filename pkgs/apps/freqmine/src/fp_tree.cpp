@@ -1470,10 +1470,18 @@ int FP_tree::FP_growth_first(FSout* fout)
         }
 
         // printf("upperbound: %d, lowerbound: %d\n", upperbound, lowerbound);
+        if (upperbound <= lowerbound) {
+            continue;
+        }
         double loop_start, loop_end;
         wtime(&loop_start);
 #ifdef ENABLE_TASK
-        pfor_backward(upperbound - 1, lowerbound, -1, GRAIN_SIZE2,
+#if TO_TBB || TO_QTHREAD
+        int grain_size = (upperbound - lowerbound + workingthread - 1) / workingthread;
+#else
+        int grain_size = GRAIN_SIZE2;
+#endif
+        pfor_backward(upperbound - 1, lowerbound, -1, grain_size,
              [&] (int innerFirst, int innerLast) {
                  for (int sequence = innerFirst; sequence >= innerLast; sequence--)
 #else

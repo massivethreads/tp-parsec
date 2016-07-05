@@ -46,7 +46,7 @@ THE POSSIBILITY OF SUCH DAMAGE.
   #define PFOR_TO_ORIGINAL 1
 #endif
 #define GRAIN_SIZE 1
-#define GRAIN_SIZE2 10
+#define GRAIN_SIZE2 1
 
 #include <common.h>
 #endif  // ENABLE_TASK
