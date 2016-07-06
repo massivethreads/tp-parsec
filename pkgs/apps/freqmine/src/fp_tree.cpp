@@ -1513,7 +1513,7 @@ int FP_tree::FP_growth_first(FSout* fout)
 #endif
 #ifdef ENABLE_TASK
 #if TO_TBB || TO_QTHREAD
-        int grain_size = (upperbound - lowerbound + workingthread - 1) / workingthread;
+        int grain_size = ((upperbound - lowerbound + workingthread - 1) / workingthread) * 2 - 1;
 #else
         int grain_size = GRAIN_SIZE2;
 #endif
