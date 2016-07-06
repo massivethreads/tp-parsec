@@ -114,7 +114,6 @@ int main(int argc, char **argv)
 {
 	double tstart, tdatap, tend;
 	int workingthread=get_max_threads();
-    printf("%d threads\n", workingthread);
 	int i;
 	FP_tree* fptree;
 

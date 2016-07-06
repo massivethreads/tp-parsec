@@ -226,8 +226,10 @@ template <class T> void first_transform_FPTree_into_FPArray(FP_tree *fptree, T m
     }
     new_data_num[0][0] = sum_new_data_num;
     T *ItemArray = (T *)local_buf->newbuf(1, new_data_num[0][0] * sizeof(T));
+#ifdef DEBUG_PFOR
     double loop_start, loop_end;
     wtime(&loop_start);
+#endif
 #ifdef ENABLE_TASK
     pfor(0, workingthread, 1, GRAIN_SIZE,
          [&] (int innerFirst, int innerLast) {
@@ -314,8 +316,10 @@ template <class T> void first_transform_FPTree_into_FPArray(FP_tree *fptree, T m
 #ifdef ENABLE_TASK
         });
 #endif
+#ifdef DEBUG_PFOR
     wtime(&loop_end);
     printf("first_transform_FPTree_into_FPArray(workingthread): %fs\n", loop_end - loop_start);
+#endif
 
     fptree->ItemArray = (int *) ItemArray;
 }
@@ -564,8 +568,10 @@ void FP_tree::database_tiling(int workingthread)
         for (j = local_num_hot_item; j < local_itemno; j ++)
             origin[i][j] = 1;
     }
+#ifdef DEBUG_PFOR
     double loop_start, loop_end;
     wtime(&loop_start);
+#endif
 #ifdef ENABLE_TASK
     pfor(0, mapfile->tablesize, 1, GRAIN_SIZE2,
          [&] (int innerFirst, int innerLast) {
@@ -673,8 +679,10 @@ void FP_tree::database_tiling(int workingthread)
 #ifdef ENABLE_TASK
         });
 #endif
+#ifdef DEBUG_PFOR
     wtime(&loop_end);
     printf("database_tiling(mapfile->tablesize: %d): %fs\n", mapfile->tablesize, loop_end - loop_start);
+#endif
 
     for (i = 0; i < workingthread; i ++) {
         thread_pos[i] = 0;
@@ -765,7 +773,9 @@ void FP_tree::database_tiling(int workingthread)
             }
         }
 
+#ifdef DEBUG_PFOR
     wtime(&loop_start);
+#endif
 #ifdef ENABLE_TASK
     pfor(0, workingthread, 1, GRAIN_SIZE,
          [&] (int innerFirst, int innerLast) {
@@ -805,8 +815,10 @@ void FP_tree::database_tiling(int workingthread)
 #ifdef ENABLE_TASK
         });
 #endif
+#ifdef DEBUG_PFOR
     wtime(&loop_end);
     printf("database_tiling(workingthread): %fs\n", loop_end - loop_start);
+#endif
 
     delete [] tempntypeoffsetbase;
     delete [] thread_pos;
@@ -935,8 +947,10 @@ void FP_tree::scan1_DB(Data* fdat)
         hot_node_index[i] = j;
     }
     hot_node_depth[0] = 0;
+#ifdef DEBUG_PFOR
     double loop_start, loop_end;
     wtime(&loop_start);
+#endif
 #ifdef ENABLE_TASK
     pfor(0, workingthread, 1, GRAIN_SIZE,
          [&] (int innerFirst, int innerLast) {
@@ -1004,8 +1018,10 @@ void FP_tree::scan1_DB(Data* fdat)
 #ifdef ENABLE_TASK
         });
 #endif
+#ifdef DEBUG_PFOR
     wtime(&loop_end);
     printf("scan1_DB(workingthread): %fs\n", loop_end - loop_start);
+#endif
     mapfile->transform_list_table();
     for (i = 0; i < hot_node_num; i ++)
         ntypeidarray[i] = i;
@@ -1128,13 +1144,15 @@ void FP_tree::fill_count(int max_itemno, int thread)
 
 void FP_tree::scan2_DB(int workingthread)
 {
-    double tstart, tend;
+    // double tstart, tend;
     int j;
-    wtime(&tstart);
+    // wtime(&tstart);
     database_tiling(workingthread);
     Fnode **local_hashtable = hashtable[0];
+#ifdef DEBUG_PFOR
     double loop_start, loop_end;
     wtime(&loop_start);
+#endif
 #ifdef ENABLE_TASK
     pfor(0, mergedworknum, 1, GRAIN_SIZE2,
          [&] (int innerFirst, int innerLast) {
@@ -1254,8 +1272,10 @@ void FP_tree::scan2_DB(int workingthread)
 #ifdef ENABLE_TASK
         });
 #endif
+#ifdef DEBUG_PFOR
     wtime(&loop_end);
     printf("scan2_DB(mergedworknum: %d): %fs\n", mergedworknum, loop_end - loop_start);
+#endif
 
     delete database_buf;
 
@@ -1266,7 +1286,9 @@ void FP_tree::scan2_DB(int workingthread)
     }
     int totalnodes = cal_level_25(0);
 
+#ifdef DEBUG_PFOR
     wtime(&loop_start);
+#endif
 #ifdef ENABLE_TASK
     pfor(0, workingthread, 1, GRAIN_SIZE,
          [&] (int innerFirst, int innerLast) {
@@ -1284,9 +1306,11 @@ void FP_tree::scan2_DB(int workingthread)
 #ifdef ENABLE_TASK
         });
 #endif
+#ifdef DEBUG_PFOR
     wtime(&loop_end);
     printf("scan1_DB(workingthread): %fs\n", loop_end - loop_start);
-    wtime(&tend);
+#endif
+    // wtime(&tend);
     //    printf("Creating the first tree from source file cost %f seconds\n", tend - tstart);
     //       printf("we have %d nodes in the initial FP tree\n", totalnodes);
 }
@@ -1483,8 +1507,10 @@ int FP_tree::FP_growth_first(FSout* fout)
         if (upperbound <= lowerbound) {
             continue;
         }
+#ifdef DEBUG_PFOR
         double loop_start, loop_end;
         wtime(&loop_start);
+#endif
 #ifdef ENABLE_TASK
 #if TO_TBB || TO_QTHREAD
         int grain_size = (upperbound - lowerbound + workingthread - 1) / workingthread;
@@ -1585,8 +1611,10 @@ int FP_tree::FP_growth_first(FSout* fout)
 #ifdef ENABLE_TASK
         });
 #endif
+#ifdef DEBUG_PFOR
         wtime(&loop_end);
         printf("FP_growth_first(t, upperbound, lowerbound: %d, %d, %d): %fs\n", t, upperbound, lowerbound, loop_end - loop_start);
+#endif
     }
     wtime(&tend);
     // printf("the major FP_growth cost %f vs %f seconds\n", tend - tstart, temp_time - tstart);
