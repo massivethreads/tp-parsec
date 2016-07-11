@@ -64,7 +64,7 @@
 using namespace std;
 
 void* entry_pt(void*);
-void run_tasks(int, void*);
+void run_tasks(int, annealer_thread*);
 
 
 
@@ -140,8 +140,7 @@ int main (int argc, char * argv[]) {
 		pthread_join(threads[i], NULL);
 	}
 #elif defined ENABLE_TASK
-	void* thread_in = static_cast<void*>(&a_thread);
-	run_tasks(num_threads,thread_in);	
+	run_tasks(num_threads, &a_thread);	
 #else
 	// original serial version
 	a_thread.Run();
@@ -161,12 +160,12 @@ int main (int argc, char * argv[]) {
 }
 
 #ifdef ENABLE_TASK
-void run_tasks(int num_threads, void* thread_in)
+void run_tasks(int num_threads, annealer_thread* a_thread)
 {
 	cilk_begin;
 	mk_task_group;
 	for(int i=0; i<num_threads; i++){
-		create_task1(thread_in,spawn entry_pt(thread_in));
+		create_task0(spawn a_thread->Run());
 	}
 	wait_tasks;
 	cilk_void_return;
