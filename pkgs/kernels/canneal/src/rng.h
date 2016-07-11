@@ -45,14 +45,16 @@ class Rng
 {
 public:
 	Rng() {
-#if defined ENABLE_THREADS
+#if defined ENABLE_THREADS || defined ENABLE_TASK
 		pthread_mutex_lock(&seed_lock);
 		_rng = new MTRand(seed++);
 		pthread_mutex_unlock(&seed_lock);
+		/*
 #elif defined ENABLE_TASK
 		lock_set(seed_lock);
 		_rng = new MTRand(seed++);
 		lock_unset(seed_lock);
+		*/
 #else
 		_rng = new MTRand(seed++);
 #endif //ENABLE_THREADS
@@ -66,10 +68,12 @@ public:
 protected:
 	//use same random seed for each run
 	static unsigned int seed;
-#if defined ENABLE_THREADS
+#if defined ENABLE_THREADS || defined ENABLE_TASK
 	static pthread_mutex_t seed_lock;
+	/*
 #elif defined ENABLE_TASK
-	lock_t seed_lock;
+	static lock_t seed_lock;
+	*/
 #endif
 	MTRand *_rng;
 };
