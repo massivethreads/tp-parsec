@@ -130,7 +130,7 @@ int main (int argc, char * argv[]) {
 	__parsec_roi_begin();
 #endif
 
-#if defined ENABLE_THREADS
+#if defined ENABLE_THREADS  
 	std::vector<pthread_t> threads(num_threads);
 	void* thread_in = static_cast<void*>(&a_thread);
 	for(int i=0; i<num_threads; i++){
@@ -139,7 +139,7 @@ int main (int argc, char * argv[]) {
 	for (int i=0; i<num_threads; i++){
 		pthread_join(threads[i], NULL);
 	}
-#elif defined ENABLE_TASK
+#elif defined ENABLE_TASK 
 	run_tasks(num_threads, &a_thread);	
 #else
 	// original serial version
@@ -162,6 +162,11 @@ int main (int argc, char * argv[]) {
 #ifdef ENABLE_TASK
 void run_tasks(int num_threads, annealer_thread* a_thread)
 {
+#if defined TO_OMP
+#pragma omp parallel
+	a_thread->Run();
+#pragma omp taskwait
+#else
 	cilk_begin;
 	mk_task_group;
 	for(int i=0; i<num_threads; i++){
@@ -169,6 +174,7 @@ void run_tasks(int num_threads, annealer_thread* a_thread)
 	}
 	wait_tasks;
 	cilk_void_return;
+#endif
 }
 #endif
 
@@ -177,3 +183,4 @@ void* entry_pt(void* data)
 	annealer_thread* ptr = static_cast<annealer_thread*>(data);
 	ptr->Run();
 }
+
