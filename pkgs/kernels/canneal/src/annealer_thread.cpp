@@ -88,10 +88,8 @@ void annealer_thread::Run()
 			}
 		}
 		temp_steps_completed++;
-#if (defined ENABLE_THREADS || defined ENABLE_TASK) && !defined TO_SERIAL && !defined TO_OMP
+#if (defined ENABLE_THREADS || defined ENABLE_TASK) && !defined TO_SERIAL
 		pthread_barrier_wait(&_barrier);
-#elif defined TO_OMP
-		pragma_omp(barrier)
 #endif
 	}
 }

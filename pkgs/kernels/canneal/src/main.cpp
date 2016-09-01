@@ -83,6 +83,13 @@ int main (int argc, char * argv[]) {
 	init_runtime(&argc, &argv);
 #endif
 
+#ifdef TO_OMP
+#pragma omp parallel
+{
+#pragma omp master
+{
+#endif
+
 	srandom(3);
 
 	if(argc != 5 && argc != 6) {
@@ -156,17 +163,16 @@ int main (int argc, char * argv[]) {
 	__parsec_bench_end();
 #endif
 
+#ifdef TO_OMP
+}
+}
+#endif
 	return 0;
 }
 
 #ifdef ENABLE_TASK
 void run_tasks(int num_threads, annealer_thread* a_thread)
 {
-#if defined TO_OMP
-#pragma omp parallel
-	a_thread->Run();
-#pragma omp taskwait
-#else
 	cilk_begin;
 	mk_task_group;
 	for(int i=0; i<num_threads; i++){
@@ -174,7 +180,6 @@ void run_tasks(int num_threads, annealer_thread* a_thread)
 	}
 	wait_tasks;
 	cilk_void_return;
-#endif
 }
 #endif
 
