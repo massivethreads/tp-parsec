@@ -27,7 +27,7 @@ case "${OSTYPE}" in
   export SFW_HOME="/usr/sfw"
 
   # CC_HOME is installation root of the C compiler
-  export CC_HOME="/usr/local/gcc-4.2.4"
+  export CC_HOME="/usr/local/gcc-4.8.4"
   #export CC_HOME="/usr/sfw"
   # BINUTIL_HOME is installation root of the GNU binutils
   export BINUTIL_HOME="/usr/sfw"
