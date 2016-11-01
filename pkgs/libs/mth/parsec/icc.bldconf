@@ -1,0 +1,7 @@
+#!/bin/bash
+
+source ${pkgparsecdir}/gcc.bldconf
+
+build_env="CC=icc"
+
+build_conf=""
