@@ -4,3 +4,6 @@
 [submodule "qth"]
 	path = pkgs/libs/qth/src
 	url = https://github.com/Qthreads/qthreads.git
+[submodule "papi"]
+	path = pkgs/libs/papi/src
+	url = https://bitbucket.org/icl/papi.git

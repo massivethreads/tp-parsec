@@ -21,8 +21,8 @@ build_deps=""
 build_inplace="TRUE"
 
 # Environment to use for configure script and Makefile
-build_env=""
+build_env="BITFLAGS=-O0"
 
 # Arguments to pass to the configure script, if it exists
-build_conf=""
+build_conf="--with-perf-events"
 

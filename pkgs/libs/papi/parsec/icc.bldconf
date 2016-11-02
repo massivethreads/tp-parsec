@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# gcc.bldconf - file containing information necessary to build a specific
-#               program of the PARSEC benchmark suite with gcc
+# icc.bldconf - file containing information necessary to build a specific
+#               program of the PARSEC benchmark suite with icc
 #
 
 # Compilation and linking options.
@@ -21,8 +21,8 @@ build_deps=""
 build_inplace="TRUE"
 
 # Environment to use for configure script and Makefile
-build_env=""
+build_env="MPICC=icc"
 
 # Arguments to pass to the configure script, if it exists
-build_conf=""
+build_conf="--with-perf-events"
 
