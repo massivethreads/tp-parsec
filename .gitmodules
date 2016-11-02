@@ -1,0 +1,3 @@
+[submodule "mth"]
+	path = pkgs/libs/mth/src
+	url = https://github.com/massivethreads/massivethreads.git
