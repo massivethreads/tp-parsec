@@ -56,7 +56,7 @@ esac
 # Compilers and preprocessors
 export CC="${CC_HOME}/bin/icc"
 export CXX="${CC_HOME}/bin/icpc"
-export CPP="${CC_HOME}/bin/cpp"
+export CPP="${CC_HOME}/bin/icpc -E"
 export CXXCPP=""
 
 # GNU Binutils
