@@ -1,3 +1,6 @@
 [submodule "mth"]
 	path = pkgs/libs/mth/src
 	url = https://github.com/massivethreads/massivethreads.git
+[submodule "qth"]
+	path = pkgs/libs/qth/src
+	url = https://github.com/Qthreads/qthreads.git
