@@ -96,7 +96,7 @@
 
 #include <cassert>
 
-#ifdef ENABLE_THREADS
+#if defined ENABLE_THREADS || defined ENABLE_TASK
 #include "atomic/atomic.h"
 #endif
 
@@ -123,7 +123,7 @@ class AtomicPtr {
     inline T *PrivateSet(T *x) {
       T *val;
 
-#ifdef ENABLE_THREADS
+#if defined ENABLE_THREADS || defined ENABLE_TASK
       do {
         val = Get();
       } while(!atomic_cmpset_ptr((ATOMIC_TYPE *)&p, (ATOMIC_TYPE)val, (ATOMIC_TYPE)x));
@@ -140,7 +140,7 @@ class AtomicPtr {
       T *val;
       bool rv;
 
-#ifdef ENABLE_THREADS
+#if defined ENABLE_THREADS || defined ENABLE_TASK
       if(!TryGet(&val)) {
         return false;
       }
@@ -191,7 +191,7 @@ class AtomicPtr {
     inline T *Get() const {
       T *val;
 
-#ifdef ENABLE_THREADS
+#if defined ENABLE_THREADS || defined ENABLE_TASK 
       do {
         val = (T *)atomic_load_acq_ptr((ATOMIC_TYPE *)&p);
       } while(val == ATOMIC_NULL);
@@ -209,7 +209,7 @@ class AtomicPtr {
     inline bool TryGet(T **x) const {
       T *val;
 
-#ifdef ENABLE_THREADS
+#if defined ENABLE_THREADS || defined ENABLE_TASK 
       val = (T *)atomic_load_acq_ptr((ATOMIC_TYPE *)&p);
 #else
       val = p;
@@ -290,7 +290,7 @@ class AtomicPtr {
 
     //release an exclusive pointer (mutex unlock semantics)
     inline void Checkin(T *x) {
-#ifdef ENABLE_TRHEADS
+#if defined ENABLE_TRHEADS || defined ENABLE_TASK
       atomic_store_rel_ptr((ATOMIC_TYPE *)(&p), (ATOMIC_TYPE)x);
 #else
       p = x;
@@ -310,7 +310,7 @@ class AtomicPtr {
     }
 
     T *operator=(AtomicPtr<T> X) {
-#ifdef ENABLE_THREADS
+#if defined ENABLE_THREADS || defined ENABLE_TASK
       T *val = (T *)atomic_load_acq_ptr((ATOMIC_TYPE *)&X.p);
 #else
       T * val = X.p;

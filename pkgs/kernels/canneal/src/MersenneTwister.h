@@ -60,6 +60,7 @@
 // Not thread safe (unless auto-initialization is avoided and each thread has
 // its own MTRand object)
 
+#undef sync
 #include <iostream>
 #include <limits.h>
 #include <stdio.h>

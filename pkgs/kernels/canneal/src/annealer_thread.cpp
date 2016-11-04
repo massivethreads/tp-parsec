@@ -26,9 +26,11 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifdef ENABLE_THREADS
+#if defined ENABLE_THREADS || defined ENABLE_TASK
 #include <pthread.h>
 #endif
+
+#undef sync
 
 #include <cassert>
 #include "annealer_thread.h"
@@ -44,6 +46,83 @@ using std::cout;
 using std::endl;
 
 
+//*****************************************************************************************
+//
+//*****************************************************************************************
+#ifdef ENABLE_TASK
+void annealer_thread::Run()
+{
+	cilk_begin;
+	int accepted_good_moves=0;
+	int accepted_bad_moves=-1;
+	double T = _start_temp;
+	int temp_steps_completed=0; 
+	lock_t moveMutex;
+	lock_init(moveMutex);
+	while(keep_going(temp_steps_completed, accepted_good_moves, accepted_bad_moves)){
+		T = T / 1.5;
+		accepted_good_moves = 0;
+		accepted_bad_moves = 0;
+		int movesLeftInThisTemp = _moves_per_thread_temp;
+		mk_task_group;
+		while(movesLeftInThisTemp > _cutoff)
+		{
+			create_taskA(spawn doMoves(_cutoff,T,accepted_good_moves,accepted_bad_moves,moveMutex));
+			movesLeftInThisTemp -= _cutoff;
+		}
+		call_task(spawn doMoves(movesLeftInThisTemp,T,accepted_good_moves,accepted_bad_moves,moveMutex));
+		wait_tasks;
+		temp_steps_completed++;
+	}
+	lock_destroy(moveMutex);
+	cilk_void_return;
+}
+#endif
+
+//*****************************************************************************************
+//
+//*****************************************************************************************
+#ifdef ENABLE_TASK
+void annealer_thread::doMoves(const int numMoves, const double T, int& accepted_good_moves, int& accepted_bad_moves, lock_t& moveMutex)
+{
+	Rng rng;
+	int local_accepted_good_moves = 0;
+	int local_accepted_bad_moves = 0;
+	long a_id;
+	long b_id;
+	netlist_elem* a = _netlist->get_random_element(&a_id, NO_MATCHING_ELEMENT, &rng);
+	netlist_elem* b = _netlist->get_random_element(&b_id, NO_MATCHING_ELEMENT, &rng);
+
+	for (int i = 0; i < numMoves; i++){
+	//get a new element. Only get one new element, so that reuse should help the cache
+		a = b;
+		a_id = b_id;
+		b = _netlist->get_random_element(&b_id, a_id, &rng);
+		
+		routing_cost_t delta_cost = calculate_delta_routing_cost(a,b);
+		move_decision_t is_good_move = accept_move(delta_cost, T, &rng);
+
+		//make the move, and update stats:
+		if (is_good_move == move_decision_accepted_bad){
+			local_accepted_bad_moves++;
+			_netlist->swap_locations(a,b);
+		} else if (is_good_move == move_decision_accepted_good){
+			local_accepted_good_moves++;
+			_netlist->swap_locations(a,b);
+		} else if (is_good_move == move_decision_rejected){
+			//no need to do anything for a rejected move
+		}
+	}
+	lock_set(moveMutex);
+	//moveMutex.lock();
+	accepted_good_moves += local_accepted_good_moves;
+	accepted_bad_moves += local_accepted_bad_moves;
+	//moveMutex.unlock();
+	lock_unset(moveMutex);
+}
+#endif
+
+#ifndef ENABLE_TASK 
 //*****************************************************************************************
 //
 //*****************************************************************************************
@@ -91,6 +170,7 @@ void annealer_thread::Run()
 #endif
 	}
 }
+#endif
 
 //*****************************************************************************************
 //
