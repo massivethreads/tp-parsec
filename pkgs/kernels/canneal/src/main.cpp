@@ -131,13 +131,20 @@ int main (int argc, char * argv[]) {
 	//now that we've read in the commandline, run the program
 	netlist my_netlist(filename);
 	
+	
+#ifndef ENABLE_THREADS 
+	// Call with one thread. Multiple tasks are created inside of annealer_thread
+	annealer_thread a_thread(&my_netlist,1,swaps_per_temp,start_temp,number_temp_steps);
+#endif
+#ifdef ENABLE_THREADS
 	annealer_thread a_thread(&my_netlist,num_threads,swaps_per_temp,start_temp,number_temp_steps);
+#endif
 	
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_roi_begin();
 #endif
 
-#if defined ENABLE_THREADS  
+#ifdef  ENABLE_THREADS  
 	std::vector<pthread_t> threads(num_threads);
 	void* thread_in = static_cast<void*>(&a_thread);
 	for(int i=0; i<num_threads; i++){
@@ -146,10 +153,9 @@ int main (int argc, char * argv[]) {
 	for (int i=0; i<num_threads; i++){
 		pthread_join(threads[i], NULL);
 	}
-#elif defined ENABLE_TASK 
-	run_tasks(num_threads, &a_thread);	
-#else
-	// original serial version
+#endif
+#ifndef ENABLE_THREADS
+	// original serial version or task parallel version
 	a_thread.Run();
 #endif
 
@@ -169,19 +175,6 @@ int main (int argc, char * argv[]) {
 #endif
 	return 0;
 }
-
-#ifdef ENABLE_TASK
-void run_tasks(int num_threads, annealer_thread* a_thread)
-{
-	cilk_begin;
-	mk_task_group;
-	for(int i=0; i<num_threads; i++){
-		create_task0(spawn a_thread->Run());
-	}
-	wait_tasks;
-	cilk_void_return;
-}
-#endif
 
 void* entry_pt(void* data)
 {

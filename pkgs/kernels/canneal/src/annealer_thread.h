@@ -62,16 +62,19 @@ public:
 	_keep_going_global_flag(true),
 	_moves_per_thread_temp(swaps_per_temp/nthreads),
 	_start_temp(start_temp),
+#ifdef ENABLE_TASK
+	_cutoff(100),
+#endif
 	_number_temp_steps(number_temp_steps)
 	{
 		assert(_netlist != NULL);
-#if (defined ENABLE_THREADS || defined ENABLE_TASK) && !defined TO_SERIAL
+#ifdef ENABLE_THREADS 
 		pthread_barrier_init(&_barrier, NULL, nthreads);
 #endif
 	};
 	
 	~annealer_thread() {
-#if (defined ENABLE_THREADS || defined ENABLE_TASK) && !defined TO_SERIAL
+#if defined ENABLE_THREADS 
 		pthread_barrier_destroy(&_barrier);
 #endif
 	}					
@@ -81,14 +84,19 @@ protected:
 	move_decision_t accept_move(routing_cost_t delta_cost, double T, Rng* rng);
 	routing_cost_t calculate_delta_routing_cost(netlist_elem* a, netlist_elem* b);
 	bool keep_going(int temp_steps_completed, int accepted_good_moves, int accepted_bad_moves);
+#ifdef ENABLE_TASK
+	void doMoves(const int numMoves, const double T, int& accepted_good_moves, int& accepted_bad_moves, lock_t& movesMutex);
+#endif
 
-protected:
 	netlist* _netlist;		
 	bool _keep_going_global_flag;
 	int _moves_per_thread_temp;
 	int _start_temp;
 	int _number_temp_steps;
-#if defined ENABLE_THREADS || defined ENABLE_TASK
+#ifdef ENABLE_TASK	
+	int _cutoff;
+#endif
+#ifdef  ENABLE_THREADS 
 	pthread_barrier_t _barrier;
 #endif
 };
