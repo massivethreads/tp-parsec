@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <vector>
+#include <functional>
 
 #ifdef ENABLE_THREADS
 #include <pthread.h>
@@ -42,10 +43,18 @@
 #include <hooks.h>
 #endif
 
+
 #ifdef ENABLE_TASK
+#include <tbb/tbb.h>
 #include "tpswitch/tpswitch.h"
 #include "common.h"
 #endif
+
+// Multi-threaded OpenMP header
+#ifdef ENABLE_OPENMP
+#include <omp.h>
+#endif
+
 
 #include "annealer_types.h"
 #include "annealer_thread.h"
@@ -55,22 +64,30 @@
 using namespace std;
 
 void* entry_pt(void*);
+void run_tasks(int, annealer_thread*);
 
 
 
-int main (int argc, char * const argv[]) {
+int main (int argc, char * argv[]) {
 #ifdef PARSEC_VERSION
 #define __PARSEC_STRING(x) #x
 #define __PARSEC_XSTRING(x) __PARSEC_STRING(x)
-        cout << "PARSEC Benchmark Suite Version "__PARSEC_XSTRING(PARSEC_VERSION) << endl << flush;
+        cout << "PARSEC Benchmark Suite Version " __PARSEC_XSTRING(PARSEC_VERSION) << endl << flush;
 #else
         cout << "PARSEC Benchmark Suite" << endl << flush;
 #endif //PARSEC_VERSION
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_bench_begin(__parsec_canneal);
 #endif
-#ifdef ENABLE_TASK
-	init_runtime(&argv,&argc);
+#if defined ENABLE_TASK && !defined TO_CILKPLUS
+	init_runtime(&argc, &argv);
+#endif
+
+#ifdef TO_OMP
+#pragma omp parallel
+{
+#pragma omp master
+{
 #endif
 
 	srandom(3);
@@ -84,10 +101,12 @@ int main (int argc, char * const argv[]) {
 	int num_threads = atoi(argv[1]);
 	cout << "Threadcount: " << num_threads << endl;
 #ifndef ENABLE_THREADS
+#ifndef ENABLE_TASK
 	if (num_threads != 1){
 		cout << "NTHREADS must be 1 (serial version)" <<endl;
 		exit(1);
 	}
+#endif 
 #endif
 		
 	//argument 2 is the num moves / temp
@@ -112,12 +131,20 @@ int main (int argc, char * const argv[]) {
 	//now that we've read in the commandline, run the program
 	netlist my_netlist(filename);
 	
+	
+#ifndef ENABLE_THREADS 
+	// Call with one thread. Multiple tasks are created inside of annealer_thread
+	annealer_thread a_thread(&my_netlist,1,swaps_per_temp,start_temp,number_temp_steps);
+#endif
+#ifdef ENABLE_THREADS
 	annealer_thread a_thread(&my_netlist,num_threads,swaps_per_temp,start_temp,number_temp_steps);
+#endif
 	
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_roi_begin();
 #endif
-#ifdef ENABLE_THREADS
+
+#ifdef  ENABLE_THREADS  
 	std::vector<pthread_t> threads(num_threads);
 	void* thread_in = static_cast<void*>(&a_thread);
 	for(int i=0; i<num_threads; i++){
@@ -126,20 +153,14 @@ int main (int argc, char * const argv[]) {
 	for (int i=0; i<num_threads; i++){
 		pthread_join(threads[i], NULL);
 	}
-#else
-#ifdef ENABLE_TASK
-	for(int i=0; i<num_threads; i++){
-		create_task1(thread_in,entry_pt);
-	}
-	wait_tasks();
-
-#else
-	a_thread.Run();
 #endif
+#ifndef ENABLE_THREADS
+	// original serial version or task parallel version
+	a_thread.Run();
 #endif
 
 #ifdef ENABLE_PARSEC_HOOKS
-E	__parsec_roi_end();
+	__parsec_roi_end();
 #endif
 	
 	cout << "Final routing is: " << my_netlist.total_routing_cost() << endl;
@@ -148,6 +169,10 @@ E	__parsec_roi_end();
 	__parsec_bench_end();
 #endif
 
+#ifdef TO_OMP
+}
+}
+#endif
 	return 0;
 }
 
@@ -156,3 +181,4 @@ void* entry_pt(void* data)
 	annealer_thread* ptr = static_cast<annealer_thread*>(data);
 	ptr->Run();
 }
+
