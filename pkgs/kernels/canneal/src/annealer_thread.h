@@ -68,6 +68,12 @@ public:
 	_number_temp_steps(number_temp_steps)
 	{
 		assert(_netlist != NULL);
+#ifdef ENABLE_TASK	
+	if (_moves_per_thread_temp <= _cutoff)
+	{
+		_cutoff = _moves_per_thread_temp/2;
+	}
+#endif
 #ifdef ENABLE_THREADS 
 		pthread_barrier_init(&_barrier, NULL, nthreads);
 #endif
