@@ -274,7 +274,9 @@ function check_global_bldconf {
 }
 
 function source_global_bldconf {
-  pkgname=$1
+  pkg=$1
+  pkgname=${pkg#*\.}
+  source ${PARSECDIR}/config/packages/${pkg}.pkgconf
   confstr=$2
   confdir=${PARSECDIR}/config
   conf=""
@@ -290,6 +292,7 @@ function source_global_bldconf {
     if [ -f ${conffile} ]; then
       echo "${oprefix} Source global build configuration file '${conffile}'."
       source ${conffile}
+      echo "CXXFLAGS=${CXXFLAGS}"
       #if [ -f ${compoundconffile} -a ! ${compoundconffile} == ${conffile} ]; then
         #echo "${oprefix} Source global build configuration file '${compoundconffile}'."
         #source ${compoundconffile}
@@ -973,7 +976,7 @@ function build_package {
   else
       eval benchdir="ext\/${bench}"
   fi
-  
+
   local pkgdir=${PARSECDIR}/${benchdir}/${pkg_group}/${pkgname}
   local pkgsrcdir=${pkgdir}/src
   local pkgobjdir=${pkgdir}/obj/${PARSECPLAT}
@@ -987,7 +990,7 @@ function build_package {
   fi
 
   # Source local build configuration to get dependencies
-  source_global_bldconf ${pkg#*\.} ${build}
+  source_global_bldconf ${pkg} ${build}
   source_local_bldconf ${build}
 
   # Build packages on which pkg depends
@@ -1013,7 +1016,7 @@ function build_package {
   echo "${oprefix} [---------- Building package ${pkg} ----------]" 2>&1 | ${TEE} ${log}
 
   # Source local package build configuration again (might have gotten overwritten by recursion)
-  source_global_bldconf ${pkg#*\.} ${build}
+  source_global_bldconf ${pkg} ${build}
   source_local_bldconf ${build}
 
   # Check for obvious errors
@@ -1372,7 +1375,6 @@ parsec_init
 process_args "$@"
 
 # Now we take decisive action
-echo $action
 for a in ${action}; do
 case ${a} in
   "build"         )

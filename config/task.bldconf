@@ -1,12 +1,16 @@
 #!/bin/bash
 
-# Proclaim version for consecutive conf, and Makefile
+# Proclaim version for following bldconf soucing, and make
 export version=task
 
-# Include tp-parsec/common/common.o
-cflags="-I${PARSECDIR}/common -DENABLE_TASK"
-CFLAGS="${CFLAGS} ${cflags}"
-CXXFLAGS="${CXXFLAGS} ${cflags}"
-
-# Package dependencies
+# Package dependencies (need to reset it even to none)
 export global_build_deps=""
+
+# Only packages of the three benchmarking groups (apps, kernels, netapps) are targeted for task parallelization
+if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" == "netapps" ]; then
+  # for ENABLE_TASK macro
+  cflags="-DENABLE_TASK"
+  CFLAGS="${CFLAGS} ${cflags}"
+  CXXFLAGS="${CXXFLAGS} ${cflags}"
+fi
+

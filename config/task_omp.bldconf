@@ -4,12 +4,14 @@ source ${PARSECDIR}/config/task.bldconf
 
 export task_target=omp
 
-# Add options and links for omp
-# some packages like streamcluster depend on tbb
-# task_omp depends on mth for tpswitch
-if [ ! "${pkgname}" == "tbb" -a ! "${pkgname}" == "mth" ]; then
-  global_build_deps="mth"
-  cflags="-I${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/include -DTO_OMP -fopenmp"
+# Add options and links for omp task target
+# Only packages of the three benchmarking groups (apps, kernels, netapps) are targeted for task parallelization
+if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" == "netapps" ]; then
+  global_build_deps="${global_build_deps} mth"
+  # for tpswitch (in mth)
+  cflags="-I${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/include"
+  # for omp
+  cflags="${cflags} -DTO_OMP -fopenmp"
   CFLAGS="${CFLAGS} ${cflags}"
   CXXFLAGS="${CXXFLAGS} ${cflags}"
   LDFLAGS="${LDFLAGS}"

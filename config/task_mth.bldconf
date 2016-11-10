@@ -4,10 +4,11 @@ source ${PARSECDIR}/config/task.bldconf
 
 export task_target=mth
 
-# Add options and links for mth
-# some packages like streamcluster depend on tbb
-if [ ! "${pkgname}" == "mth" -a ! "${pkgname}" == "tbb" ]; then
-  global_build_deps="mth"
+# Add options and links for mth task target
+# Only packages of the three benchmarking groups (apps, kernels, netapps) are targeted for task parallelization
+if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" == "netapps" ]; then
+  global_build_deps="${global_build_deps} mth"
+  # for mth
   cflags="-I${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/include -DTO_MTHREAD_NATIVE -pthread"
   CFLAGS="${CFLAGS} ${cflags}"
   CXXFLAGS="${CXXFLAGS} ${cflags} -std=c++0x"

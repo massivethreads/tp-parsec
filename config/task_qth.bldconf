@@ -4,12 +4,14 @@ source ${PARSECDIR}/config/task.bldconf
 
 export task_target=qth
 
-# Add options and links for qth
-# some packages like streamcluster depend on tbb
-# task_qth depends on mth for tpswitch
-if [ ! "${pkgname}" == "qth" -a ! "${pkgname}" == "tbb" -a ! "${pkgname}" == "mth" ]; then
-  global_build_deps="qth mth"
-  cflags="-I${PARSECDIR}/pkgs/libs/qth/inst/${PARSECPLAT}/include -I${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/include -DTO_QTHREAD -pthread"
+# Add options and links for qth task target
+# Only packages of the three benchmarking groups (apps, kernels, netapps) are targeted for task parallelization
+if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" == "netapps" ]; then
+  global_build_deps="${global_build_deps} tbb mth"
+  # for tpswitch (in mth)
+  cflags="-I${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/include"
+  # for qth
+  cflags="${cflags} -I${PARSECDIR}/pkgs/libs/qth/inst/${PARSECPLAT}/include -DTO_QTHREAD -pthread"
   CFLAGS="${CFLAGS} ${cflags}"
   CXXFLAGS="${CXXFLAGS} ${cflags} -std=c++0x"
   LDFLAGS="${LDFLAGS} -L${PARSECDIR}/pkgs/libs/qth/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/qth/inst/${PARSECPLAT}/lib"
