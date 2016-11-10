@@ -11,18 +11,40 @@ ifdef source
 		CXXFLAGS += -msse3
 	endif
 else
-	SRC = blackscholes.c
+	SRC	= blackscholes.c
 endif
 
+ifdef version
+  ifeq "$(version)" "pthreads"
+    M4_SRC    = blackscholes.m4.cpp
+    CSRC      = $(M4_SRC)
+    MT        = -DENABLE_THREADS
+    CXXFLAGS += -pthread
+  endif
+  ifeq "$(version)" "openmp"
+    MT        = -DENABLE_OPENMP
+  endif
+  ifeq "$(version)" "tbb"
+    MT        = -DENABLE_TBB
+  endif
+  ifeq "$(version)" "task"
+    MT        = -DENABLE_TASK
+  endif
+else
+  MT        = 
+endif
+
+
+
 # Default build single precision version
-NCO     = -DNCO=4 -Dfptype=float
+NCO     = -DNCO=4
 
 ifdef chk_err
 ERR     = -DERR_CHK
 endif
 
 ifdef single
-NCO = -DNCO=4 -Dfptype=float
+NCO = -DNCO=4
 endif
 
 ifdef size
@@ -32,32 +54,24 @@ SZ = -DN=960
 endif
 
 ifdef double
-NCO = -DNCO=2 -Dfptype=double
+NCO = -DNCO=2
 endif
 
-app_root       = ${PARSECDIR}/pkgs/apps/${TARGET}
-icc_dir       ?= ${CC_HOME}
-icc           ?= ${icc_dir}/bin/icc
-default_all    : ${task_target}_exes
-src_dir       ?= $(app_root)/src
-exe_prefix    ?= $(app_root)/inst/${PARSECPLAT}/${TARGET}
-obj_dir       ?= $(app_root)/obj/${PARSECPLAT}
+CXXFLAGS += $(MT) $(NCO) $(FUNC) $(ERR) $(CSRC) -std=c++11
 
-c_srcs   := 
-cxx_srcs := blackscholes.cxx
-cxx_opts := -std=c++11 $(CXXFLAGS) $(MT) $(NCO) $(FUNC) $(ERR) -DENABLE_TASK
-targets  := ${TARGET}
+all: $(TARGET)
 
-include $(parallel2_dir)/sys/src/tools/makefiles/compile.mk
+include ${PARSECDIR}/common/common.mk
 
+$(TARGET): clean $(CSRC)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(LIBS) -o $(TARGET)
+
+$(M4_SRC): $(SRC)
+	$(M4) $(M4_BASE)/$(MACROS) $< > $@
 
 clean:
-	rm -f -r $(app_root)/inst/${PARSECPLAT}/*
+	rm -f $(TARGET) $(M4_SRC)
 
 install:
-	mkdir -p $(app_root)/inst/${PARSECPLAT}/bin
-	mv -f $(exe_prefix)* $(app_root)/inst/${PARSECPLAT}/bin/$(TARGET)_${task_target}
-	echo "\$${parallel2_dir}/sys/inst/${platform}/bin/urun -t ${task_target} -p \$$1 -f ${platform} -- \$$(dirname \$$0)/$(TARGET)_${task_target} \$$1 \$$2 \$$3" > $(app_root)/inst/${PARSECPLAT}/bin/$(TARGET)
-	chmod 775 $(app_root)/inst/${PARSECPLAT}/bin/$(TARGET)
-
-
+	mkdir -p $(PREFIX)/bin
+	cp -f $(TARGET) $(PREFIX)/bin/$(TARGET)

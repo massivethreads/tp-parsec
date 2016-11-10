@@ -44,7 +44,7 @@ using namespace tbb;
   #define PFOR_TO_ORIGINAL 1
 #endif
 
-#include "common.h"
+#include "tpswitch/tpswitch.h"
 
 #endif
 
@@ -392,7 +392,7 @@ int main (int argc, char **argv)
 #endif
 
 #if defined(ENABLE_TASK) && !defined(TO_CILKPLUS)
-   init_runtime(&argc,&argv);
+   init_task_runtime();
 #endif
 
    if (argc != 4)
