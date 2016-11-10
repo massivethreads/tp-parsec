@@ -15,6 +15,7 @@
 #include <math.h>
 #include <sys/resource.h>
 #include <limits.h>
+#include <sys/time.h>
 
 #ifdef ENABLE_THREADS
 #include <pthread.h>
@@ -1957,6 +1958,12 @@ void streamCluster( PStream* stream,
   outcenterIDs( &centers, centerIDs, outfile);
 }
 
+long parsec_usecs() {
+   struct timeval t;
+   gettimeofday(&t,NULL);
+   return t.tv_sec * 1000000 + t.tv_usec;
+}
+
 int main(int argc, char **argv)
 {
   char *outfilename = new char[MAXNAMESIZE];
@@ -2027,7 +2034,12 @@ int main(int argc, char **argv)
   __parsec_roi_begin();
 #endif
 
+  double time = (double) parsec_usecs();
+  
   streamCluster(stream, kmin, kmax, dim, chunksize, clustersize, outfilename );
+
+  time = (((double) parsec_usecs()) - time) / 1000000.0;
+  printf("kernel_execution_time = %lf seconds\n", time);
 
 #ifdef ENABLE_PARSEC_HOOKS
   __parsec_roi_end();

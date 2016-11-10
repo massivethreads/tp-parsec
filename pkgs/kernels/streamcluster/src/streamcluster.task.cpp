@@ -17,6 +17,9 @@
 #endif
 
 #include <tbb/tbb.h>
+
+//#define PFOR_TO_ORIGINAL
+//#define USE_OLD_RANGE_BASED_PARALLEL_FOR
 #include <tpswitch/tpswitch.h>
 #include <common.h>
 
@@ -32,6 +35,10 @@
 
 #if USE_TBBMALLOC
 #include "tbb/cache_aligned_allocator.h"
+#endif
+
+#ifdef ENABLE_PARSEC_HOOKS
+#include <hooks.h>
 #endif
 
 using namespace std;
@@ -691,7 +698,7 @@ pkmedian(Points * points, long kmin, long kmax, long * kfinal, int pid, pthread_
   long bsize = points->num / nproc;
   long k1 = bsize * pid;
   long k2 = k1 + bsize;
-  if(pid == nproc - 1) k2 = points->num;
+  if (pid == nproc - 1) k2 = points->num;
 
   
   //fprintf(stderr,"Starting Kmedian procedure\n");
@@ -1100,6 +1107,12 @@ streamCluster(PStream * stream, long kmin, long kmax, int dim, long chunksize, l
   outcenterIDs( &centers, centerIDs, outfile );
 }
 
+long parsec_usecs() {
+   struct timeval t;
+   gettimeofday(&t,NULL);
+   return t.tv_sec * 1000000 + t.tv_usec;
+}
+
 int
 main(int argc, char ** argv) {
   
@@ -1153,7 +1166,7 @@ main(int argc, char ** argv) {
   if (str_grain_size) {
     env_grain_size = atol(str_grain_size);
   }
-  printf("env_grain_size = %ld\n", env_grain_size);
+  printf("env_grain_size = %d\n", env_grain_size);
   
   srand48(SEED);
   PStream * stream;
@@ -1169,10 +1182,13 @@ main(int argc, char ** argv) {
 #endif
 
   init_runtime(&argc, &argv);
-  dr_start(0);
+  
+  double time = (double) parsec_usecs();
+  
   streamCluster(stream, kmin, kmax, dim, chunksize, clustersize, outfilename);
-  dr_stop();
-  dr_dump();
+  
+  time = (((double) parsec_usecs()) - time) / 1000000.0;
+  printf("kernel_execution_time = %lf seconds\n", time);
 
 #ifdef ENABLE_PARSEC_HOOKS
   __parsec_roi_end();

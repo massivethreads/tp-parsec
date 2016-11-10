@@ -16,16 +16,13 @@ OPTS += $(CXXFLAGS)
 
 #LINK_OPTS += -pg 
 LINK_OPTS += -ltbb
+LINK_OPTS += $(LDFLAGS) $(LIBS)
 
 ifeq ($(USE_TBBMALLOC),1)
 	OPTS += -DUSE_TBBMALLOC
 	LINK_OPTS += -ltbbmalloc
 endif
 
-ifeq ($(DAG_RECORDER),2)
-	OPTS += -DDAG_RECORDER=2
-	LINK_OPTS += -ldr -lpthread
-endif
 
 
 
