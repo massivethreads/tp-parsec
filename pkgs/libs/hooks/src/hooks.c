@@ -73,6 +73,11 @@ static double time_end;
 #include <stdbool.h>
 #endif //ENABLE_SETAFFINITY
 
+#if DAG_RECORDER == 2
+//#include <dag_recorder.h>
+#include <tpswitch/tpswitch.h>
+#endif
+
 /** Enable debugging code */
 #define DEBUG 0
 
@@ -167,6 +172,11 @@ void __parsec_bench_end() {
   #if ENABLE_TIMING
   printf(HOOKS_PREFIX" Total time spent in ROI: %.3fs\n", time_end-time_begin);
   #endif //ENABLE_TIMING
+
+  #if DAG_RECORDER == 2
+  dr_dump();
+  #endif
+
   printf(HOOKS_PREFIX" Terminating\n");
 }
 
@@ -195,10 +205,18 @@ void __parsec_roi_begin() {
   #if ENABLE_PTLSIM_TRIGGER
   ptlcall_switch_to_sim();
   #endif //ENABLE_PTLSIM_TRIGGER
+
+  #if DAG_RECORDER == 2
+  dr_start(NULL);
+  #endif
 }
 
 
 void __parsec_roi_end() {
+  #if DAG_RECORDER == 2
+  dr_stop();
+  #endif
+
   #if DEBUG
   num_roi_ends++;
   assert(num_bench_begins==1);
