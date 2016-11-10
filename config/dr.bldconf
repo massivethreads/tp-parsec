@@ -9,7 +9,7 @@ cflags=""
 cxxflags=""
 ldflags=""
 libs=""
-if [ ! ${pkgname} == "hooks" -a ! ${pkgname} == "mth" ]; then
+if [ ! ${pkgname} == "hooks" -a ! ${pkgname} == "mth" -a ! ${pkgname} == "libtool" ]; then
   global_build_deps="hooks mth"
   cflags="-DENABLE_PARSEC_HOOKS -DDAG_RECORDER=2 -I${PARSECDIR}/pkgs/libs/hooks/inst/${PARSECPLAT}/include -I${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/include"
   cxxflags="${cflags}"
