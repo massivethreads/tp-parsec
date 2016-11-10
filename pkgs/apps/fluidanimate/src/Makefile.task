@@ -1,10 +1,13 @@
-
 PREFIX=${PARSECDIR}/pkgs/apps/fluidanimate/inst/${PARSECPLAT}
 
-CXXFLAGS += -Wno-invalid-offsetof
-
 TARGET   = fluidanimate
+OBJS     = cellpool.o task.o
 CXXFLAGS += -pthread -D_GNU_SOURCE -D__XOPEN_SOURCE=600
+
+# To enable visualization comment out the following lines (don't do this for benchmarking)
+#OBJS     += fluidview.o
+#CXXFLAGS += -DENABLE_VISUALIZATION
+#LIBS     += -lglut
 
 ostype=$(findstring solaris, ${PARSECPLAT})
 
@@ -12,30 +15,22 @@ ifeq "$(ostype)" "solaris"
     CXXFLAGS += -DSPARC_SOLARIS
 endif
 
-app_root       = ${PARSECDIR}/pkgs/apps/${TARGET}
-icc_dir       ?= ${CC_HOME}
-icc           ?= ${icc_dir}/bin/icc
-default_all    : ${task_target}_exes
-src_dir       ?= $(app_root)/src
-exe_prefix    ?= $(app_root)/inst/${PARSECPLAT}/${TARGET}
-obj_dir       ?= $(app_root)/obj/${PARSECPLAT}
+all: $(OBJS)
+	$(CXX) $(CXXFLAGS) $(OBJS) $(LDFLAGS) $(LIBS) -o $(TARGET)
 
-c_srcs   := 
-c_opts   := $(CXXFLAGS)
-cpp_srcs := 
-cxx_srcs := task.cxx cellpool.cxx
-cxx_opts := $(CXXFLAGS)
-targets  := $(TARGET)
+include ${PARSECDIR}/common/common.mk
 
-include $(parallel2_dir)/sys/src/tools/makefiles/compile.mk
+%.o : %.cpp
+	$(CXX) $(CXXFLAGS) -c $<
+
+fluidcmp: fluidcmp.cpp
+	rm -rf fluidcmp
+	$(CXX) $(CXXFLAGS) fluidcmp.cpp -o fluidcmp
 
 clean:
-	rm -f -r $(app_root)/inst/${PARSECPLAT}/*
+	rm -rf $(TARGET)
+	rm -rf fluidcmp
 
-install:
-	mkdir -p $(app_root)/inst/${PARSECPLAT}/bin
-	mv -f $(exe_prefix)* $(app_root)/inst/${PARSECPLAT}/bin/$(TARGET)_${task_target}
-	echo "\$${parallel2_dir}/sys/inst/${platform}/bin/urun -t ${task_target} -p \$$1 -f ${platform} -- \$$(dirname \$$0)/$(TARGET)_${task_target} \$$1 \$$2 \$$3 \$$4" > $(app_root)/inst/${PARSECPLAT}/bin/$(TARGET)
-	chmod 775 $(app_root)/inst/${PARSECPLAT}/bin/$(TARGET)
-
-
+install: 
+	mkdir -p $(PREFIX)/bin
+	cp -f $(TARGET) $(PREFIX)/bin/$(TARGET)

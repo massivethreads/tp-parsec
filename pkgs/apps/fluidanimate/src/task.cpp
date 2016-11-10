@@ -20,7 +20,6 @@
 #include "fluid.hpp"
 #include "cellpool.hpp"
 
-#include "common.h"
 #include "tpswitch/tpswitch.h"
 
 #ifdef ENABLE_VISUALIZATION
@@ -1207,9 +1206,7 @@ int main(int argc, char *argv[])
   __parsec_bench_begin(__parsec_fluidanimate);
 #endif
 
-#ifndef TO_CILKPLUS
-   init_runtime(&argc,&argv);
-#endif
+  tp_init();
 
   if(argc < 4 || argc >= 6)
   {
