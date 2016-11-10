@@ -1076,7 +1076,13 @@ function build_package {
   fi
 
   # Run make
-  local makecmd="env ${build_env} ${MAKE}"
+  nproc="$(grep -c 'processor' /proc/cpuinfo)"
+  num_re="^[0-9]+$"
+  if ! [[ $nproc =~ $num_re ]]; then
+    # nproc is not a number
+    nproc=""
+  fi
+  local makecmd="env ${build_env} ${MAKE} -j ${nproc}"
   eval echo "${oprefix} Running \'$makecmd\':" 2>&1 \| ${TEE} ${log}
   eval \( ${makecmd} 2>&1 \) 2>&1 \| ${TEE} ${log} \; retval=\${PIPESTATUS[0]}
   if [ "$retval" -ne "0" ]; then
