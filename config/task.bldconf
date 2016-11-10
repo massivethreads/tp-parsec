@@ -4,7 +4,7 @@
 export version=task
 
 # Include tp-parsec/common/common.o
-cflags="-I${PARSECDIR}/common"
+cflags="-I${PARSECDIR}/common -DENABLE_TASK"
 CFLAGS="${CFLAGS} ${cflags}"
 CXXFLAGS="${CXXFLAGS} ${cflags}"
 
