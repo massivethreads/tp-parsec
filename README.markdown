@@ -191,8 +191,8 @@ Please look at ```blackscholes.c``` for example, especially around ```ENABLE_TAS
 
 Don't forget to ...
 * add ```cilk_begin``` and ```cilk_void_return```.
-* include both ```#include <tpswitch/tpswitch.h>``` and ```#include <common.h>```
-* write ```init_runtime(&argv,&argc);``` at the beginning of ```main()```, surrounded by ```#ifdef ENABLE_TASK```
+* include  ```#include <tpswitch/tpswitch.h>``` (```#include <common.h>``` is no more needed)
+* write ```init_task_runtime();``` at the beginning of ```main()```, surrounded by ```#ifdef ENABLE_TASK```
 
 ## How to live together with CMake and compile.mk?
 
