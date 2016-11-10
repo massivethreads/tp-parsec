@@ -23,7 +23,6 @@
 
 
 #ifdef ENABLE_TASK
-# include "common.h"
 # include "tpswitch/tpswitch.h"
 #endif
 
