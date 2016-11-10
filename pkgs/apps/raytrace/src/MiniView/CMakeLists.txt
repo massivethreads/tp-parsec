@@ -1,9 +1,5 @@
 
-IF($ENV{version} STREQUAL "task")
-	#Skip it.
-ELSE()
-	ADD_EXECUTABLE(rtview rtview ../RTTL/common/MapOptions)
-	TARGET_LINK_LIBRARIES(rtview RTTL LRT ${GLUT_glut_LIBRARY} ${GL_LIBS} $ENV{LIBS} stdc++ rt)
+ADD_EXECUTABLE(rtview rtview ../RTTL/common/MapOptions)
+TARGET_LINK_LIBRARIES(rtview RTTL LRT ${GLUT_glut_LIBRARY} ${GL_LIBS} $ENV{LIBS} stdc++ rt)
 
-	INSTALL(TARGETS rtview RUNTIME DESTINATION bin)
-ENDIF()
+INSTALL(TARGETS rtview RUNTIME DESTINATION bin)

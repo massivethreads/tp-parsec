@@ -18,8 +18,6 @@ endif
 all: $(OBJS)
 	$(CXX) $(CXXFLAGS) $(OBJS) $(LDFLAGS) $(LIBS) -o $(TARGET)
 
-include ${PARSECDIR}/common/common.mk
-
 %.o : %.cpp
 	$(CXX) $(CXXFLAGS) -c $<
 

@@ -16,7 +16,6 @@
 #endif
 
 #ifdef ENABLE_TASK
-#include "common.h"
 #include "tpswitch/tpswitch.h"
 #endif
 
@@ -352,8 +351,8 @@ int main(int argc, char* argv[])
   __parsec_bench_begin(__parsec_raytrace);
 #endif
 
-#if defined(ENABLE_TASK) && !defined(TO_CILKPLUS)
-   init_runtime(&argc,&argv);
+#if defined(ENABLE_TASK)
+   tp_init();
 #endif
 
   rtInit(&argc, argv);
