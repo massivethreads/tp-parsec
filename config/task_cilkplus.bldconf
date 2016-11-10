@@ -1,0 +1,20 @@
+#!/bin/bash
+
+source ${PARSECDIR}/config/task.bldconf
+
+export task_target=cilkplus
+
+# Add options and links for cilkplus
+# some packages like (tp)streamcluster depend on tbb
+# task version depends on mth for tpswitch
+if [ ! "${pkgname}" == "tbb" -a ! "${pkgname}" == "mth" ]; then
+  global_build_deps="mth"
+  cflags="-I${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/include -DTO_CILKPLUS"
+  if [ "${platform}" == "g" ]; then
+    cflags="${cflags} -fcilkplus"  
+  fi
+  CFLAGS="${CFLAGS} ${cflags}"
+  CXXFLAGS="${CXXFLAGS} ${cflags}"
+  LDFLAGS="${LDFLAGS}"
+  LIBS="${LIBS}"
+fi

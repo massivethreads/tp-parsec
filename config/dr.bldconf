@@ -1,0 +1,30 @@
+#!/bin/bash
+#
+# dr.bldconf - file containing global information necessary to build
+#              PARSEC with DAG Recorder
+#
+
+global_build_deps=""
+cflags=""
+cxxflags=""
+ldflags=""
+libs=""
+if [ ! ${pkgname} == "hooks" -a ! ${pkgname} == "mth" ]; then
+  global_build_deps="hooks mth"
+  cflags="-DENABLE_PARSEC_HOOKS -DDAG_RECORDER=2 -I${PARSECDIR}/pkgs/libs/hooks/inst/${PARSECPLAT}/include -I${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/include"
+  cxxflags="${cflags}"
+  ldflags="-L${PARSECDIR}/pkgs/libs/hooks/inst/${PARSECPLAT}/lib -L${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/hooks/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/lib"
+  libs="-lhooks -ldr -lpthread"
+else
+  if [ ${pkgname} == "hooks" ]; then
+    global_build_deps="mth"
+    cflags="-DDAG_RECORDER=2 -I${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/include"
+    ldflags="-L${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/lib"
+    libs="-ldr -lpthread"
+  fi
+fi  
+
+CFLAGS="${CFLAGS} ${cflags}"
+CXXFLAGS="${CXXFLAGS} ${cflags}"
+LDFLAGS="${LDFLAGS} ${ldflags}"
+LIBS="${LIBS} ${libs}"

@@ -1,0 +1,18 @@
+#!/bin/bash
+
+source ${PARSECDIR}/config/task.bldconf
+
+export task_target=qth
+
+# Add options and links for qth
+# some packages like streamcluster depend on tbb
+# task_qth depends on mth for tpswitch
+if [ ! "${pkgname}" == "qth" -a ! "${pkgname}" == "tbb" -a ! "${pkgname}" == "mth" ]; then
+  global_build_deps="qth mth"
+  cflags="-I${PARSECDIR}/pkgs/libs/qth/inst/${PARSECPLAT}/include -I${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/include -DTO_QTHREAD -pthread"
+  CFLAGS="${CFLAGS} ${cflags}"
+  CXXFLAGS="${CXXFLAGS} ${cflags} -std=c++0x"
+  LDFLAGS="${LDFLAGS} -L${PARSECDIR}/pkgs/libs/qth/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/qth/inst/${PARSECPLAT}/lib"
+  LIBS="${LIBS} -lqthread -lpthread"
+fi  
+

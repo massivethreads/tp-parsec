@@ -1,0 +1,17 @@
+#!/bin/bash
+
+source ${PARSECDIR}/config/task.bldconf
+
+export task_target=tbb
+
+# Add options and links for tbb
+# task_tbb depends on mth for tpswitch
+if [ ! "${pkgname}" == "tbb" -a ! "${pkgname}" == "mth" ]; then
+  global_build_deps="tbb mth"
+  cflags="-I${PARSECDIR}/pkgs/libs/tbb/inst/${PARSECPLAT}/include -I${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/include -DTO_TBB -pthread"
+  CFLAGS="${CFLAGS} ${cflags}"
+  CXXFLAGS="${CXXFLAGS} ${cflags} -std=c++0x"
+  LDFLAGS="${LDFLAGS} -L${PARSECDIR}/pkgs/libs/tbb/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/tbb/inst/${PARSECPLAT}/lib"
+  LIBS="${LIBS} -ltbb -lpthread"
+fi  
+

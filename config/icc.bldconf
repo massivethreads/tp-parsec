@@ -104,3 +104,6 @@ CXX_ver=$(${CXX} --version)
 LD_ver=$(${LD} --version)
 JAVAC_ver=$(${JAVAC} -version 2>&1)
 
+# Proclaim version for consecutive conf, and Makefile
+export platform=i
+

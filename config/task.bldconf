@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Proclaim version for consecutive conf, and Makefile
+export version=task
+
+# Include tp-parsec/common/common.o
+cflags="-I${PARSECDIR}/common"
+CFLAGS="${CFLAGS} ${cflags}"
+CXXFLAGS="${CXXFLAGS} ${cflags}"
+
+# Package dependencies
+export global_build_deps=""

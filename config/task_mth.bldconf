@@ -1,0 +1,17 @@
+#!/bin/bash
+
+source ${PARSECDIR}/config/task.bldconf
+
+export task_target=mth
+
+# Add options and links for mth
+# some packages like streamcluster depend on tbb
+if [ ! "${pkgname}" == "mth" -a ! "${pkgname}" == "tbb" ]; then
+  global_build_deps="mth"
+  cflags="-I${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/include -DTO_MTHREAD_NATIVE -pthread"
+  CFLAGS="${CFLAGS} ${cflags}"
+  CXXFLAGS="${CXXFLAGS} ${cflags} -std=c++0x"
+  LDFLAGS="${LDFLAGS} -L${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/lib"
+  LIBS="${LIBS} -lmyth -lpthread"
+fi  
+

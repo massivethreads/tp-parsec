@@ -122,3 +122,6 @@ else
   JAVAC_ver=""
 fi
 
+# Proclaim version for consecutive conf, and Makefile
+export platform=g
+
