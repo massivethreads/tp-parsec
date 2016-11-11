@@ -1036,6 +1036,20 @@ function build_package {
   # Global arguments to configure script
   build_conf_global="--prefix=${pkginstdir}"
 
+  # Special case for qth which does not have configure at first, need to run autogen.sh to generate configure
+  if [ ${pkg#*\.} == "qth" -a ! -x ${pkgsrcdir}/configure ]; then
+    echo "${oprefix} Package Qthreads (qth) has no configure file, to run its autogen.sh script." 2>&1 | ${TEE} ${log}
+    pushd ${pkgsrcdir} > /dev/null
+    autogencmd="./autogen.sh"
+    eval $autogencmd
+    popd > /dev/null
+    if [ -x ${pkgsrcdir}/configure ]; then
+      echo "${oprefix} qth's configure has been created (${pkgsrcdir}/configure)." 2>&1 | ${TEE} ${log}
+    else
+      echo "${oprefix} autogen.sh failed to create qth's configure (${pkgsrcdir}/configure)." 2>&1 | ${TEE} ${log}
+    fi
+  fi
+
   # We need either configure or a Makefile
   if [ ! -x ${pkgsrcdir}/configure -a ! -f ${pkgsrcdir}/[Mm]akefile ]; then
     echo "${oprefix} Error: Need 'configure' script or a '[Mm]akefile' to build package ${pkg}." 2>&1 | ${TEE} ${log}
