@@ -46,8 +46,7 @@
 
 #ifdef ENABLE_TASK
 #include <tbb/tbb.h>
-#include "tpswitch/tpswitch.h"
-#include "common.h"
+#include <tpswitch/tpswitch.h>
 #endif
 
 // Multi-threaded OpenMP header
@@ -80,7 +79,7 @@ int main (int argc, char * argv[]) {
 	__parsec_bench_begin(__parsec_canneal);
 #endif
 #if defined ENABLE_TASK && !defined TO_CILKPLUS
-	init_runtime(&argc, &argv);
+	tp_init();
 #endif
 
 #ifdef TO_OMP
