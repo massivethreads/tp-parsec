@@ -7,8 +7,6 @@ OBJS=streamcluster.o
 
 OPTS += -DENABLE_TASK -save-temps
 
-OPTS += -I${PARSECDIR}/pkgs/libs/tbb/inst/${PARSECPLAT}/include
-
 ifeq ($(USE_TBBMALLOC),1)
 	OPTS += -DUSE_TBBMALLOC
 	LINK_OPTS += -ltbbmalloc

@@ -13,5 +13,8 @@ build_env="${build_env}"
 build_conf="${build_conf}"
 
 # Add options and links for tbb
+cflags="-I${PARSECDIR}/pkgs/libs/tbb/inst/${PARSECPLAT}/include"
+CFLAGS="${CFLAGS} ${cflags}"
+CXXFLAGS="${CXXFLAGS} ${cflags}"
 LDFLAGS="${LDFLAGS} -L${PARSECDIR}/pkgs/libs/tbb/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/tbb/inst/${PARSECPLAT}/lib"
 LIBS="${LIBS} -ltbb"
