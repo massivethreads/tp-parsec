@@ -18,6 +18,9 @@
 # binaries, then we use that information to define the binary locations.
 # The values for Linux are at the end and also the default values.
 
+# Add icc to PATH.
+PATH="$PATH:${CC_HOME}/bin"
+
 case "${OSTYPE}" in
 *solaris*)
   # Solaris case
