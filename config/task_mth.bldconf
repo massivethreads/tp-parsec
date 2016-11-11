@@ -16,3 +16,13 @@ if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" =
   LIBS="${LIBS} -lmyth -lpthread"
 fi  
 
+# Options for running
+if [ "${act}" == "run" ]; then
+  flags="MYTH_NUM_WORKERS=${NTHREADS}"
+  #flags+=" MYTH_DEF_STKSIZE=${stack_size} MYTH_CPU_LIST=%(myth_cpu_list)"
+  if [ -z "${run_env}" ]; then
+    run_env="${flags}"
+  else
+    run_env="${run_env} ${flags}"
+  fi
+fi

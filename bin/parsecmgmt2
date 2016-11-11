@@ -275,38 +275,24 @@ function check_global_bldconf {
 
 function source_global_bldconf {
   pkg=$1
-  pkgname=${pkg#*\.}
+  # pkg_group defined in ${pkg}.pkgconf is needed for task_*.bldconf
   source ${PARSECDIR}/config/packages/${pkg}.pkgconf
+  pkgname=${pkg#*\.}
   confstr=$2
   confdir=${PARSECDIR}/config
   conf=""
-  compoundconf=""
   while [ ! "$conf" == "$confstr" ]; do
     # remove the longest matching from the right
     conf=${confstr%%-*}
     # remove the shortest matching from the left
     confstr=${confstr#*-}
-    compoundconf=${compoundconf}${compoundconf:+-}${conf}
     conffile="${confdir}/${conf}.bldconf"
-    compoundconffile="${confdir}/${compoundconf}.bldconf"
     if [ -f ${conffile} ]; then
       echo "${oprefix} Source global build configuration file '${conffile}'."
       source ${conffile}
-      echo "CXXFLAGS=${CXXFLAGS}"
-      #if [ -f ${compoundconffile} -a ! ${compoundconffile} == ${conffile} ]; then
-        #echo "${oprefix} Source global build configuration file '${compoundconffile}'."
-        #source ${compoundconffile}
-      #fi
     else
       echo "${oprefix} Error: Cannot find build configuration file '${conffile}'."
       exit 1
-      #if [ -f ${compoundconffile} ]; then
-        #echo "${oprefix} Source global build configuration file '${compoundconffile}'."
-        #source ${compoundconffile}
-      #else
-        #echo "${oprefix} Error: Cannot find build configuration file '${conffile}' or '${compoundconffile}'."
-        #exit 1
-      #fi
     fi
   done
 }
@@ -315,29 +301,17 @@ function source_local_bldconf {
   confstr=$1
   confdir=${pkgparsecdir}
   conf=""
-  compoundconf=""
   while [ ! "$conf" == "$confstr" ]; do
     # remove the longest matching from the right
     conf=${confstr%%-*}
     # remove the shortest matching from the left
     confstr=${confstr#*-}
-    compoundconf=${compoundconf}${compoundconf:+-}${conf}
     conffile="${confdir}/${conf}.bldconf"
-    compoundconffile="${confdir}/${compoundconf}.bldconf"
     if [ -f ${conffile} ]; then
       echo "${oprefix} Source local build configuration file '${conffile}'."
       source ${conffile}
-      if [ -f ${compoundconffile} -a ! ${compoundconffile} == ${conffile} ]; then
-        echo "${oprefix} Source local build configuration file '${compoundconffile}'."
-        source ${compoundconffile}
-      fi
     else
-      if [ -f ${compoundconffile} ]; then
-        echo "${oprefix} Source local build configuration file '${compoundconffile}'."
-        source ${compoundconffile}
-      else
-        echo "${oprefix} Warning: There is no local build configuration file '${conffile}' or '${compoundconffile}'."
-      fi
+      echo "${oprefix} Warning: There is no local build configuration file '${conffile}'."
     fi
   done
 }
@@ -805,8 +779,8 @@ Examples (3) [NEW: SPLASH-2 Suite and SPLASH-2x Suite]:
 
   export PARSECPLAT
   # Load build configuration
-  if [[ $build != *"task"* ]]; then
-    if [[ $action == *"build"* ]]; then
+  if [[ $action == *"build"* || $action == *"run"* ]]; then
+    if [[ $build != *"task"* ]]; then
       buildfile="${PARSECDIR}/config/${build}.bldconf"
       if [ -f "${buildfile}" ]; then
         echo "${oprefix} Source global build configuration file '${buildfile}'."
@@ -815,11 +789,10 @@ Examples (3) [NEW: SPLASH-2 Suite and SPLASH-2x Suite]:
         echo "${oprefix} Error: Cannot find build configuration file '${buildfile}'."
         exit 1
       fi
+#    else
+#      source_global_bldconf ${no_pkg_here} ${build}
     fi
   fi
-#  if [ "${action}" == "build" -o "${action}" == "run" ]; then
-#    source_global_bldconf ${build}
-#  fi
 
   # Expand aliases to get full list of packages to build
   # there are three kinds of token in $pkgs:
@@ -1024,14 +997,17 @@ function build_package {
 
   local dep=""
   for dep in ${global_build_deps} ${build_deps}; do
-    local tmpdep
-    local index
-    tmpdep=${dep}
-    eval index=`expr "${dep}" : '\.'`
-    if [ $index -eq 0 ]; then
-        eval tmpdep="parsec.${dep}"
+    if [ ${dep} != ${pkgname} ]; then
+      echo "${dep} is different from ${pkgname}"
+      local tmpdep
+      local index
+      tmpdep=${dep}
+      eval index=`expr "${dep}" : '\.'`
+      if [ $index -eq 0 ]; then
+          eval tmpdep="parsec.${dep}"
+      fi
+      build_package "${tmpdep}"
     fi
-    build_package "${tmpdep}"
   done
 
   # Now build pkg itself
@@ -1222,16 +1198,16 @@ function run_benchmark {
   platform=${PARSECPLAT/serial/REPLACED} # check if gcc-serial
   if [ ${platform} != ${PARSECPLAT}  ]; then
       if [ "${NTHREADS}" -gt "1" ]; then
-          NTHREADS=1
           echo "${oprefix} WARNING: Serial does not support multiple threads." | ${TEE} ${log}
-          echo "${oprefix}          Change thread number to default 1." | ${TEE} ${log}
+          echo "${oprefix}          Changed thread number from ${NTHREADS} to default 1." | ${TEE} ${log}
+          NTHREADS=1
       fi
   fi
 
   # specific cases end
   #
   
-  local bmrundir="${rundir}/${benchdir}/${pkg_group}/${pkgname}/run"
+  local bmrundir="${rundir}/${benchdir}/${pkg_group}/${pkgname}/run/${PARSECPLAT}"
   local bmdir="${PARSECDIR}/${benchdir}/${pkg_group}/${pkgname}"
   local bminputdir="${bmdir}/inputs"
   local bmoutputdir="${bmdir}/outputs"
@@ -1310,6 +1286,12 @@ function run_benchmark {
     fi
   fi
 
+  # Source global bldconf to get environment variables specific to each task parallel runtimes (e.g., ppn, stack_size)
+  run_env=""
+  if [[ $build == *"task"* ]]; then
+    source_global_bldconf ${benchmark} ${build}
+  fi  
+
   # Execute
   local bmexec_args=${run_args}
   if [ ! -z ${netmode} ]; then
@@ -1325,10 +1307,9 @@ function run_benchmark {
       UPTCPIP_RX_THREADS=1
       export UPTCPIP_RX_THREADS
   fi 
-  eval cmd="\"${submit} ${bmexec} ${bmexec_args}\""
-  echo "${oprefix} Run command:" | ${TEE} ${log}
-  echo "${cmd}" | ${TEE} ${log}
-  echo "${oprefix} Running '${cmd}':" | ${TEE} ${log}
+  eval cmd="\"${run_env} ${submit} ${bmexec} ${bmexec_args}\""
+  echo "${oprefix} Run directory: $(pwd)"
+  echo "${oprefix} Run command: '${cmd}':" | ${TEE} ${log}
   echo "${oprefix} [---------- Beginning of output ----------]" | ${TEE} ${log}
   (eval ${cmd} 2>&1) 2>&1 | ${TEE} ${bmrundir}/benchmark.out | ${TEE} ${log}
   echo "${oprefix} [----------    End of output    ----------]" | ${TEE} ${log}
@@ -1406,8 +1387,8 @@ parsec_init
 process_args "$@"
 
 # Now we take decisive action
-for a in ${action}; do
-case ${a} in
+for act in ${action}; do
+case ${act} in
   "build"         )
     eval echo "${oprefix} \[========== PARSEC $(${CAT} ${PARSECDIR}/version) BUILD LOGFILE ==========\]" > ${log}
     echo >> ${log}
@@ -1885,7 +1866,7 @@ case ${a} in
     done
     ;; #exit 0;;
   *           )
-    echo "${oprefix} Error: Unknown action '${a}'."
+    echo "${oprefix} Error: Unknown action '${act}'."
     exit 1;;
 esac
 done
