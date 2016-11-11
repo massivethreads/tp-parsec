@@ -18,7 +18,8 @@
 # binaries, then we use that information to define the binary locations.
 # The values for Linux are at the end and also the default values.
 
-gcc_version=$(${GCC_HOME}/bin/gcc -dumpversion)
+# Get default gcc version in order to include the right c++ libs
+gcc_version=$(gcc -dumpversion)
 
 case "${OSTYPE}" in
 *solaris*)
