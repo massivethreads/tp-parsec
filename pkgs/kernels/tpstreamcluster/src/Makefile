@@ -3,14 +3,11 @@
 PREFIX=${PARSECDIR}/pkgs/kernels/tpstreamcluster/inst/${PARSECPLAT}
 
 TARGET=streamcluster
-OBJS=streamcluster.o common.o
+OBJS=streamcluster.o
 
-#OPTS += -O0 -g
-#OPTS += -pg
-OPTS += -DENABLE_TASK
+OPTS += -DENABLE_TASK -save-temps
 
-#LINK_OPTS += -pg 
-#LINK_OPTS += -ltbb
+OPTS += -I${PARSECDIR}/pkgs/libs/tbb/inst/${PARSECPLAT}/include
 
 ifeq ($(USE_TBBMALLOC),1)
 	OPTS += -DUSE_TBBMALLOC
@@ -23,8 +20,6 @@ endif
 
 all: $(OBJS)
 	$(CXX) $(CXXFLAGS) $(OPTS) $(LDFLAGS) $(OBJS) $(LIBS) $(LINK_OPTS) -o $(TARGET)
-
-include ${PARSECDIR}/common/common.mk
 
 %.o : %.cpp
 	$(CXX) $(CXXFLAGS) $(OPTS) -c $<

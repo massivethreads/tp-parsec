@@ -391,7 +391,7 @@ int main (int argc, char **argv)
    __parsec_bench_begin(__parsec_blackscholes);
 #endif
 
-#if defined(ENABLE_TASK) && !defined(TO_CILKPLUS)
+#if defined(ENABLE_TASK)
    tp_init();
 #endif
 
