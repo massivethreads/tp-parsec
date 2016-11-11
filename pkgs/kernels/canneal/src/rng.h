@@ -35,9 +35,6 @@
 #ifdef ENABLE_THREADS
 #include <pthread.h>
 #endif
-#ifdef ENABLE_TASK
-#include <common.h>
-#endif
 
 #include "MersenneTwister.h"
 
