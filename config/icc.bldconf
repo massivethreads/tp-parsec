@@ -18,8 +18,8 @@
 # binaries, then we use that information to define the binary locations.
 # The values for Linux are at the end and also the default values.
 
-# Add icc to PATH.
-PATH="$PATH:${CC_HOME}/bin"
+# Get default gcc version in order to include the right c++ libs
+gcc_version=$(gcc -dumpversion)
 
 case "${OSTYPE}" in
 *solaris*)
@@ -32,7 +32,7 @@ case "${OSTYPE}" in
   # CC_HOME is the installation root of the C compiler
   export CC_HOME="/opt/intel"
   # GCC_HOME is installation root of the GNU C compiler
-  export GCC_HOME="/usr/local/gcc-4.8.4"
+  export GCC_HOME="/usr/local/gcc-${gcc_version}"
   # BINUTIL_HOME is installation root of the GNU binutils
   export BINUTIL_HOME="/usr/local"
   # GNUTOOL_HOME is installation root of the GNU tools
@@ -74,8 +74,8 @@ export M4="${GNUTOOL_HOME}/bin/${BINARY_PREFIX}m4"
 export MAKE="${GNUTOOL_HOME}/bin/${BINARY_PREFIX}make"
 
 # Arguments to use
-export CFLAGS="-gcc-name=${GCC_HOME}/bin/gcc -gcc -I${GCC_HOME}/include/c++/4.8.4 -O3 -funroll-loops -opt-prefetch"
-export CXXFLAGS="-gcc-name=${GCC_HOME}/bin/gcc -gcc -I${GCC_HOME}/include/c++/4.8.4 -O3 -funroll-loops -opt-prefetch -fpermissive -fno-exceptions"
+export CFLAGS="-gcc-name=${GCC_HOME}/bin/gcc -gcc -I${GCC_HOME}/include/c++/${gcc_version} -O3 -funroll-loops -opt-prefetch"
+export CXXFLAGS="-gcc-name=${GCC_HOME}/bin/gcc -gcc -I${GCC_HOME}/include/c++/${gcc_version} -O3 -funroll-loops -opt-prefetch -fpermissive -fno-exceptions"
 export CPPFLAGS=""
 export CXXCPPFLAGS=""
 export LDFLAGS="-L${CC_HOME}/lib/intel64 -L${CC_HOME}/lib/ia32"
@@ -109,4 +109,3 @@ JAVAC_ver=$(${JAVAC} -version 2>&1)
 
 # Proclaim version for consecutive conf, and Makefile
 export platform=i
-

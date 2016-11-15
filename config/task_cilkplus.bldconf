@@ -20,3 +20,13 @@ if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" =
   LDFLAGS="${LDFLAGS}"
   LIBS="${LIBS}"
 fi
+
+# Options for running
+if [ "${act}" == "run" ]; then
+  flags="CILK_NWORKERS=${NTHREADS}"
+  if [ -z "${run_env}" ]; then
+    run_env="${flags}"
+  else
+    run_env="${run_env} ${flags}"
+  fi
+fi

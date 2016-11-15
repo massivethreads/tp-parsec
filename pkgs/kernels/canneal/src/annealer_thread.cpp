@@ -41,6 +41,9 @@
 #include <iostream>
 #include <fstream>
 #include "rng.h"
+#ifdef ENABLE_TASK
+#include <tpswitch/tpswitch.h>
+#endif
 
 using std::cout;
 using std::endl;
@@ -57,8 +60,7 @@ void annealer_thread::Run()
 	int accepted_bad_moves=-1;
 	double T = _start_temp;
 	int temp_steps_completed=0; 
-	lock_t moveMutex;
-	lock_init(moveMutex);
+	pthread_mutex_t moveMutex = PTHREAD_MUTEX_INITIALIZER;
 	while(keep_going(temp_steps_completed, accepted_good_moves, accepted_bad_moves)){
 		T = T / 1.5;
 		accepted_good_moves = 0;
@@ -74,7 +76,6 @@ void annealer_thread::Run()
 		wait_tasks;
 		temp_steps_completed++;
 	}
-	lock_destroy(moveMutex);
 	cilk_void_return;
 }
 #endif
@@ -83,7 +84,7 @@ void annealer_thread::Run()
 //
 //*****************************************************************************************
 #ifdef ENABLE_TASK
-void annealer_thread::doMoves(const int numMoves, const double T, int& accepted_good_moves, int& accepted_bad_moves, lock_t& moveMutex)
+void annealer_thread::doMoves(const int numMoves, const double T, int& accepted_good_moves, int& accepted_bad_moves, pthread_mutex_t& moveMutex)
 {
 	Rng rng;
 	int local_accepted_good_moves = 0;
@@ -113,12 +114,10 @@ void annealer_thread::doMoves(const int numMoves, const double T, int& accepted_
 			//no need to do anything for a rejected move
 		}
 	}
-	lock_set(moveMutex);
-	//moveMutex.lock();
+	pthread_mutex_lock(&moveMutex);
 	accepted_good_moves += local_accepted_good_moves;
 	accepted_bad_moves += local_accepted_bad_moves;
-	//moveMutex.unlock();
-	lock_unset(moveMutex);
+	pthread_mutex_unlock(&moveMutex);
 }
 #endif
 

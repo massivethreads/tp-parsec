@@ -1,0 +1,103 @@
+#!/bin/bash
+
+# Package dependencies
+build_deps="${build_deps} mth"
+
+# In-place compilation.
+build_inplace="TRUE"
+
+# Environment to use for configure script and Makefile
+build_env="${build_env}"
+
+# Arguments to pass to the configure script, if it exists
+build_conf="${build_conf}"
+
+# Add options and links for corresponding task target
+case ${task_target} in
+  "mth" )
+    echo "${oprefix} hooks with dr: added options and links for task_target=mth"
+    # for mth
+    cflags="-I${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/include -DTO_MTHREAD_NATIVE -pthread"
+    CFLAGS="${CFLAGS} ${cflags}"
+    CXXFLAGS="${CXXFLAGS} ${cflags} -std=c++0x"
+    LDFLAGS="${LDFLAGS} -L${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/lib"
+    LIBS="${LIBS} -lmyth -lpthread"
+  ;;
+  "tbb" )
+    echo "${oprefix} hooks with dr: added options and links for task_target=tbb"
+    build_deps="${build_deps} tbb"
+    # for tbb
+    cflags="${cflags} -I${PARSECDIR}/pkgs/libs/tbb/inst/${PARSECPLAT}/include -DTO_TBB -pthread"
+    CFLAGS="${CFLAGS} ${cflags}"
+    CXXFLAGS="${CXXFLAGS} ${cflags} -std=c++0x"
+    LDFLAGS="${LDFLAGS} -L${PARSECDIR}/pkgs/libs/tbb/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/tbb/inst/${PARSECPLAT}/lib"
+    LIBS="${LIBS} -ltbb -lpthread"
+  ;;
+  "qth" )
+    echo "${oprefix} hooks with dr: added options and links for task_target=qth"
+    build_deps="${build_deps} qth"
+    # for qth
+    cflags="${cflags} -I${PARSECDIR}/pkgs/libs/qth/inst/${PARSECPLAT}/include -DTO_QTHREAD -pthread"
+    CFLAGS="${CFLAGS} ${cflags}"
+    CXXFLAGS="${CXXFLAGS} ${cflags} -std=c++0x"
+    LDFLAGS="${LDFLAGS} -L${PARSECDIR}/pkgs/libs/qth/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/qth/inst/${PARSECPLAT}/lib"
+    LIBS="${LIBS} -lqthread -lpthread"
+  ;;
+  "omp" )
+    echo "${oprefix} hooks with dr: added options and links for task_target=omp"
+    build_deps="${build_deps}"
+    # for omp
+    cflags="${cflags} -DTO_OMP -fopenmp"
+    CFLAGS="${CFLAGS} ${cflags}"
+    CXXFLAGS="${CXXFLAGS} ${cflags}"
+    LDFLAGS="${LDFLAGS}"
+    LIBS="${LIBS}"
+  ;;
+  "cilkplus" )
+    echo "${oprefix} hooks with dr: added options and links for task_target=cilkplus"
+    build_deps="${build_deps}"
+    # for cilkplus
+    cflags="${cflags} -DTO_CILKPLUS"
+    if [ "${platform}" == "g" ]; then
+        cflags="${cflags} -fcilkplus"  
+    fi
+    CFLAGS="${CFLAGS} ${cflags}"
+    CXXFLAGS="${CXXFLAGS} ${cflags}"
+    LDFLAGS="${LDFLAGS}"
+    LIBS="${LIBS}"
+  ;;
+  "serial" )
+    echo "${oprefix} hooks with dr: added options and links for task_target=serial"
+    build_deps="${build_deps}"
+    # for serial
+    cflags="${cflags} -DTO_SERIAL"
+    CFLAGS="${CFLAGS} ${cflags}"
+    CXXFLAGS="${CXXFLAGS} ${cflags}"
+    LDFLAGS="${LDFLAGS}"
+    LIBS="${LIBS}"
+  ;;
+  * )
+    echo "${oprefix} Unrecognized task_target: ${task_target}."
+  ;;
+esac    
+
+# Add options and links for tpswitch & dr
+case ${task_target} in
+  "mth" )
+    echo "${oprefix} hooks with dr: added options and links for dr"
+    cflags="-DDAG_RECORDER=2"
+    CFLAGS="${CFLAGS} ${cflags}"
+    CXXFLAGS="${CXXFLAGS} ${cflags}"
+    LDFLAGS="${LDFLAGS}"
+    LIBS="${LIBS} -ldr -lpthread"
+  ;;
+  "tbb" | "qth" | "omp" | "cilkplus" | "serial" )
+    echo "${oprefix} hooks with dr: added options and links for dr"
+    cflags="-DDAG_RECORDER=2 -I${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/include"
+    CFLAGS="${CFLAGS} ${cflags}"
+    CXXFLAGS="${CXXFLAGS} ${cflags}"
+    LDFLAGS="${LDFLAGS} -L${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/lib"
+    LIBS="${LIBS} -ldr -lpthread"
+  ;;
+esac    
+

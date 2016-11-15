@@ -18,3 +18,12 @@ if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" =
   LIBS="${LIBS} -ltbb -lpthread"
 fi  
 
+# Options for running
+if [ "${act}" == "run" ]; then
+  flags="TBB_NTHREADS=${NTHREADS}"
+  if [ -z "${run_env}" ]; then
+    run_env="${flags}"
+  else
+    run_env="${run_env} ${flags}"
+  fi
+fi
