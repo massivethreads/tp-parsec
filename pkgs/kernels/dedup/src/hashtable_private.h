@@ -7,8 +7,10 @@
 #include <errno.h>
 #include "config.h"
 
-#ifdef ENABLE_PTHREADS
+#if defined(ENABLE_PTHREADS) || defined(ENABLE_TASK_PTHREADS_LOCK)
 #include <pthread.h>
+#elif defined(ENABLE_TASK)
+#include "task_lock.h"
 #endif
 
 #include "hashtable.h"
@@ -28,9 +30,11 @@ struct hash_entry
 struct hashtable {
     unsigned int tablelength;
     struct hash_entry **table;
-#ifdef ENABLE_PTHREADS
+#if defined(ENABLE_PTHREADS) || defined(ENABLE_TASK_PTHREADS_LOCK)
     //Each entry in table array is protected with its own lock
     pthread_mutex_t *locks;
+#elif defined(ENABLE_TASK)
+    task_lock_t *locks;
 #endif
 #ifdef ENABLE_DYNAMIC_EXPANSION
     unsigned int entrycount;

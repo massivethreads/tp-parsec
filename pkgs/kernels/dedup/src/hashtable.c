@@ -85,12 +85,18 @@ struct hashtable * hashtable_create(unsigned int minsize,
   if (NULL == h->table) { free(h); return NULL; } /*oom*/
   memset(h->table, 0, size * sizeof(struct hash_entry *));
   h->tablelength  = size;
-#ifdef ENABLE_PTHREADS
+#if defined(ENABLE_PTHREADS) || defined(ENABLE_TASK_PTHREADS_LOCK)
   //allocate and initialize array with locks
   h->locks = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t) * size);
   if(NULL == h->locks) {free(h->table); free(h); return NULL;} /*oom*/
   for(pindex=0; pindex<size; pindex++) {
     pthread_mutex_init(&(h->locks[pindex]), NULL);
+  }
+#elif defined(ENABLE_TASK)
+  h->locks = (task_lock_t *)malloc(sizeof(task_lock_t) * size);
+  if(NULL == h->locks) {free(h->table); free(h); return NULL;}
+  for(pindex=0; pindex<size; pindex++) {
+    task_lock_init(&(h->locks[pindex]));
   }
 #endif
 #ifdef ENABLE_DYNAMIC_EXPANSION
@@ -116,13 +122,21 @@ unsigned int hash(struct hashtable *h, void *k) {
   return i;
 }
 
-#ifdef ENABLE_PTHREADS
+#if defined(ENABLE_PTHREADS) || defined(ENABLE_TASK_PTHREADS_LOCK)
 /*****************************************************************************/
 pthread_mutex_t * hashtable_getlock(struct hashtable *h, void *k) {
   unsigned int hashvalue, index;
 
   hashvalue = hash(h,k);
   //NOTE: If dynamic expansion is disabled then tablelength is read-only
+  index = indexFor(h->tablelength,hashvalue);
+  return &(h->locks[index]);
+}
+#elif defined(ENABLE_TASK)
+task_lock_t * hashtable_getlock(struct hashtable *h, void *k) {
+  //Exactly the same without type of return value.
+  unsigned int hashvalue, index;
+  hashvalue = hash(h,k);
   index = indexFor(h->tablelength,hashvalue);
   return &(h->locks[index]);
 }
@@ -301,9 +315,14 @@ void hashtable_destroy(struct hashtable *h, int free_values) {
       while (NULL != e) { f = e; e = e->next; if(h->free_keys) freekey(f->k); free(f); }
     }
   }
-#ifdef ENABLE_PTHREADS
+#if defined(ENABLE_PTHREADS) || defined(ENABLE_TASK_PTHREADS_LOCK)
   for(i=0; i<h->tablelength; i++) {
     pthread_mutex_destroy(&(h->locks[i]));
+  }
+  free(h->locks);
+#elif defined(ENABLE_TASK)
+  for(i=0; i<h->tablelength; i++) {
+    task_lock_destroy(&(h->locks[i]));
   }
   free(h->locks);
 #endif

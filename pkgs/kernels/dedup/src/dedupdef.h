@@ -174,6 +174,10 @@ typedef struct _chunk_t {
   //whether this is the last L2 chunk for the given L1 number
   int isLastL2Chunk;
 #endif //ENABLE_PTHREADS
+#ifdef ENABLE_TASK
+  //Linked list to represent an array of chunk_t.
+  chunk_t* next;
+#endif
 } chunk_t;
 
 

@@ -5,9 +5,11 @@
 #include <string.h>
 #include <assert.h>
 
-#ifdef ENABLE_PTHREADS
+#if defined(ENABLE_PTHREADS) || defined(ENABLE_TASK_PTHREADS_LOCK)
 #include <pthread.h>
-#endif //ENABLE_PTHREADS
+#elif defined(ENABLE_TASK)
+#include "task_lock.h"
+#endif
 
 #ifdef ENABLE_DMALLOC
 #include <dmalloc.h>
@@ -18,8 +20,10 @@
 
 
 
-#ifdef ENABLE_PTHREADS
+#if defined(ENABLE_PTHREADS) || defined(ENABLE_TASK)
 
+
+#if defined(ENABLE_PTHREADS) || defined(ENABLE_TASK_PTHREADS_LOCK)
 //Use spin locks instead of mutexes (this file only)
 #define ENABLE_SPIN_LOCKS
 
@@ -37,6 +41,17 @@ typedef pthread_mutex_t pthread_lock_t;
 #define PTHREAD_UNLOCK(l) pthread_mutex_unlock(l)
 #endif //ENABLE_SPIN_LOCKS
 
+#else //defined(ENABLE_TASK)
+
+//Use locks for task systems.
+typedef task_lock_t pthread_lock_t;
+#define PTHREAD_LOCK_INIT(l) task_lock_init(l)
+#define PTHREAD_LOCK_DESTROY(l) task_lock_destroy(l)
+#define PTHREAD_LOCK(l) task_lock_lock(l)
+#define PTHREAD_UNLOCK(l) task_lock_unlock(l)
+
+#endif
+
 //Array with global locks to use. We use many mutexes to achieve some concurrency.
 //FIXME: Merge into mbuffer mcb
 //FIXME: Update documentation with latest changes
@@ -52,13 +67,13 @@ pthread_lock_t *locks = NULL;
 static inline int lock_hash(void *p) {
   return (int)(((unsigned long long int)p) % NUMBER_OF_LOCKS);
 }
-#endif //ENABLE_PTHREADS
+#endif
 
 
 
 //Initialize memory buffer subsystem
 int mbuffer_system_init() {
-#ifdef ENABLE_PTHREADS
+#if defined(ENABLE_PTHREADS) || defined(ENABLE_TASK)
   int i;
 
   assert(locks==NULL);
@@ -81,7 +96,7 @@ int mbuffer_system_init() {
 
 //Shutdown memory buffer subsystem
 int mbuffer_system_destroy() {
-#ifdef ENABLE_PTHREADS
+#if defined(ENABLE_PTHREADS) || defined(ENABLE_TASK)
   int i, rv;
   rv=0;
   for(i=0; i<NUMBER_OF_LOCKS; i++) {
@@ -136,7 +151,7 @@ mbuffer_t *mbuffer_clone(mbuffer_t *m) {
   if(temp==NULL) return NULL;
 
   //Update reference counter
-#ifdef ENABLE_PTHREADS
+#if defined(ENABLE_PTHREADS) || defined(ENABLE_TASK)
   PTHREAD_LOCK(&locks[lock_hash(m->mcb)]);
   assert(m->mcb->i>=1);
   m->mcb->i++;
@@ -193,7 +208,7 @@ void mbuffer_free(mbuffer_t *m) {
 #endif
 
   //Update meta state first to avoid races
-#ifdef ENABLE_PTHREADS
+#if defined(ENABLE_PTHREADS) || defined(ENABLE_TASK)
   PTHREAD_LOCK(&locks[lock_hash(m->mcb)]);
   m->mcb->i--;
   ref = m->mcb->i;
@@ -226,20 +241,20 @@ int mbuffer_realloc(mbuffer_t *m, size_t size) {
   assert(m->check_flag==MBUFFER_CHECK_MAGIC);
 #endif
 
-#ifdef ENABLE_PTHREADS
+#if defined(ENABLE_PTHREADS) || defined(ENABLE_TASK)
   PTHREAD_LOCK(&locks[lock_hash(m->mcb)]);
-#endif //ENABLE_PTHREADS
+#endif
 
   //We cannot resize a buffer if more than one pointer to it is in circulation
   if(m->mcb->i > 1) {
-#ifdef ENABLE_PTHREADS
+#if defined(ENABLE_PTHREADS) || defined(ENABLE_TASK)
     PTHREAD_UNLOCK(&locks[lock_hash(m->mcb)]);
 #endif
     return -1;
   }
   //This must be the original mbuffer, otherwise we'd have to do something more complicated
   if(m->ptr != m->mcb->ptr) {
-#ifdef ENABLE_PTHREADS
+#if defined(ENABLE_PTHREADS) || defined(ENABLE_TASK)
     PTHREAD_UNLOCK(&locks[lock_hash(m->mcb)]);
 #endif
     return -1;
@@ -252,7 +267,7 @@ int mbuffer_realloc(mbuffer_t *m, size_t size) {
     m->mcb->ptr = r;
   }
 
-#ifdef ENABLE_PTHREADS
+#if defined(ENABLE_PTHREADS) || defined(ENABLE_TASK)
   PTHREAD_UNLOCK(&locks[lock_hash(m->mcb)]);
 #endif
 
@@ -276,7 +291,7 @@ int mbuffer_split(mbuffer_t *m1, mbuffer_t *m2, size_t split) {
 #endif
 
   //Update reference counter
-#ifdef ENABLE_PTHREADS
+#if defined(ENABLE_PTHREADS) || defined(ENABLE_TASK)
   PTHREAD_LOCK(&locks[lock_hash(m1->mcb)]);
   assert(m1->mcb->i>=1);
   m1->mcb->i++;
@@ -284,7 +299,7 @@ int mbuffer_split(mbuffer_t *m1, mbuffer_t *m2, size_t split) {
 #else
   assert(m1->mcb->i>=1);
   m1->mcb->i++;
-#endif //ENABLE_PTHREADS
+#endif
 
   //split buffer
   m2->ptr = m1->ptr+split;

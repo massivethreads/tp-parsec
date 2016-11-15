@@ -29,6 +29,9 @@ ifdef version
     CFLAGS += -DENABLE_PTHREADS -pthread
     DEDUP_OBJ += queue.o binheap.o tree.o
   endif
+  ifeq "$(version)" "task"
+    CFLAGS += -DENABLE_TASK
+  endif
 endif
 
 

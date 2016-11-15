@@ -37,7 +37,12 @@
 #ifndef _HASHTABLE_H_
 #define _HASHTABLE_H_
 
+#if defined(ENABLE_PTHREADS) || defined(ENABLE_TASK_PTHREADS_LOCK)
 #include <pthread.h>
+#elif defined(ENABLE_TASK)
+#include "task_lock.h"
+#endif
+
 #include "config.h"
 
 //WARNING: Dynamic expansion is not thread-safe
@@ -45,7 +50,7 @@
 
 //Make sure dynamic expansion and parallelization not enabled at the same time
 #ifdef ENABLE_DYNAMIC_EXPANSION
-#ifdef ENABLE_PTHREADS
+#if defined(ENABLE_PTHREADS) || defined(ENABLE_TASK)
 #error Dynamic hashtable expansion not thread-safe
 #endif
 #endif
@@ -140,8 +145,10 @@ struct hashtable * hashtable_create(
  * be used safely by multiple threads. After the lock has been acquired, all
  * accesses to the hash table with this key are thread-safe.
  */
-#ifdef ENABLE_PTHREADS
+#if defined(ENABLE_PTHREADS) || defined(ENABLE_TASK_PTHREADS_LOCK)
 pthread_mutex_t * hashtable_getlock(struct hashtable *h, void *k);
+#elif defined(ENABLE_TASK)
+task_lock_t * hashtable_getlock(struct hashtable *h, void *k);
 #endif
 
 /*****************************************************************************
