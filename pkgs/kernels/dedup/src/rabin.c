@@ -14,7 +14,11 @@
 //static u32int irrpoly = 0x759ddb9f;
 static u32int irrpoly = 0x45c2b6a1;
 
+#ifdef __cplusplus
+uint32_t bswap32(uint32_t x) {
+#else
 uint32_t bswap32(x) uint32_t x; {
+#endif
   return  ((x << 24) & 0xff000000 ) |
           ((x <<  8) & 0x00ff0000 ) |
           ((x >>  8) & 0x0000ff00 ) |

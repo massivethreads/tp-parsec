@@ -82,5 +82,12 @@ int mbuffer_realloc(mbuffer_t *m, size_t size);
 //Returns 0 if the operation was successful
 int mbuffer_split(mbuffer_t *m1, mbuffer_t *m2, size_t split);
 
+#ifdef ENABLE_TASK
+//Remove old_m and old_m becomes new_m
+//new_m is invalidated, so you don't manage new_m after calling this function
+//Returns 0 if the operation was successful
+int mbuffer_renew(mbuffer_t *old_m, mbuffer_t *new_m);
+#endif
+
 #endif //_MBUFFER_H_
 

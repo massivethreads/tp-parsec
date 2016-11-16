@@ -1,6 +1,5 @@
-
 #ifdef ENABLE_TASK
-  #include "encoder_task.c"
+  #include "encoder_task.h"
 #else
-  #include "encoder_orig.c"
+  #include "encoder_orig.h"
 #endif

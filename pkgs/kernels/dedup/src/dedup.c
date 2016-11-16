@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
 #ifdef PARSEC_VERSION
 #define __PARSEC_STRING(x) #x
 #define __PARSEC_XSTRING(x) __PARSEC_STRING(x)
-  printf("PARSEC Benchmark Suite Version "__PARSEC_XSTRING(PARSEC_VERSION)"\n");
+  printf("PARSEC Benchmark Suite Version " __PARSEC_XSTRING(PARSEC_VERSION) "\n");
 #else
   printf("PARSEC Benchmark Suite\n");
 #endif //PARSEC_VERSION
@@ -145,7 +145,7 @@ int main(int argc, char** argv) {
   }
 #endif
 
-#ifndef ENABLE_PTHREADS
+#if !defined(ENABLE_PTHREADS) && !defined(ENABLE_TASK)
  if (conf->nthreads != 1){
     printf("Number of threads must be 1 (serial version)\n");
     exit(1);

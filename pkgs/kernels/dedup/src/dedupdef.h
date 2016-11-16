@@ -77,7 +77,10 @@ typedef int64_t  int64;
 typedef enum {
   CHUNK_STATE_UNCOMPRESSED=0,  //only uncompressed data available
   CHUNK_STATE_COMPRESSED=1,    //compressed data available, but nothing else
-  CHUNK_STATE_FLUSHED=2        //no data available because chunk has already been flushed
+  CHUNK_STATE_FLUSHED=2,       //no data available because chunk has already been flushed
+#ifdef ENABLE_TASK
+  CHUNK_STATE_EMPTY=3          //data is empty, so don't need to write to a file.
+#endif
 } chunk_state_t;
 
 #ifdef ENABLE_PTHREADS
@@ -176,7 +179,7 @@ typedef struct _chunk_t {
 #endif //ENABLE_PTHREADS
 #ifdef ENABLE_TASK
   //Linked list to represent an array of chunk_t.
-  chunk_t* next;
+  struct _chunk_t* next;
 #endif
 } chunk_t;
 

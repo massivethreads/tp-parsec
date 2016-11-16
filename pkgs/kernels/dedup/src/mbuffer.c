@@ -312,3 +312,17 @@ int mbuffer_split(mbuffer_t *m1, mbuffer_t *m2, size_t split) {
 
   return 0;
 }
+
+#ifdef ENABLE_TASK
+int mbuffer_renew(mbuffer_t *old_m, mbuffer_t *new_m) {
+  mbuffer_free(old_m);
+  old_m->ptr = new_m->ptr;
+  old_m->n = new_m->n;
+  old_m->mcb = new_m->mcb;
+#ifdef ENABLE_MBUFFER_CHECK
+  old_m->check_flag = new_m->check_flag;
+#endif
+  // TODO: invalidate new_m.
+  return 0;
+}
+#endif //ENABLE_TASK
