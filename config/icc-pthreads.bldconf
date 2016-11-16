@@ -1,0 +1,7 @@
+#!/bin/bash
+#
+# icc-pthreads.bldconf - file containing global information necessary to build
+#                        PARSEC with gcc and pthreads
+
+source ${PARSECDIR}/config/icc.bldconf
+

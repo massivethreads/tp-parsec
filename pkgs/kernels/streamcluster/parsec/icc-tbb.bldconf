@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# gcc.bldconf - file containing information necessary to build a specific
-#               program of the PARSEC benchmark suite with gcc
+# gcc-tbb.bldconf - file containing information necessary to build a specific
+#                   program of the PARSEC benchmark suite with gcc and tbb
 
 # Compilation and linking options.
 # This is the configuration we'll use to build the program. Each package of the
@@ -9,11 +9,12 @@
 # global configuration. All variables set in the global configuration files can
 # be referenced here.
 
+
 # Package dependencies
-build_deps=""
+build_deps="tbblib"
 
 # Environment to use for configure script and Makefile
-build_env="compiler=icc PATH=\"${CC_HOME}/bin:${PATH}\" CXXFLAGS=\"${CXXFLAGS} -fexceptions\""
+build_env="version=tbb"
 
 # Whether the build system supports only in-place compilation.
 # If TRUE, then all sources will be copied to the build directory before we
@@ -23,6 +24,3 @@ build_inplace="TRUE"
 
 # Arguments to pass to the configure script, if it exists
 build_conf=""
-
-
-

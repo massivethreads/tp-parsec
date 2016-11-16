@@ -116,3 +116,6 @@ JAVAC_ver=$(${JAVAC} -version 2>&1)
 
 # Proclaim version for consecutive conf, and Makefile
 export platform=i
+
+# Some packages like tbblib need icc to be found in PATH
+PATH="${CC_HOME}/bin:${PATH}"

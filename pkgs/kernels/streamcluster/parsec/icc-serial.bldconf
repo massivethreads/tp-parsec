@@ -1,0 +1,7 @@
+#!/bin/bash
+
+source ${PARSECDIR}/pkgs/kernels/streamcluster/parsec/icc.bldconf
+
+# Override build environment
+build_env="version=serial"
+

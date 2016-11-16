@@ -1,0 +1,9 @@
+#!/bin/bash
+#
+# icc-serial.bldconf - file containing global information necessary to build
+#                      the serial versions of the PARSEC programs with icc
+
+# Global configuration is identical to multi-threaded version
+source ${PARSECDIR}/config/icc.bldconf
+
+PARMACS_MACRO_FILE="serial"
