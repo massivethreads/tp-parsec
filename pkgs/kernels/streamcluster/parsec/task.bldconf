@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Package dependencies
+build_deps="${build_deps} tbb"
+
+# In-place compilation.
+build_inplace="TRUE"
+
+# Environment to use for configure script and Makefile
+build_env="${build_env}"
+
+# Arguments to pass to the configure script, if it exists
+build_conf="${build_conf}"
+
+# Add options and links for tbb
+cflags="-I${PARSECDIR}/pkgs/libs/tbb/inst/${PARSECPLAT}/include"
+CFLAGS="${CFLAGS} ${cflags}"
+CXXFLAGS="${CXXFLAGS} ${cflags}"
+LDFLAGS="${LDFLAGS} -L${PARSECDIR}/pkgs/libs/tbb/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/tbb/inst/${PARSECPLAT}/lib"
+LIBS="${LIBS} -ltbb"
+

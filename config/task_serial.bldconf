@@ -1,7 +1,5 @@
 #!/bin/bash
 
-source ${PARSECDIR}/config/task.bldconf
-
 export task_target=serial
 
 # Add options and links for serial task target

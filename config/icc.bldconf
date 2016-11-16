@@ -21,6 +21,13 @@
 # Get default gcc version in order to include the right c++ libs
 gcc_version=$(gcc -dumpversion)
 
+# On comet, the default gcc version (5.4.0) is too new for our current icc version (14.0.2)
+# $ icc -v
+# icc version 14.0.2 (gcc version 4.8.0 compatibility)
+# So we need to force the gcc_version to use here back to 4.8
+# it should not affect things on andromeda because andromeda's default gcc is 4.8
+gcc_version=4.8
+
 case "${OSTYPE}" in
 *solaris*)
   # Solaris case
@@ -74,8 +81,8 @@ export M4="${GNUTOOL_HOME}/bin/${BINARY_PREFIX}m4"
 export MAKE="${GNUTOOL_HOME}/bin/${BINARY_PREFIX}make"
 
 # Arguments to use
-export CFLAGS="-gcc-name=${GCC_HOME}/bin/gcc -gcc -I${GCC_HOME}/include/c++/${gcc_version} -O3 -funroll-loops -opt-prefetch"
-export CXXFLAGS="-gcc-name=${GCC_HOME}/bin/gcc -gcc -I${GCC_HOME}/include/c++/${gcc_version} -O3 -funroll-loops -opt-prefetch -fpermissive -fno-exceptions"
+export CFLAGS="-gcc-name=${GCC_HOME}/bin/gcc-${gcc_version} -gcc -I${GCC_HOME}/include/c++/${gcc_version} -O3 -funroll-loops -opt-prefetch"
+export CXXFLAGS="-gcc-name=${GCC_HOME}/bin/gcc-${gcc_version} -gcc -I${GCC_HOME}/include/c++/${gcc_version} -O3 -funroll-loops -opt-prefetch -fpermissive -fno-exceptions"
 export CPPFLAGS=""
 export CXXCPPFLAGS=""
 export LDFLAGS="-L${CC_HOME}/lib/intel64 -L${CC_HOME}/lib/ia32"
@@ -109,3 +116,6 @@ JAVAC_ver=$(${JAVAC} -version 2>&1)
 
 # Proclaim version for consecutive conf, and Makefile
 export platform=i
+
+# Some packages like tbblib need icc to be found in PATH
+PATH="${CC_HOME}/bin:${PATH}"

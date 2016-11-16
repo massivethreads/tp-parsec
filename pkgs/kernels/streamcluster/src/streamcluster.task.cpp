@@ -7,6 +7,7 @@
 #include <math.h>
 #include <sys/resource.h>
 #include <limits.h>
+#include <sys/time.h>
 
 #ifndef USE_TBBMALLOC
 #define USE_TBBMALLOC 1
@@ -21,7 +22,6 @@
 //#define PFOR_TO_ORIGINAL
 //#define USE_OLD_RANGE_BASED_PARALLEL_FOR
 #include <tpswitch/tpswitch.h>
-#include <common.h>
 
 #include <mtbb/parallel_for.h>
 #include <mtbb/parallel_reduce.h>
@@ -34,7 +34,7 @@
 #define NUM_DIVISIONS (nproc)
 
 #if USE_TBBMALLOC
-#include "tbb/cache_aligned_allocator.h"
+#include <tbb/cache_aligned_allocator.h>
 #endif
 
 #ifdef ENABLE_PARSEC_HOOKS
@@ -1181,7 +1181,7 @@ main(int argc, char ** argv) {
   __parsec_roi_begin();
 #endif
 
-  init_runtime(&argc, &argv);
+  tp_init();
   
   double time = (double) parsec_usecs();
   

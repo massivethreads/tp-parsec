@@ -1,0 +1,11 @@
+#!/bin/bash
+#
+# icc-openmp.bldconf - file containing global information necessary to build
+#                      PARSEC with icc and openmp
+
+source ${PARSECDIR}/config/icc.bldconf
+
+# Enable OpenMP
+CFLAGS="${CFLAGS} -fopenmp"
+CXXFLAGS="${CXXFLAGS} -fopenmp"
+
