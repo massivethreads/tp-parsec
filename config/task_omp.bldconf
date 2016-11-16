@@ -1,7 +1,5 @@
 #!/bin/bash
 
-source ${PARSECDIR}/config/task.bldconf
-
 export task_target=omp
 
 # Add options and links for omp task target
@@ -21,10 +19,7 @@ fi
 # Options for running
 if [ "${act}" == "run" ]; then
   flags="OMP_NUM_THREADS=${NTHREADS}"
-  if [ -z "${run_env}" ]; then
-    run_env="${flags}"
-  else
-    run_env="${run_env} ${flags}"
-  fi
+  # If run_env exists (not null nor empty), append it with a whitespace prior to flags
+  run_env="${run_env:+$run_env }${flags}"
 fi
 

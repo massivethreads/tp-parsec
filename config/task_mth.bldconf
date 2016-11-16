@@ -1,7 +1,5 @@
 #!/bin/bash
 
-source ${PARSECDIR}/config/task.bldconf
-
 export task_target=mth
 
 # Add options and links for mth task target
@@ -20,9 +18,6 @@ fi
 if [ "${act}" == "run" ]; then
   flags="MYTH_NUM_WORKERS=${NTHREADS}"
   #flags+=" MYTH_DEF_STKSIZE=${stack_size} MYTH_CPU_LIST=%(myth_cpu_list)"
-  if [ -z "${run_env}" ]; then
-    run_env="${flags}"
-  else
-    run_env="${run_env} ${flags}"
-  fi
+  # If run_env exists (not null nor empty), append it with a whitespace prior to flags
+  run_env="${run_env:+$run_env }${flags}"
 fi

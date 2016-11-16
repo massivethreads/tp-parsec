@@ -1,7 +1,5 @@
 #!/bin/bash
 
-source ${PARSECDIR}/config/task.bldconf
-
 export task_target=tbb
 
 # Add options and links for tbb task target
@@ -21,9 +19,6 @@ fi
 # Options for running
 if [ "${act}" == "run" ]; then
   flags="TBB_NTHREADS=${NTHREADS}"
-  if [ -z "${run_env}" ]; then
-    run_env="${flags}"
-  else
-    run_env="${run_env} ${flags}"
-  fi
+  # If run_env exists (not null nor empty), append it with a whitespace prior to flags
+  run_env="${run_env:+$run_env }${flags}"
 fi

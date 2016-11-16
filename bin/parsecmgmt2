@@ -286,6 +286,18 @@ function source_global_bldconf {
     conf=${confstr%%-*}
     # remove the shortest matching from the left
     confstr=${confstr#*-}
+    # If conf="task_*", source task.bldconf first
+    if [[ $conf =~ task_* ]]; then
+      conffile="${confdir}/task.bldconf"
+      if [ -f ${conffile} ]; then
+        echo "${oprefix} Source global build configuration file '${conffile}'."
+        source ${conffile}
+      else
+        echo "${oprefix} Error: There is no global build configuration file '${conffile}'."
+        exit 1
+      fi
+    fi
+    # Source the ${conf}.bldconf file
     conffile="${confdir}/${conf}.bldconf"
     if [ -f ${conffile} ]; then
       echo "${oprefix} Source global build configuration file '${conffile}'."
@@ -306,6 +318,17 @@ function source_local_bldconf {
     conf=${confstr%%-*}
     # remove the shortest matching from the left
     confstr=${confstr#*-}
+    # If conf="task_*", source task.bldconf first
+    if [[ $conf =~ task_* ]]; then
+      conffile="${confdir}/task.bldconf"
+      if [ -f ${conffile} ]; then
+        echo "${oprefix} Source local build configuration file '${conffile}'."
+        source ${conffile}
+      else
+        echo "${oprefix} Warning: There is no local build configuration file '${conffile}'."
+      fi
+    fi
+    # Source the ${conf}.bldconf file
     conffile="${confdir}/${conf}.bldconf"
     if [ -f ${conffile} ]; then
       echo "${oprefix} Source local build configuration file '${conffile}'."
@@ -1106,6 +1129,7 @@ function build_package {
     # nproc is not a number
     nproc=""
   fi
+  #local makecmd="env ${build_env} ${MAKE}"
   local makecmd="env ${build_env} ${MAKE} -j ${nproc}"
   eval echo "${oprefix} Running \'$makecmd\':" 2>&1 \| ${TEE} ${log}
   eval \( ${makecmd} 2>&1 \) 2>&1 \| ${TEE} ${log} \; retval=\${PIPESTATUS[0]}
