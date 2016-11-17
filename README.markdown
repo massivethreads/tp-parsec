@@ -76,6 +76,30 @@ We have implemented an improved version of the central control script **'parsecm
   * task\_cilkplus: Cilk Plus
   * task\_serial: serial version (disable all generic task primitives)
 
+### 2. MassiveThreads, Qthreads, PAPI added as submodules
+MassiveThreads, Qthreads, and PAPI have been added as submodules in the TP-PARSEC git repository. They are located in 'libs' group ('pkgs/libs'). There locations and URLs of linked remote repositories are store in ```tp-parsec/.gitmodules``` by Git.
+
+```
+[submodule "mth"]
+	path = pkgs/libs/mth/src
+	url = https://github.com/massivethreads/massivethreads.git
+[submodule "qth"]
+	path = pkgs/libs/qth/src
+	url = https://github.com/Qthreads/qthreads.git
+[submodule "papi"]
+	path = pkgs/libs/papi/src
+	url = https://bitbucket.org/icl/papi.git
+```
+
+When TP-PARSEC is first cloned, these three submodules need to be initialized and pulled down first so that ```parsecmgmt2``` can use them to compile task parallel versions of benchmarks.
+
+```
+tp-parsec $ git submodule update --init pkgs/libs/mth/src
+tp-parsec $ git submodule update --init pkgs/libs/qth/src
+tp-parsec $ git submodule update --init pkgs/libs/papi/src
+```
+
+
 ### 2. Multiple actions
 'parsecmgmt2' supports **multiple actions** specified by the option ```-a```, e.g., ```-a uninstall build``` is legitimate and effective now, the action 'uninstall' will be done first then the action 'build' will be carried on.
 

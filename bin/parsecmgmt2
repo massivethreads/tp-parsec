@@ -346,8 +346,8 @@ function source_local_bldconf {
 # Arguments: all arguments given to the script (i.e. "$@")
 function process_args {
   # Default configuration to use
-  default_pkgs="parsec splash2 splash2x"
-  default_build="gcc"
+  default_pkgs="parsec"
+  default_build="gcc-task_mth"
   default_rundir="${PARSECDIR}"
   default_inputsize="test"
   default_nthreads="1"
@@ -355,19 +355,19 @@ function process_args {
 
   # Usage
   usage="\
-Usage: $me -a ACTION [OPTION]...
+Usage: tp-parsec/bin $ ./parsecmgmt2 -a ACTION [OPTION]...
 
 Manage the installation of the PARSEC benchmark suite.
 
 Options:
-    -a ACTION        Specifies the action to perform. See below for a
-                     list of valid actions.
-    -p PACKAGE       A list of packages or aliases on which the action is to be
+    -a ACTION        Specifies the actions to perform. Multiple actions are separated by
+                     whitespaces. See below for a list of valid actions.
+    -p PACKAGE       A list of packages or aliases on which the actions are to be
                      performed.
     -c CONFIG        Which build configuration to use. Default: '$default_build'
+    -i INPUT         The input to use to run the benchmarks. Default: '$default_inputsize'
     -d RUNDIR        Use directory RUNDIR as root in which to run the
                      benchmarks.
-    -i INPUT         The input to use to run the benchmarks. Default: '$default_inputsize'
     -n THREADS       The minimum number of threads to use. Default: '$default_nthreads'
     -s SUBMIT        Command to use to submit the benchmark for execution.
                      Default: '$default_submit'
@@ -397,58 +397,38 @@ Actions:
                      installation.
     'info'           List available packages and configurations.
 
+Configs:
+    '{gcc,icc}-pthreads'   Builds the original Pthreads version
+    '{gcc,icc}-openmp'     Builds the original OpenMP version
+    '{gcc,icc}-tbb'        Builds the original TBB version
+    '{gcc,icc}-serial'     Builds the original serial version
+    '{gcc,icc}-task_{mth,tbb,qth,omp,cilkplus,serial}'        Builds the task parallel versions
+    '{gcc,icc}-task_{mth,tbb,qth,omp,cilkplus,serial}-dr'     Builds the task parallel versions together with DAG Recorder
 
-Examples (1) [Compatible to PARSEC 2.1 but Extended]:
+Examples:
+    - Build gcc-based MassiveThreads-based task parallel version of blackscholes:
+        tp-parsec/bin $ ./parsecmgmt2 -a build -p blackscholes -c gcc-task_mth
+    - Re-build icc-based TBB-based task parallel version of tbb and streamcluster:
+        tp-parsec/bin $ ./parsecmgmt2 -a uninstall build -p tbb streamcluster -c icc-task_tbb
+    - Build gcc-based Qthreads-based task parallel version of dedup with DAG Recorder:
+        tp-parsec/bin $ ./parsecmgmt2 -a build -p dedup -c icc-task_qth-dr
+    - Run icc-based OpenMP-based task parallel version of fluidanimate with DAG Recorder and native input on 32 cores:
+        tp-parsec/bin $ ./parsecmgmt2 -a run -p fluidanimate -c icc-task_omp-dr -i native -n 32
+
     - Build all benchmarks of three suites, i.e., PARSEC, SPLASH-2 and SPLASH-2x:
-        $me -a build -p all
-    - Build only applications, use 'icc' as build configuration:
-        $me -a build -c icc -p apps
+        tp-parsec/bin $ ./parsecmgmt2 -a build -p all
+    - Build only applications, with 'icc-task_tbb' configuration:
+        tp-parsec/bin $ ./parsecmgmt2 -a build -c icc-task_tbb -p apps
     - Do a full cleanup after a build or benchmark run:
-        $me -a fullclean -p all
+        tp-parsec/bin $ ./parsecmgmt2 -a fullclean -p all
     - Remove all generated files of the current architecture:
-        $me -a uninstall -p all
+        tp-parsec/bin $ ./parsecmgmt2 -a uninstall -p all
     - Run benchmark 'ferret' w/ input 'simsmall' and 4 threads:
-        $me -a run -p ferret -i simsmall -n 4
+        tp-parsec/bin $ ./parsecmgmt2 -a run -p ferret -i simsmall -n 4
     - Get a quick summary of all available packages and features:
-        $me -a info
+        tp-parsec/bin $ ./parsecmgmt2 -a info
     - Show which kernel binaries have been installed:
-        $me -a status -p kernels
-
-
-Examples (2) [NEW: Network Benchmarks]:
-    - Check the status of all components involved in network benchmarks:
-        $me -a status -p netapps
-    - Build network benchmark 'netstreamcluster':
-        $me -a build -p raytrace
-    - Build all network benchmark:
-        $me -a build -p netapps
-    - Run network benchmark 'netdedup' w/ input 'native' and 2 server threads:
-        $me -a run -p netdedup -i native -n 2
-    - Run network benchmark 'netferret' w/ input 'simlarge', 4 server threads and 2 client connections:
-        $me -a run -p netferret -i simlarge -n 4 -t 2
-    - For simulation, run 'netdedup' server on a simulator w/ 4 threads and run client on a real machine:
-        $me -a run -p netdedup -i simlarge -n 4 -m server
-        $me -a run -p netdedup -i simlarge -m client
-    - Do a full cleanup for network benchmarks:
-        $me -a fullclean -p netapps
-
-
-Examples (3) [NEW: SPLASH-2 Suite and SPLASH-2x Suite]:
-    - Check the status of SPLASH-2 suite and SPLASH-2x suite:
-        $me -a status -p splash2
-        $me -a status -p splash2x
-    - Build benchmark 'raytrace' from SPLASH-2x suite other than PARSEC:
-        $me -a build -p splash2x.raytrace
-        $me -a build -p raytrace   ## defaultly from PARSEC (for comparison)
-    - Build benchmark 'fft' from SPLASH-2 suite with 'gcc-serial' build configuration:
-        $me -a build -c gcc-serial -p splash2.fft
-    - Build all benchmarks from SPLASH-2 suite and SPLASH-2x suite:
-        $me -a build -p splash2
-        $me -a build -p splash2x
-    - Run benchmark 'fft' from SPLASH-2x w/ input 'simsmall' and 4 threads:
-        $me -a run -p splash2x.fft -i simsmall -n 4
-    - Do a full cleanup for SPLASH-2 suite
-        $me -a fullclean -p splash2"
+        tp-parsec/bin $ ./parsecmgmt2 -a status -p kernels"
 
   # Define valid actions
   valid_actions="build run clean uninstall fullclean fulluninstall status info"
