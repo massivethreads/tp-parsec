@@ -100,10 +100,10 @@ tp-parsec $ git submodule update --init pkgs/libs/papi/src
 ```
 
 
-### 2. Multiple actions
+### 3. Multiple actions
 'parsecmgmt2' supports **multiple actions** specified by the option ```-a```, e.g., ```-a uninstall build``` is legitimate and effective now, the action 'uninstall' will be done first then the action 'build' will be carried on.
 
-### 3. New bldconf(s)
+### 4. New bldconf(s)
 * **New global build configuration files** are added in ```tp-parsec/config/``` in order to provide system-specific compilation flags (CFLAGS, CXXFLAGS) and link options (LDFLAGS, LIBS) for ```parsecmgmt2``` to compile the program into corresponding executables.
 
 ```
@@ -163,7 +163,7 @@ if [ "${act}" == "run" ]; then
 fi
 ```
 
-### 4. DAG Recorder
+### 5. DAG Recorder
 'parsecmgmt2' also supports **DAG Recorder**. By appending '-dr' to the usual config ('gcc-task\_mth' -> 'gcc-task\_mth-dr'), we can demand 'parsecmgmt2' to compile the corresponding task version together with DAG Recorder (```... -DDAG_RECORDER=2 ... -ldr -lpthread ...```). Compile and link options for DAG Recorder are stored in ```tp-parsec/config/dr.bldconf```.
 
 ```
