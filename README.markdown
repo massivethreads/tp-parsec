@@ -92,8 +92,6 @@ tp-parsec/bin $ ls -ahl ../config/task*
 ```
   * 'task.bldconf' contains **common options** for task versions, and 'task_mth.bldconf', for example, contains **options specific to** MassiveThreads task version.
 ```
-{task.bldconf}
-
 /tp-parsec/bin $ cat ../config/task.bldconf 
 #!/bin/bash
 
@@ -112,8 +110,6 @@ if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" =
 fi
 ```
 ```
-{task\_mth.bldconf}
-
 /tp-parsec/bin $ cat ../config/task_mth.bldconf 
 #!/bin/bash
 
@@ -140,7 +136,6 @@ if [ "${act}" == "run" ]; then
 fi
 ```
 4. 'parsecmgmt2' also supports **DAG Recorder**. By appending '-dr' to the usual config ('gcc-task\_mth' -> 'gcc-task\_mth-dr'), we can demand 'parsecmgmt2' to compile the corresponding task version together with DAG Recorder (```... -DDAG_RECORDER=2 ... -ldr -lpthread ...```). Compile and link options for DAG Recorder are stored in ```tp-parsec/config/dr.bldconf```.
-{dr.bldconf}
 ```
 tp-parsec/bin $ cat ../config/dr.bldconf
 #!/bin/bash
