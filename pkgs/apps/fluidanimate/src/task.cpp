@@ -20,6 +20,10 @@
 #include "fluid.hpp"
 #include "cellpool.hpp"
 
+
+#if !defined(PFOR_TO_ALLATONCE) && !defined(PFOR_TO_BISECTION) && !defined(PFOR_TO_ORIGINAL)
+  #define PFOR_TO_ORIGINAL 1
+#endif
 #include "tpswitch/tpswitch.h"
 
 #ifdef ENABLE_VISUALIZATION
@@ -1118,36 +1122,42 @@ void AdvanceParticlesMT(int tid)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void DivConqTask(int from, int to, void(*f)(int)) {
-  cilk_begin;
-  if(to - from == 1) {
-    f(from);
-  } else {
-    mk_task_group;
-    create_task0(spawn DivConqTask(from, from + (to - from) / 2, f));
-    call_task(spawn DivConqTask(from + (to - from) / 2, to, f));
-    wait_tasks;
-  }
-  cilk_void_return;
-}
 void AdvanceFrameMT(int tasknum)
 {
   //swap src and dest arrays with particles
   std::swap(cells, cells2);
   std::swap(cnumPars, cnumPars2);
-  DivConqTask(0, tasknum, ClearParticlesMT);
-  DivConqTask(0, tasknum, RebuildGridMT);
-  DivConqTask(0, tasknum, InitDensitiesAndForcesMT);
-  DivConqTask(0, tasknum, ComputeDensitiesMT);
-  DivConqTask(0, tasknum, ComputeDensities2MT);
-  DivConqTask(0, tasknum, ComputeForcesMT);
-  DivConqTask(0, tasknum, ProcessCollisionsMT);
-  DivConqTask(0, tasknum, AdvanceParticlesMT);
+  pfor(int, 0, tasknum, 1, 1, {
+    ClearParticlesMT(FIRST_);
+  });
+  pfor(int, 0, tasknum, 1, 1, {
+    RebuildGridMT(FIRST_);
+  });
+  pfor(int, 0, tasknum, 1, 1, {
+    InitDensitiesAndForcesMT(FIRST_);
+  });
+  pfor(int, 0, tasknum, 1, 1, {
+    ComputeDensitiesMT(FIRST_);
+  });
+  pfor(int, 0, tasknum, 1, 1, {
+    ComputeDensities2MT(FIRST_);
+  });
+  pfor(int, 0, tasknum, 1, 1, {
+    ComputeForcesMT(FIRST_);
+  });
+  pfor(int, 0, tasknum, 1, 1, {
+    ProcessCollisionsMT(FIRST_);
+  });
+  pfor(int, 0, tasknum, 1, 1, {
+    AdvanceParticlesMT(FIRST_);
+  });
 #if defined(USE_ImpeneratableWall)
   // N.B. The integration of the position can place the particle
   // outside the domain. We now make a pass on the perimiter cells
   // to account for particle migration beyond domain.
-  DivConqTask(0, tasknum, ProcessCollisions2MT);
+  pfor(int, 0, tasknum, 1, 1, {
+    ProcessCollisions2MT(FIRST_);
+  });
 #endif
 }
 
