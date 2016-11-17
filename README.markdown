@@ -1,94 +1,270 @@
-Task-parallel version of PARSEC
+Task-Parallelized PARSEC
+-------------------------------
+
+The original [PARSEC](http://parsec.cs.princeton.edu) (Princeton Application Repository for Shared-Memory Computers) developed by Princeton University is a large benchmark suite containing more than 13 parallel applications of various kinds of emerging workloads. These parallel applications are multithreaded based on one of the three programming models of Pthreads, OpenMP, and Intel TBB. Each application can be parallelized by one, two or all three models. You can know which application is parallelized by which models by taking a look at the overview table on PARSEC's [Wiki page](http://wiki.cs.princeton.edu/index.php/PARSEC). These three versions of an application exist in the same code base and are switched between each other by define flags of ```-DENABLE_THREADS``` (Pthreads), ```-DENABLE_OPENMP``` (OpenMP), and ```-DENABLE_TBB``` (TBB).
+
+In this project, we aim to parallelize PARSEC into task programming models which use **task parallelism** (i.e., lightweight user-level threads) instead of OS threads like Pthreads, or restrictive parallel for loops like OpenMP's parallel for. We currently support five different task parallel programming models: [Cilk Plus](https://www.cilkplus.org/), [OpenMP Task](http://www.openmp.org/), [Intel TBB](https://www.threadingbuildingblocks.org/), [MassiveThreads](https://github.com/massivethreads/massivethreads), [Qthreads](https://github.com/Qthreads/qthreads). By defining a thin API layer covering all these five models (**tpswitch**, distributed together with MassiveThreads), we can simplify our conversion. We just need to write code once using the generic task parallel model provided by *tpswitch*, the program can then be compiled automatically into supported underlying systems.
+
+Following is a short description about the original PARSEC and then our task-parallelized TP-PARSEC.
+
 -------------------------------
 
 # Original PARSEC
 
-## How to build?
-* 1. Download all files.
-* 2. ```$ cd parsec/bin/```
-* 3. ```parsec/bin$ ./parsecmgmt -a build -p all```
-  * It takes 30 mins or so. Please wait a bit.
+1. Download: you can either download [all-in-one package](http://parsec.cs.princeton.edu/download/3.0/parsec-3.0.tar.gz) (2.9 GB) which contains everything or download separately the [core package](http://parsec.cs.princeton.edu/download/3.0/parsec-3.0-core.tar.gz) (112 MB) which excludes input data files for benchmarks, [simulation input package](http://parsec.cs.princeton.edu/download/3.0/parsec-3.0-input-sim.tar.gz) (468 MB), and [native input package](http://parsec.cs.princeton.edu/download/3.0/parsec-3.0-input-native.tar.gz) (2.3 GB). The three separate packages have the same directory structure so you can just simply extract them to the same place and they will fit to each other.
 
-## How to run?
-* 1. At first, download native input from the official page, or here: http://parsec.cs.princeton.edu/download/3.0/parsec-3.0-input-native.tar.gz
-* 2. Uncompress it and overwrite all files.
-* 3. ```$ cd parsec/bin/```
-* 4. ```parsec/bin$ ./parsecmgmt -a run -p [all|blackscholes|bodytrack...] -n $THREAD_NUM -i [test|simdev|...|native]```
+2. Use: everything (build, clean, run of benchmarks) is controlled by a central bash script ```parsecmgmt``` in ```parsec/bin/```. Three main options among others to pass to *parsecmgmt* are ```-a``` (action: to specify what to do, e.g., 'build', 'clean', 'uninstall', 'run'), ```-p``` (package: to specify which benchmark or library package to apply the action to, e.g., 'blackscholes', 'canneal', 'freqmine'), and ```-c``` (config: to specify the configuration to build or run the package, e.g., 'gcc', 'gcc-pthreads', 'icc-tbb'). When the action is 'run', you need to basically specify two more options of the input to use (```-i```), and the number of threads to run on (```-n```).
+
+ * How to build blackscholes' pthreads version using gcc?
+```
+parsec/bin $ ./parsecmgmt -a build -p blackscholes -c gcc-pthreads
+```
+
+ * How to run freqmine's icc-tbb build on 8 cores with simdev input?
+```
+parsec/bin $ ./parsecmgmt -a run -p freqmine -c gcc-pthreads -i simdev -n 8
+```
+
+ * Or you can build all by: (it takes 30 mins or so, please wait a bit)
+```
+parsec/bin $ ./parsecmgmt -a build -p all
+```
 
 -------------------------------
 
 # Task parallel PARSEC
 
-I completed implementation of all task versions of ```blackscholes```.
+The repository of our TP-PARSEC (task parallel PARSEC) is on the [internal Gitlab](https://gitlab.eidos.ic.i.u-tokyo.ac.jp/parallel/tp-parsec). It is equivalent to the PARSEC's core package, which means it does not include simulation inputs and native inputs for the benchmark programs, you need to download it separately via the links above.
 
-I've checked the correctness of its transformation.
+## A quick start
 
-## Readme
-* 1. It may (fully?) support ```parsecmgmt``` without any modification for now.
-* 2. I checked Massivethreads (icc/gcc), Intel TBB (icc/gcc), OpenMP (icc/gcc), QThreads (icc/gcc), and CilkPlus (icc only) version.
-* 3. We use ```common.h```, ```tpswitch.h```, ```compile.mk```, and ```urun``` mechanism.
-* 4. It currenctly needs some efforts to support icc.
-* 5. A little tricky.
-* 6. If you know better solution. please tell us.
-
-## How to build and run?
-* 1. Clone repository: ```git clone git@gitlab.eidos.ic.i.u-tokyo.ac.jp:parallel/tp-parsec.git```
-* 2. Download a parallel2 repository in tp-parsec/toolkit/parallel2: ```svn checkout svn+ssh://vega/repos/parallel2```
-* 3. Make & Make install
-
+1. Clone the repository: ```git clone git@gitlab.eidos.ic.i.u-tokyo.ac.jp:parallel/tp-parsec.git```
+2. Download simulation inputs: ```wget http://parsec.cs.princeton.edu/download/3.0/parsec-3.0-input-sim.tar.gz```
+3. Extract simulation inputs: ```tar xvzf parsec-3.0-input-sim.tar.gz```
+4. Import simulation inputs: ```rsync -a parsec-3.0/* tp-parsec/```
+5. (can do this later) Do the same steps 2, 3, 4 for the [native inputs](http://parsec.cs.princeton.edu/download/3.0/parsec-3.0-input-native.tar.gz).
+7. Jump into ```tp-parsec``` and initialize/update the three submodules of TP-PARSEC (MassiveThreads, Qthreads, PAPI):
 ```
-tp-parsec$ cd toolkit/parallel2/sys/src/
-src$ make
-src$ make install
+tp-parsec $ git submodule update --init pkgs/libs/mth/src
+tp-parsec $ git submodule update --init pkgs/libs/qth/src
+tp-parsec $ git submodule update --init pkgs/libs/papi/src
 ```
-
-* 4. (Optional) If you want to create icc version, type following commands.
-
+7. Jump into ```bin```, try building some benchmark and run it:
 ```
-# icc is located in /opt/intel/ for some environments (e.g. magellan).
-tp-parsec$ cd toolkit/parallel2/sys/src/
-src$ PATH=$PATH:/opt/intel/bin/ make platform=i
-src$ PATH=$PATH:/opt/intel/bin/ make platform=i install
+tp-parsec/bin $ ./parsecmgmt2 -a build -p blackscholes -c gcc-task_mth
+tp-parsec/bin $ ./parsecmgmt2 -a run -p blackscholes -c gcc-task_mth -i simlarge -n 8
+```
+8. You're set! Do whatever you want. You can build all benchmarks at once by:
+```
+tp-parsec/bin $ ./parsecmgmt2 -a build -p all -c gcc-task_mth
 ```
 
-* 5. Build & Run
+## How is it different from the original PARSEC?
+
+* We have implemented an improved control script 'parsecmgmt2' (```tp-parsec/bin/parsecmgmt2```) which supports new build configuration for task versions (task\_mth: MassiveThreads, task\_tbb: TBB, task\_qth: Qthreads, task\_omp: OpenMP, task\_cilkplus: Cilk Plus) together with other improvements, while still maintaining things that parsecmgmt can do.
+
+* 'parsecmgmt2' supports multiple actions specified by the option ```-a```, e.g., ```-a uninstall build``` is legitimate and effective now.
+
+* New global build configuration files are added in ```tp-parsec/config/``` in order to provide system-specific compilation flags (CFLAGS, CXXFLAGS) and link options (LDFLAGS, LIBS) for ```parsecmgmt2``` to compile the program into corresponding executables.
 
 ```
-tp-parsec$ cd bin
-bin$ parallel2_dir={tp-parsec/toolkit/parallel2} ./parsecmgmt -a build -p blackscholes -c gcc-task_mth
-bin$ parallel2_dir={tp-parsec/toolkit/parallel2} ./parsecmgmt -a run -p blackscholes -c gcc-task_mth -n 4
-# if icc is available.
-bin$ parallel2_dir={tp-parsec/toolkit/parallel2} CC_HOME={/opt/intel} ./parsecmgmt -a build -p blackscholes -c icc-task_cilkplus
-bin$ parallel2_dir={tp-parsec/toolkit/parallel2} CC_HOME={/opt/intel} ./parsecmgmt -a run -p blackscholes -c icc-task_cilkplus -n 4
-
-# Concrete examples:
-bin$ parallel2_dir=~/tp-parsec/toolkit/parallel2 ./parsecmgmt -a build -p blackscholes -c gcc-task_mth
-bin$ parallel2_dir=~/tp-parsec/toolkit/parallel2 ./parsecmgmt -a run -p blackscholes -c gcc-task_mth -n 4
-bin$ parallel2_dir=~/tp-parsec/toolkit/parallel2 CC_HOME=/opt/intel ./parsecmgmt -a build -p blackscholes -c icc-task_cilkplus
-bin$ parallel2_dir=~/tp-parsec/toolkit/parallel2 CC_HOME=/opt/intel ./parsecmgmt -a run -p blackscholes -c icc-task_cilkplus -n 4
+tp-parsec/bin $ ls -ahl ../config/task*
+ ../config/task.bldconf
+ ../config/task_cilkplus.bldconf
+ ../config/task_mth.bldconf
+ ../config/task_omp.bldconf
+ ../config/task_qth.bldconf
+ ../config/task_serial.bldconf
+ ../config/task_tbb.bldconf
 ```
 
-* 6. (Optional) add larger inputs
+ * 'task.bldconf' contains common options for task versions, and 'task_mth.bldconf', for example, contains options specific to MassiveThreads task version.
 
 ```
-# download native-size input.
-tp-parsec$ wget http://parsec.cs.princeton.edu/download/3.0/parsec-3.0-input-native.tar.gz
-tp-parsec$ tar xvzf parsec-3.0-input-native.tar.gz
-tp-parsec$ rsync -a parsec-3.0/* .
-tp-parsec$ rm -r parsec-3.0
-# for evaluation
-# bin$ parallel2_dir={tp-parsec/toolkit/parallel2} CC_HOME={/opt/intel} ./parsecmgmt -a run -p blackscholes -c icc-task_cilkplus -n 4 -i native
+/tp-parsec/bin $ cat ../config/task.bldconf 
+#!/bin/bash
+
+# Proclaim version for following bldconf soucing, and make
+export version=task
+
+# Package dependencies (need to reset it even to none)
+export global_build_deps=""
+
+# Only packages of the three benchmarking groups (apps, kernels, netapps) are targeted for task parallelization
+if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" == "netapps" ]; then
+  # for ENABLE_TASK macro
+  cflags="-DENABLE_TASK"
+  CFLAGS="${CFLAGS} ${cflags}"
+  CXXFLAGS="${CXXFLAGS} ${cflags}"
+fi
 ```
 
-## Temporary Conventions
-* Use ```tpswitch/tpswitch.h```.
-* ```ENABLE_TASK``` is defined in the code for task version. Use ```#ifdef```.
-* For makefile, task version is inserted into ```${target_task}``` (e.g., mth, omp, tbb, qth, cilkplus are supported by compile.mk)
- * Now everything except simple Cilk works well (icc/gcc-mth/omp/tbb/qth & icc-cilkplus)
-* parallel2's root directory is assigned into ```${parallel2_dir}```
-* A name convention of config files is ```{compiler}-task_{target_task}``` (e.g., ```gcc-task_mth```)
-* ```g``` is assigned into ```${platform}``` for gcc compilation, while ```i``` is for icc in Makefile.
-* ```${CC_HOME}``` is an environment variable storing a path to icc. PARSEC seems to use this convention.
+```
+/tp-parsec/bin $ cat ../config/task_mth.bldconf 
+#!/bin/bash
+
+export task_target=mth
+
+# Add options and links for mth task target
+# Only packages of the three benchmarking groups (apps, kernels, netapps) are targeted for task parallelization
+if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" == "netapps" ]; then
+  global_build_deps="${global_build_deps} mth"
+  # for mth
+  cflags="-I${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/include -DTO_MTHREAD_NATIVE -pthread"
+  CFLAGS="${CFLAGS} ${cflags}"
+  CXXFLAGS="${CXXFLAGS} ${cflags} -std=c++0x"
+  LDFLAGS="${LDFLAGS} -L${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/lib"
+  LIBS="${LIBS} -lmyth -lpthread"
+fi  
+
+# Options for running
+if [ "${act}" == "run" ]; then
+  flags="MYTH_NUM_WORKERS=${NTHREADS}"
+  #flags+=" MYTH_DEF_STKSIZE=${stack_size} MYTH_CPU_LIST=%(myth_cpu_list)"
+  # If run_env exists (not null nor empty), append it with a whitespace prior to flags
+  run_env="${run_env:+$run_env }${flags}"
+fi
+```
+
+* 'parsecmgmt2' also supports DAG Recorder. By appending '-dr' to the usual config ('gcc-task\_mth' -> 'gcc-task\_mth-dr'), we can demand 'parsecmgmt2' to compile the corresponding task version together with DAG Recorder (```... -DDAG_RECORDER=2 ... -ldr -lpthread ...```). Compile and link options for DAG Recorder are stored in ```tp-parsec/config/dr.bldconf```.
+
+```
+tp-parsec/bin $ cat ../config/dr.bldconf
+#!/bin/bash
+#
+# dr.bldconf - file containing global information necessary to build
+#              PARSEC with DAG Recorder
+#
+
+# Add options and links for dr (and hooks)
+# Only packages of the three benchmarking groups (apps, kernels, netapps) are targeted for task parallelization
+if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" == "netapps" ]; then
+  global_build_deps="${global_build_deps} hooks mth"
+  # for hooks & mth
+  cflags="-DENABLE_PARSEC_HOOKS -DDAG_RECORDER=2 -I${PARSECDIR}/pkgs/libs/hooks/inst/${PARSECPLAT}/include -I${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/include"
+  CFLAGS="${CFLAGS} ${cflags}"
+  CXXFLAGS="${CXXFLAGS} ${cflags}"
+  LDFLAGS="${LDFLAGS} -L${PARSECDIR}/pkgs/libs/hooks/inst/${PARSECPLAT}/lib -L${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/hooks/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/lib"
+  LIBS="${LIBS} -lhooks -ldr -lpthread"
+fi
+```
+
+
+* A brief summary of supported build configurations is shown in the table below.
+
+       | Pthreads | OpenMP | TBB | Serial | Task\_mth | Task\_tbb | Task\_qth | Task\_omp | Task\_cilkplus | Task\_serial
+------ | -------- | ------ | --- | ------ | --------- | --------- | --------- | --------- | -------------- | ------------
+gcc    | mgmt/mgmt2 | mgmt/mgmt2 | mgmt/mgmt2 | mgmt/mgmt2 | mgmt2 | mgmt2 | mgmt2 | mgmt2 | mgmt2 | mgmt2
+icc    | mgmt/mgmt2 | mgmt/mgmt2 | mgmt/mgmt2 | mgmt/mgmt2 | mgmt2 | mgmt2 | mgmt2 | mgmt2 | mgmt2 | mgmt2
+gcc-dr | n/a        | n/a        | n/a        | n/a        | mgmt2 | mgmt2 | mgmt2 | mgmt2 | mgmt2 | mgmt2 
+icc-dr | n/a        | n/a        | n/a        | n/a        | mgmt2 | mgmt2 | mgmt2 | mgmt2 | mgmt2 | mgmt2
+
+* Some examples are:
+
+- How to build MassiveThreads-based task version of streamcluster using gcc?
+
+```
+tp-parsec/bin $ ./parsecmgmt2 -a build -p streamcluster -c gcc-task_mth
+```
+
+- How to re-build TBB-based task version of canneal using icc?
+
+```
+tp-parsec/bin $ ./parsecmgmt2 -a uninstall build -p canneal -c icc-task_tbb
+```
+
+- How to build gcc-based Qthreads-based task version of dedup with DAG Recorder?
+
+```
+tp-parsec/bin $ ./parsecmgmt2 -a build -p dedup -c icc-task_qth-dr
+```
+
+* You can run the benchmarks similarly as you do with 'parsecmgmt', just add two more options of input type (e.g., ```-i simlarge```) and number of cores (e.g., ```-n 16```).
+
+ * Run fluidanimate compiled with icc, TBB task, and DAG Recorder on 32 cores and with the native input:
+ 
+```
+tp-parsec/bin $ ./parsecmgmt2 -a run -p fluidanimate -c icc-task_tbb-dr -i native -n 32
+```
+
+
+## How to take part in developing TP-PARSEC?
+
+1. Compilation: you almost do not need to do anything in the application's Makefile to deal with task versions. All the necessary compile flags and links passed by 'parsecmgmt2' through four variables of ```CFLAGS, CXXFLAGS, LDFLAGS, LIBS``` are already automatically captured by the original Makefile. When you want to pass some additional options in the Makefile, you can branch out the case of ```version=task```. Following is a part of the streamcluster's Makefile which allows the option of using tbbmalloc for task versions.
+
+```
+...
+ifdef version
+  ifeq "$(version)" "pthreads"
+    CXXFLAGS :=	$(CXXFLAGS) -DENABLE_THREADS -pthread
+    OBJS += parsec_barrier.o
+  endif
+  ifeq "$(version)" "tbb"
+    CXXFLAGS := $(CXXFLAGS) -DTBB_VERSION
+    LIBS := $(LIBS) -ltbb
+  endif
+  ifeq "$(version)" "task"
+    CXXFLAGS := $(CXXFLAGS) -DENABLE_TASK
+    ifeq ($(USE_TBBMALLOC),1)
+      CXXFLAGS := $(CXXFLAGS) -DUSE_TBBMALLOC
+      LIBS := $(LIBS) -ltbbmalloc
+    endif
+  endif
+endif
+...
+```
+
+A note is that you actually do not need to append ```-DENABLE_TASK``` into 'CFLAGS' or 'CXXFLAGS' because it has been added automatically by 'parsecmgmt2'.
+
+2. Source code:
+
+ * You use ```#ifdef ENABLE_TASK``` pragma to separate your task-parallel code from other versions.
+ * Remember to include ```tpsiwtch.h``` which translates the generic task parallel primitives into corresponding equivalents of a specific task parallel system.
+ * Call the function ```tp_init()``` before any invocation to task primitives in order for 'tpswitch' to initialize the corresponding runtime system if necessary.
+ * Add ```cilk_begin``` and ```cilk_void_return``` (?).
+
+
+```
+#ifdef ENABLE_TASK
+#include <tpswitch/tpswitch.h>
+#endif
+
+#ifdef ENABLE_THREADS
+...
+{Pthreads version}
+...
+#endif
+
+#ifdef ENABLE_OPENMP
+...
+{original OpenMP version}
+...
+#endif
+
+#ifdef TBB_VERSION
+...
+{original TBB version}
+...
+#endif
+
+#ifdef ENABLE_TASK
+...
+{task-parallel version}
+...
+#endif
+
+int main() {
+  ...
+#ifdef ENABLE_TASK
+  tp_init();
+#endif
+  ...
+#ifdef ENABLE_TASK
+  create_task();
+#endif
+  ...
+}
+```
 
 ## How to evaluate correctness of code transformation?
 
@@ -97,107 +273,10 @@ For instance, blackscholes employs a chk_err flag, but bodytrack does nothing.
 
 It is strongly demanded to develop methods to check it.
 
-## How did you add new task parallel system?
-
-* Add ```{application}/config/gcc-task_{target_task}.bldconf```
-* Also add ```tp-parsec/config/gcc-task_{target_task}.bldconf``` unless it exists.
-
-## How did you write Makefile?
-* 1. Copy original ```Makefile``` to ```Makefile.orig```
-* 2. Rewrite ```Makefile``` as follows:
-
-```
-ifeq "$(version)" "task"
-  include Makefile.task
-else
-  include Makefile.orig
-endif
-```
-* 3. Write ```Makefile.task``` by modifying ```Makefile``` as follows:
-
-Key points are:
- - Set default_all, exe_prefix etc... for ```compile.mk```
- - Write ```clean``` and ```install```
- - Declare ```ENABLE_TASK```
- - Create wrapper for ```urun``` (echo *** in ```install```)
-
-```
-PREFIX=${PARSECDIR}/pkgs/apps/blackscholes/inst/${PARSECPLAT}
-
-CSRC    = $(SRC)
-TARGET  = blackscholes
-M4_BASE = .
-MACROS  = c.m4.pthreads
-
-ifdef source
-        ifeq "$(source)" "simd"
-                SRC = blackscholes.simd.c
-                CXXFLAGS += -msse3
-        endif
-else
-        SRC = blackscholes.c
-endif
-
-# Default build single precision version
-NCO     = -DNCO=4 -Dfptype=float
-
-ifdef chk_err
-ERR     = -DERR_CHK
-endif
-
-ifdef single
-NCO = -DNCO=4 -Dfptype=float
-endif
-
-ifdef size
-SZ = -DN=$(size)
-else
-SZ = -DN=960
-endif
-
-ifdef double
-NCO = -DNCO=2 -Dfptype=double
-endif
-
-app_root       = ${PARSECDIR}/pkgs/apps/blackscholes
-icc_dir       ?= ${CC_HOME}
-icc           ?= ${icc_dir}/compiler/bin/icc
-default_all    : ${task_target}_exes
-src_dir       ?= $(app_root)/src
-exe_prefix    ?= $(app_root)/inst/${PARSECPLAT}/${TARGET}
-obj_dir       ?= $(app_root)/obj/${PARSECPLAT}
-
-c_srcs   :=
-cxx_srcs := blackscholes.cxx
-cxx_opts := $(CXXFLAGS) $(MT) $(NCO) $(FUNC) $(ERR) -DENABLE_TASK
-targets  := blackscholes
-
-include $(parallel2_dir)/sys/src/tools/makefiles/compile.mk
-
-
-clean:
-        rm -f -r $(app_root)/inst/${PARSECPLAT}/*
-
-install:
-        mkdir -p $(app_root)/inst/${PARSECPLAT}/bin
-        mv -f $(exe_prefix)* $(app_root)/inst/${PARSECPLAT}/bin/$(TARGET)_${task_target}
-        echo "\$${parallel2_dir}/sys/inst/${platform}/bin/urun -t ${task_target} -p \$$1 -f ${platform} -- \$$(dirname \$$0)/$(TARGET)_${task_target} \$$1 \$$2 \$$3" > $(app_root)/inst/${PARSECPLAT}/bin/$(TARGET)
-        chmod 775 $(app_root)/inst/${PARSECPLAT}/bin/$(TARGET)
-```
-
-## How did you rewrite source codes?
-
-Please look at ```blackscholes.c``` for example, especially around ```ENABLE_TASK```.
-
-Don't forget to ...
-* add ```cilk_begin``` and ```cilk_void_return```.
-* include  ```#include <tpswitch/tpswitch.h>``` (```#include <common.h>``` is no more needed)
-* write ```init_task_runtime();``` at the beginning of ```main()```, surrounded by ```#ifdef ENABLE_TASK```
-
 ## How to live together with CMake and compile.mk?
 
 At present, I have no good idea. An example of ```raytrace``` shows how I struggled to forcedly combine them.
 
 ## Tips
 
-* You can clean the binaries by ```-a uninstall```
+* You can clean (remove objects), uninstall (remove executables), and re-build a package by ```./parsecmgmt2 -a clean uninstall build -p {package} ...```. Actually 'clean' is not needed, the 'uninstall' makes the 'build' recompile all object files.
