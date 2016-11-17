@@ -668,7 +668,7 @@ void Context::renderFrame(Camera *camera,
       renderTile<DirectedEdgeMesh,RAY_PACKET_LAYOUT_SUBDIVISION>(frameBuffer,0,0,resX,resY);
     else
       FATAL("unknown mesh type");
-#endif    
+#endif
   BVH_STAT_COLLECTOR(BVHStatCollector::global.print());
   frameBuffer->doneWithFrame();
 }
@@ -736,92 +736,92 @@ void Context::renderTile(LRT::FrameBuffer *frameBuffer,
 #ifdef ENABLE_TASK
 template <class MESH, const int LAYOUT>
 void Context::renderTileTask(LRT::FrameBuffer *frameBuffer,
-                        const int startX, 
+                        const int startX,
                         const int startY,
                         const int endX,
                         const int endY)
 {
   cilk_begin;
-  const int CUTOFF_X=PACKET_WIDTH;
-  const int CUTOFF_Y=PACKET_WIDTH;
-  if(endX-startX>CUTOFF_X||endY-startY>CUTOFF_Y){
-    //To escape a comma-in-macro problem.  
-    #define renderTileTaskFunc (renderTileTask<MESH,LAYOUT>) 
+  const int CUTOFF_X = PACKET_WIDTH;
+  const int CUTOFF_Y = PACKET_WIDTH;
+  if(endX-startX > CUTOFF_X || endY-startY > CUTOFF_Y){
+    //To escape a comma-in-macro problem.
+    #define renderTileTaskFunc (renderTileTask<MESH,LAYOUT>)
     //Not cut-off: divide-and-conquer
-    if(endX-startX<endY-startY){
+    if(endX-startX < endY-startY) {
       //Divide Y-axis.
-      int startY1=startY;
-      int endY1=startY1+((endY-startY)/(2*PACKET_WIDTH))*PACKET_WIDTH;
-      int startY2=endY1;
-      int endY2=endY;
+      int startY1 = startY;
+      int endY1   = startY1+((endY-startY)/(2*PACKET_WIDTH))*PACKET_WIDTH;
+      int startY2 = endY1;
+      int endY2   = endY;
       mk_task_group;
       create_task0(spawn renderTileTaskFunc(frameBuffer,startX,startY1,endX,endY1));
       call_task   (spawn renderTileTaskFunc(frameBuffer,startX,startY2,endX,endY2));
       wait_tasks;
-    }else{
+    } else {
       //Divide X-axis.
-      int startX1=startX;
-      int endX1=startX1+((endX-startX)/(2*PACKET_WIDTH))*PACKET_WIDTH;
-      int startX2=endX1;
-      int endX2=endX;
+      int startX1 = startX;
+      int endX1   = startX1+((endX-startX)/(2*PACKET_WIDTH))*PACKET_WIDTH;
+      int startX2 = endX1;
+      int endX2   = endX;
       mk_task_group;
       create_task0(spawn renderTileTaskFunc(frameBuffer,startX1,startY,endX1,endY));
       call_task   (spawn renderTileTaskFunc(frameBuffer,startX2,startY,endX2,endY));
       wait_tasks;
     }
     #undef renderTileTaskFunc
-    cilk_void_return;
-  }
-  //Applied cut-off: leaf of task
-  for (int y=startY; y+PACKET_WIDTH<=endY; y+=PACKET_WIDTH)
-    for (int x=startX; x+PACKET_WIDTH<=endX; x+=PACKET_WIDTH)
-      {
+  } else {
+    //Applied cut-off: leaf of task
+    for (int y=startY; y+PACKET_WIDTH<=endY; y+=PACKET_WIDTH)
+      for (int x=startX; x+PACKET_WIDTH<=endX; x+=PACKET_WIDTH)
+        {
 
-        const int MULTIPLE_ORIGINS = 0;
-        const int SHADOW_RAYS = 0;
-        RayPacket<SIMD_VECTORS_PER_PACKET, LAYOUT, MULTIPLE_ORIGINS, SHADOW_RAYS> packet;
-        _ALIGN(DEFAULT_ALIGNMENT) sse_i rgb32[SIMD_VECTORS_PER_PACKET];
+          const int MULTIPLE_ORIGINS = 0;
+          const int SHADOW_RAYS = 0;
+          RayPacket<SIMD_VECTORS_PER_PACKET, LAYOUT, MULTIPLE_ORIGINS, SHADOW_RAYS> packet;
+          _ALIGN(DEFAULT_ALIGNMENT) sse_i rgb32[SIMD_VECTORS_PER_PACKET];
 
-        const MESH &mesh = *dynamic_cast<MESH*>(m_mesh);
-        const RTMaterial *const mat = m_material.size() ? &*m_material.begin() : NULL;
-        RTTextureObject_RGBA_UCHAR **texture = m_texture.size() ?  &*m_texture.begin() : NULL;
+          const MESH &mesh = *dynamic_cast<MESH*>(m_mesh);
+          const RTMaterial *const mat = m_material.size() ? &*m_material.begin() : NULL;
+          RTTextureObject_RGBA_UCHAR **texture = m_texture.size() ?  &*m_texture.begin() : NULL;
 
-        /* init all rays within packet */
-        const sse_f sx = _mm_set_ps1((float)x);
-        const sse_f sy = _mm_set_ps1((float)y);
-        const sse_f delta = _mm_set_ps1(PACKET_WIDTH-1);
-        FOR_ALL_SIMD_VECTORS_IN_PACKET
-          {
-            const sse_f dx = _mm_add_ps(sx,_mm_load_ps(&coordX[i*SIMD_WIDTH]));
-            const sse_f dy = _mm_add_ps(sy,_mm_load_ps(&coordY[i*SIMD_WIDTH]));
-            packet.directionX(i) = _mm_add_ps(_mm_add_ps(_mm_mul_ps(dx,m_threadData.xAxis[0]),
-                                                         _mm_mul_ps(dy,m_threadData.zAxis[0])),
-                                              m_threadData.imagePlaneOrigin[0]);
-            packet.directionY(i) = _mm_add_ps(_mm_add_ps(_mm_mul_ps(dx,m_threadData.xAxis[1]),
-                                                         _mm_mul_ps(dy,m_threadData.zAxis[1])),
-                                              m_threadData.imagePlaneOrigin[1]);
-            packet.directionZ(i) = _mm_add_ps(_mm_add_ps(_mm_mul_ps(dx,m_threadData.xAxis[2]),
-                                                         _mm_mul_ps(dy,m_threadData.zAxis[2])),
-                                              m_threadData.imagePlaneOrigin[2]);
+          /* init all rays within packet */
+          const sse_f sx = _mm_set_ps1((float)x);
+          const sse_f sy = _mm_set_ps1((float)y);
+          const sse_f delta = _mm_set_ps1(PACKET_WIDTH-1);
+          FOR_ALL_SIMD_VECTORS_IN_PACKET
+            {
+              const sse_f dx = _mm_add_ps(sx,_mm_load_ps(&coordX[i*SIMD_WIDTH]));
+              const sse_f dy = _mm_add_ps(sy,_mm_load_ps(&coordY[i*SIMD_WIDTH]));
+              packet.directionX(i) = _mm_add_ps(_mm_add_ps(_mm_mul_ps(dx,m_threadData.xAxis[0]),
+                                                           _mm_mul_ps(dy,m_threadData.zAxis[0])),
+                                                m_threadData.imagePlaneOrigin[0]);
+              packet.directionY(i) = _mm_add_ps(_mm_add_ps(_mm_mul_ps(dx,m_threadData.xAxis[1]),
+                                                           _mm_mul_ps(dy,m_threadData.zAxis[1])),
+                                                m_threadData.imagePlaneOrigin[1]);
+              packet.directionZ(i) = _mm_add_ps(_mm_add_ps(_mm_mul_ps(dx,m_threadData.xAxis[2]),
+                                                           _mm_mul_ps(dy,m_threadData.zAxis[2])),
+                                                m_threadData.imagePlaneOrigin[2]);
 #if defined(NORMALIZE_PRIMARY_RAYS)
-            const sse_f invLength = rsqrt(packet.directionX(i) * packet.directionX(i) + packet.directionY(i) * packet.directionY(i) + packet.directionZ(i) * packet.directionZ(i));
-            packet.directionX(i) *= invLength;
-            packet.directionY(i) *= invLength;
-            packet.directionZ(i) *= invLength;
-#endif                
-            packet.originX(i) = m_threadData.origin[0];
-            packet.originY(i) = m_threadData.origin[1];
-            packet.originZ(i) = m_threadData.origin[2];
-          }
-        packet.computeReciprocalDirectionsAndInitMinMax();
-        packet.reset();
-        TraverseBVH<SIMD_VECTORS_PER_PACKET, LAYOUT, MULTIPLE_ORIGINS, SHADOW_RAYS, MESH>(packet,m_bvh->node,m_bvh->item,mesh);
+              const sse_f invLength = rsqrt(packet.directionX(i) * packet.directionX(i) + packet.directionY(i) * packet.directionY(i) + packet.directionZ(i) * packet.directionZ(i));
+              packet.directionX(i) *= invLength;
+              packet.directionY(i) *= invLength;
+              packet.directionZ(i) *= invLength;
+#endif
+              packet.originX(i) = m_threadData.origin[0];
+              packet.originY(i) = m_threadData.origin[1];
+              packet.originZ(i) = m_threadData.origin[2];
+            }
+          packet.computeReciprocalDirectionsAndInitMinMax();
+          packet.reset();
+          TraverseBVH<SIMD_VECTORS_PER_PACKET, LAYOUT, MULTIPLE_ORIGINS, SHADOW_RAYS, MESH>(packet,m_bvh->node,m_bvh->item,mesh);
 
-         //SHADE(RandomID);
-         SHADE(EyeLight);
+           //SHADE(RandomID);
+           SHADE(EyeLight);
 
-        frameBuffer->writeBlock(x,y,PACKET_WIDTH,PACKET_WIDTH,rgb32);
-      }
+          frameBuffer->writeBlock(x,y,PACKET_WIDTH,PACKET_WIDTH,rgb32);
+        }
+  }
   cilk_void_return;
 }
 #endif
