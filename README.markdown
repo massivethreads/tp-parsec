@@ -176,13 +176,21 @@ icc-**dr** | n/a        | n/a        | n/a        | n/a        | **mgmt2** | **m
 
 Some examples are:
 - How to build MassiveThreads-based task version of streamcluster using gcc?
-```tp-parsec/bin $ ./parsecmgmt2 -a build -p streamcluster -c gcc-task_mth```
+```
+tp-parsec/bin $ ./parsecmgmt2 -a build -p streamcluster -c gcc-task_mth
+```
 - How to re-build TBB-based task version of canneal using icc?
-```tp-parsec/bin $ ./parsecmgmt2 -a uninstall build -p canneal -c icc-task_tbb```
+```
+tp-parsec/bin $ ./parsecmgmt2 -a uninstall build -p canneal -c icc-task_tbb
+```
 - How to build gcc-based Qthreads-based task version of dedup with DAG Recorder?
-```tp-parsec/bin $ ./parsecmgmt2 -a build -p dedup -c icc-task_qth-dr```
+```
+tp-parsec/bin $ ./parsecmgmt2 -a build -p dedup -c icc-task_qth-dr
+```
 - You can **run** the benchmarks similarly as you do with 'parsecmgmt', just add two more options of input type (e.g., ```-i simlarge```) and number of cores (e.g., ```-n 16```), e.g., run fluidanimate compiled with icc, TBB task, and DAG Recorder on 32 cores and with the native input:
-```tp-parsec/bin $ ./parsecmgmt2 -a run -p fluidanimate -c icc-task_tbb-dr -i native -n 32```
+```
+tp-parsec/bin $ ./parsecmgmt2 -a run -p fluidanimate -c icc-task_tbb-dr -i native -n 32
+```
 
 
 ## How to take part in developing TP-PARSEC?
@@ -225,6 +233,7 @@ endif
 * Remember to include ```tpsiwtch.h``` which translates the generic task parallel primitives into corresponding equivalents of a specific task parallel system.
 * Call the function ```tp_init()``` before any invocation to task primitives in order for 'tpswitch' to initialize the corresponding runtime system if necessary.
 * Add ```cilk_begin``` and ```cilk_void_return``` (?).
+
 ```
 #ifdef ENABLE_TASK
 #include <tpswitch/tpswitch.h>
