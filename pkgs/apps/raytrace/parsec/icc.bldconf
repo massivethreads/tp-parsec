@@ -2,7 +2,6 @@
 
 # icc.bldconf - configuration file for PARSEC
 
-LIBS=""
 source ${PARSECDIR}/pkgs/apps/raytrace/parsec/gcc.bldconf
 
 
