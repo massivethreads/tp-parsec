@@ -803,6 +803,10 @@ void Encode(config_t * _conf) {
 #ifdef ENABLE_PARSEC_HOOKS
   __parsec_roi_begin();
 #endif
+#if defined(ENABLE_TASK) && defined(TO_OMP)
+  #pragma omp parallel
+  #pragma omp single nowait
+#endif
   Fragment(fd, input_file_buffer, input_file_size);
 #ifdef ENABLE_PARSEC_HOOKS
   __parsec_roi_end();
