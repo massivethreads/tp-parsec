@@ -1,2 +1,0 @@
-#!/bin/bash
-source ${PARSECDIR}/config/icc-task.bldconf
