@@ -28,6 +28,9 @@ CXXFLAGS += $(CFLAGS) -pthread
 
 all: $(TARGET)
 
+encoder.o : encoder.c
+	$(CXX) -c -x c++ $(CXXFLAGS) $< -o $@
+
 %.o : %.c
 	$(CXX) -c -x c++ $(CXXFLAGS) $< -o $@
 

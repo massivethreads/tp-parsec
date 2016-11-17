@@ -122,7 +122,7 @@ static int uncompress_chunk(chunk_t *chunk) {
     unsigned long len_64 = UNCOMPRESS_BOUND;
     r = mbuffer_create(&chunk->uncompressed_data, len_64);
     if(r != 0) EXIT_TRACE("Creation of decompression buffer failed.\n");
-    r = uncompress(chunk->uncompressed_data.ptr, &len_64, chunk->compressed_data.ptr, chunk->compressed_data.n);
+    r = uncompress((Bytef *)chunk->uncompressed_data.ptr, &len_64, (Bytef *)chunk->compressed_data.ptr, chunk->compressed_data.n);
     //TODO: Automatically enlarge buffer if return value is Z_BUF_ERROR
     if(r!=Z_OK) EXIT_TRACE("error uncompressing chunk data\n");
     //Shrink buffer to actual size
@@ -244,7 +244,11 @@ void Decode(config_t * _conf) {
       }
     }
     //We now have the uncompressed data in 'entry', write uncompressed data to output file
+#ifdef __cplusplus
+    if(xwrite(fd_out, entry->uncompressed_data.ptr, entry->uncompressed_data.n)<(int)entry->uncompressed_data.n) {
+#else
     if(xwrite(fd_out, entry->uncompressed_data.ptr, entry->uncompressed_data.n)<entry->uncompressed_data.n) {
+#endif
       EXIT_TRACE("error writing to output file");
     }
   }

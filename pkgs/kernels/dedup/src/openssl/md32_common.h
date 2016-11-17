@@ -281,7 +281,11 @@
 
 int HASH_UPDATE (HASH_CTX *c, const void *data_, size_t len)
 	{
+#ifdef __cplusplus
+	const unsigned char *data=(const unsigned char* )data_;
+#else
 	const unsigned char *data=data_;
+#endif
 	unsigned char *p;
 	HASH_LONG l;
 	size_t n;

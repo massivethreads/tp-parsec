@@ -63,7 +63,11 @@ static inline int ringbuffer_isEmpty(ringbuffer_t *buf) {
 
 //Returns true if and only if the ring buffer is full
 static inline int ringbuffer_isFull(ringbuffer_t *buf) {
+#ifdef __cplusplus
+  return (buf->head == (int)((buf->tail-1+buf->size)%buf->size));
+#else
   return (buf->head == (buf->tail-1+buf->size)%buf->size);
+#endif
 }
 
 //Get an element from a ringbuffer
@@ -76,7 +80,11 @@ static inline void *ringbuffer_remove(ringbuffer_t *buf) {
   } else {
     ptr = buf->data[buf->tail];
     buf->tail++;
+#ifdef __cplusplus
+    if(buf->tail >= (int)buf->size) buf->tail = 0;
+#else
     if(buf->tail >= buf->size) buf->tail = 0;
+#endif
   }
 
   return ptr;
@@ -88,8 +96,11 @@ static inline int ringbuffer_insert(ringbuffer_t *buf, void *ptr) {
   if(ringbuffer_isFull(buf)) return -1;
   buf->data[buf->head] = ptr;
   buf->head++;
+#ifdef __cplusplus
+  if(buf->head == (int)buf->size) buf->head = 0;
+#else
   if(buf->head == buf->size) buf->head = 0;
-
+#endif
   return 0;
 }
 
