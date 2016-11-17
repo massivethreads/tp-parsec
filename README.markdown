@@ -91,8 +91,9 @@ tp-parsec/bin $ ls -ahl ../config/task*
  ../config/task_tbb.bldconf
 ```
   * 'task.bldconf' contains **common options** for task versions, and 'task_mth.bldconf', for example, contains **options specific to** MassiveThreads task version.
-{task.bldconf}
 ```
+{task.bldconf}
+
 /tp-parsec/bin $ cat ../config/task.bldconf 
 #!/bin/bash
 
@@ -110,8 +111,9 @@ if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" =
   CXXFLAGS="${CXXFLAGS} ${cflags}"
 fi
 ```
-{task\_mth.bldconf}
 ```
+{task\_mth.bldconf}
+
 /tp-parsec/bin $ cat ../config/task_mth.bldconf 
 #!/bin/bash
 
