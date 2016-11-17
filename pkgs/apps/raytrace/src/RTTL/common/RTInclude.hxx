@@ -147,14 +147,13 @@ __forceinline int __builtin_expect(int a, int p) { return a; }
 #endif
 
 /// Defined if all SSE ops are emulated (SSE-less implementation).
-
-#ifndef ENABLE_TASK
-	//We unwillingly disable this pragma.  
-	#define RT_EMULATE_SSE
-#endif
-
+#define RT_EMULATE_SSE
 #ifdef  RT_EMULATE_SSE
 #include "RTEmulatedSSE.hxx"
+
+#ifdef _MM_SHUFFLE
+    #undef _MM_SHUFFLE
+#endif
 
 #define _MM_SHUFFLE(fp3,fp2,fp1,fp0) (((fp3) << 6) | ((fp2) << 4) | ((fp1) << 2) | ((fp0)))
 

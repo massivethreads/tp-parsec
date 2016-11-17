@@ -12,6 +12,86 @@
 #endif
 #endif
 
+// To avoid conflict between functions declared in this file and the original ones.
+#define ENABLE_ALIAS_NAME
+#ifdef ENABLE_ALIAS_NAME
+
+#define _mm_add_epi32 _mm_add_epi32_emu
+#define _mm_add_ps _mm_add_ps_emu
+#define _mm_add_ss _mm_add_ss_emu
+#define _mm_and_ps _mm_and_ps_emu
+#define _mm_and_si128 _mm_and_si128_emu
+#define _mm_andnot_ps _mm_andnot_ps_emu
+#define _mm_andnot_si128 _mm_andnot_si128_emu
+#define _mm_cmpeq_epi32 _mm_cmpeq_epi32_emu
+#define _mm_cmpeq_ps _mm_cmpeq_ps_emu
+#define _mm_cmpge_ps _mm_cmpge_ps_emu
+#define _mm_cmpgt_ps _mm_cmpgt_ps_emu
+#define _mm_cmple_ps _mm_cmple_ps_emu
+#define _mm_cmplt_epi32 _mm_cmplt_epi32_emu
+#define _mm_cmpgt_epi32 _mm_cmpgt_epi32_emu
+#define _mm_cmplt_ps _mm_cmplt_ps_emu
+#define _mm_cmple_ss _mm_cmple_ss_emu
+#define _mm_cmpneq_ps  _mm_cmpneq_ps_emu
+#define _mm_cvtepi32_ps _mm_cvtepi32_ps_emu
+#define _mm_cvtps_epi32 _mm_cvtps_epi32_emu
+#define _mm_cvtsi32_ss _mm_cvtsi32_ss_emu
+#define _mm_cvttps_epi32 _mm_cvttps_epi32_emu
+#define _mm_cvtps_pi32 _mm_cvtps_pi32_emu
+#define _mm_cvttss_si32 _mm_cvttss_si32_emu
+#define _mm_div_ps _mm_div_ps_emu
+#define _mm_load_ps _mm_load_ps_emu
+#define _mm_load_si128 _mm_load_si128_emu
+#define _mm_maskmoveu_si128 _mm_maskmoveu_si128_emu
+#define _mm_max_ps _mm_max_ps_emu
+#define _mm_min_ps _mm_min_ps_emu
+#define _mm_movehl_ps _mm_movehl_ps_emu
+#define _mm_movemask_epi8 _mm_movemask_epi8_emu
+#define _mm_movemask_ps _mm_movemask_ps_emu
+#define _mm_movemask_epi8 _mm_movemask_epi8_emu
+#define _mm_movemask_ps _mm_movemask_ps_emu
+#define _mm_mul_ss _mm_mul_ss_emu
+#define _mm_mul_ps _mm_mul_ps_emu
+#define _mm_or_ps _mm_or_ps_emu
+#define _mm_or_si128 _mm_or_si128_emu
+#define _mm_rcp_ps _mm_rcp_ps_emu
+#define _mm_rcp_ss _mm_rcp_ss_emu
+#define _mm_rsqrt_ss _mm_rsqrt_ss_emu
+#define _mm_rsqrt_ps _mm_rsqrt_ps_emu
+#define _mm_set1_epi32 _mm_set1_epi32_emu
+#define _mm_set_epi32 _mm_set_epi32_emu
+#define _mm_set_ps _mm_set_ps_emu
+#define _mm_set_ps1 _mm_set_ps1_emu
+#define _mm_set_ss _mm_set_ss_emu
+#define _mm_setr_epi32 _mm_setr_epi32_emu
+#define _mm_setr_ps _mm_setr_ps_emu
+#define _mm_setzero_ps _mm_setzero_ps_emu
+#define _mm_slli_epi32 _mm_slli_epi32_emu
+#define _mm_shuffle_epi32 _mm_shuffle_epi32_emu
+#define _mm_shuffle_ps _mm_shuffle_ps_emu
+#define _mm_stream_ps _mm_stream_ps_emu
+#define _mm_srli_epi32 _mm_srli_epi32_emu
+#define _mm_sqrt_ps _mm_sqrt_ps_emu
+#define _mm_store_ps _mm_store_ps_emu
+#define _mm_sub_epi32 _mm_sub_epi32_emu
+#define _mm_sub_ss _mm_sub_ss_emu
+#define _mm_sub_ps _mm_sub_ps_emu
+#define _mm_unpackhi_ps _mm_unpackhi_ps_emu
+#define _mm_unpacklo_ps _mm_unpacklo_ps_emu
+#define _mm_xor_ps _mm_xor_ps_emu
+#define _mm_packs_pi32 _mm_packs_pi32_emu
+#define _mm_setzero_si64 _mm_setzero_si64_emu
+#define _mm_unpacklo_pi16 _mm_unpacklo_pi16_emu
+#define _mm_unpackhi_pi16 _mm_unpackhi_pi16_emu
+#define _mm_unpacklo_pi32 _mm_unpacklo_pi32_emu
+#define _mm_unpackhi_pi32 _mm_unpackhi_pi32_emu
+#define _mm_packs_pu16 _mm_packs_pu16_emu
+#define _mm_setr_epi64 _mm_setr_epi64_emu
+#define _mm_getcsr _mm_getcsr_emu
+#define _mm_setcsr _mm_setcsr_emu
+
+#endif
+
 #ifdef VECTOR_SIZE
 #error macro conflict found in __FILE__ << ":" << __LINE__
 #endif
@@ -910,6 +990,10 @@ _INLINE static void _mm_setcsr(unsigned int v) {
 }
 
 /////////////////////////////////////////////////////////////////////////////
+
+#ifdef _mm_cvtps_pi16
+    #undef _mm_cvtps_pi16
+#endif
 
 #define _mm_cvtps_pi16(a)                                   \
     _mm_packs_pi32(_mm_cvtps_pi32(a),                       \
