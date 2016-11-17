@@ -69,7 +69,7 @@ tp-parsec/bin $ ./parsecmgmt2 -a build -p all -c gcc-task_mth
 
 ## How is it different from the original PARSEC?
 
-1. We have implemented an improved version of the central control script **'parsecmgmt2'** (```tp-parsec/bin/parsecmgmt2```) which supports new build configurations and build-config-sourcing mechanisms for task versions together with other improvements, while still maintaining things that parsecmgmt can do.
+* 1. We have implemented an improved version of the central control script **'parsecmgmt2'** (```tp-parsec/bin/parsecmgmt2```) which supports new build configurations and build-config-sourcing mechanisms for task versions together with other improvements, while still maintaining things that parsecmgmt can do.
   * task\_mth: MassiveThreads
   * task\_tbb: Intel TBB
   * task\_qth: Qthreads
@@ -77,9 +77,9 @@ tp-parsec/bin $ ./parsecmgmt2 -a build -p all -c gcc-task_mth
   * task\_cilkplus: Cilk Plus
   * task\_serial: serial version (disable all generic task primitives)
 
-2. 'parsecmgmt2' supports **multiple actions** specified by the option ```-a```, e.g., ```-a uninstall build``` is legitimate and effective now, the action 'uninstall' will be done first then the action 'build' will be carried on.
+* 2. 'parsecmgmt2' supports **multiple actions** specified by the option ```-a```, e.g., ```-a uninstall build``` is legitimate and effective now, the action 'uninstall' will be done first then the action 'build' will be carried on.
 
-3. **New global build configuration files** are added in ```tp-parsec/config/``` in order to provide system-specific compilation flags (CFLAGS, CXXFLAGS) and link options (LDFLAGS, LIBS) for ```parsecmgmt2``` to compile the program into corresponding executables.
+* 3. **New global build configuration files** are added in ```tp-parsec/config/``` in order to provide system-specific compilation flags (CFLAGS, CXXFLAGS) and link options (LDFLAGS, LIBS) for ```parsecmgmt2``` to compile the program into corresponding executables.
 
 ```
 tp-parsec/bin $ ls -ahl ../config/task*
@@ -138,7 +138,7 @@ if [ "${act}" == "run" ]; then
 fi
 ```
 
-4. 'parsecmgmt2' also supports **DAG Recorder**. By appending '-dr' to the usual config ('gcc-task\_mth' -> 'gcc-task\_mth-dr'), we can demand 'parsecmgmt2' to compile the corresponding task version together with DAG Recorder (```... -DDAG_RECORDER=2 ... -ldr -lpthread ...```). Compile and link options for DAG Recorder are stored in ```tp-parsec/config/dr.bldconf```.
+* 4. 'parsecmgmt2' also supports **DAG Recorder**. By appending '-dr' to the usual config ('gcc-task\_mth' -> 'gcc-task\_mth-dr'), we can demand 'parsecmgmt2' to compile the corresponding task version together with DAG Recorder (```... -DDAG_RECORDER=2 ... -ldr -lpthread ...```). Compile and link options for DAG Recorder are stored in ```tp-parsec/config/dr.bldconf```.
 
 ```
 tp-parsec/bin $ cat ../config/dr.bldconf
@@ -169,48 +169,27 @@ fi
 ------ | -------- | ------ | --- | ------ | --------- | --------- | --------- | --------- | -------------- | ------------
 gcc    | mgmt/**mgmt2** | mgmt/**mgmt2** | mgmt/**mgmt2** | mgmt/**mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2**
 icc    | mgmt/**mgmt2** | mgmt/**mgmt2** | mgmt/**mgmt2** | mgmt/**mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2**
-gcc**-dr** | n/a        | n/a        | n/a        | n/a        | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** 
-icc**-dr** | n/a        | n/a        | n/a        | n/a        | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2**
+gcc-**dr** | n/a        | n/a        | n/a        | n/a        | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** 
+icc-**dr** | n/a        | n/a        | n/a        | n/a        | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2**
 
 * Some examples are:
-
-  - How to build MassiveThreads-based task version of streamcluster using gcc?
-
-```
-tp-parsec/bin $ ./parsecmgmt2 -a build -p streamcluster -c gcc-task_mth
-```
-
-  - How to re-build TBB-based task version of canneal using icc?
-
-```
-tp-parsec/bin $ ./parsecmgmt2 -a uninstall build -p canneal -c icc-task_tbb
-```
-
-  - How to build gcc-based Qthreads-based task version of dedup with DAG Recorder?
-
-```
-tp-parsec/bin $ ./parsecmgmt2 -a build -p dedup -c icc-task_qth-dr
-```
-
-  - You can **run** the benchmarks similarly as you do with 'parsecmgmt', just add two more options of input type (e.g., ```-i simlarge```) and number of cores (e.g., ```-n 16```), e.g., run fluidanimate compiled with icc, TBB task, and DAG Recorder on 32 cores and with the native input:
-
-```
-tp-parsec/bin $ ./parsecmgmt2 -a run -p fluidanimate -c icc-task_tbb-dr -i native -n 32
-```
+  - How to build MassiveThreads-based task version of streamcluster using gcc? ```tp-parsec/bin $ ./parsecmgmt2 -a build -p streamcluster -c gcc-task_mth```
+  - How to re-build TBB-based task version of canneal using icc? ```tp-parsec/bin $ ./parsecmgmt2 -a uninstall build -p canneal -c icc-task_tbb```
+  - How to build gcc-based Qthreads-based task version of dedup with DAG Recorder? ```tp-parsec/bin $ ./parsecmgmt2 -a build -p dedup -c icc-task_qth-dr```
+  - You can **run** the benchmarks similarly as you do with 'parsecmgmt', just add two more options of input type (e.g., ```-i simlarge```) and number of cores (e.g., ```-n 16```), e.g., run fluidanimate compiled with icc, TBB task, and DAG Recorder on 32 cores and with the native input: ```tp-parsec/bin $ ./parsecmgmt2 -a run -p fluidanimate -c icc-task_tbb-dr -i native -n 32```
 
 
 ## How to take part in developing TP-PARSEC?
 
 There are two things to consider when converting an existing application into task parallelism: compilation and source code.
 
-1. How to change **Compilation**?
+* 1. How to change **Compilation**?
 You almost do not need to do anything in the application's Makefile to deal with task versions. All the necessary compile flags and links passed by 'parsecmgmt2' through four variables of ```CFLAGS, CXXFLAGS, LDFLAGS, LIBS``` are already automatically captured by the original Makefile.
   * ```CFLAGS```: compile options for C source files
   * ```CXXFLAGS```: compile options for C++ source files
   * ```LDFLAGS```: library paths to look for linked libraries at compile time ('-L') and runtime ('-Wl,-R')
   * ```LIBS```: libraries to link against with ('-l')
-  
-  When you want to pass some additional options in the Makefile, you can branch out the case of ```version=task```. Following is a part of the streamcluster's Makefile which allows the option of using tbbmalloc for task versions. One note is that you actually do not need to append ```-DENABLE_TASK``` into 'CFLAGS' or 'CXXFLAGS' because it has been done automatically by 'parsecmgmt2'.
+When you want to pass some additional options in the Makefile, you can branch out the case of ```version=task```. Following is a part of the streamcluster's Makefile which allows the option of using tbbmalloc for task versions. One note is that you actually do not need to append ```-DENABLE_TASK``` into 'CFLAGS' or 'CXXFLAGS' because it has been done automatically by 'parsecmgmt2'.
 ```
 ...
 ifdef version
@@ -232,7 +211,7 @@ ifdef version
 endif
 ...
 ```
-2. How to change **Source code**?
+* 2. How to change **Source code**?
  * You use ```#ifdef ENABLE_TASK``` pragma to separate your task-parallel code from other versions.
  * Remember to include ```tpsiwtch.h``` which translates the generic task parallel primitives into corresponding equivalents of a specific task parallel system.
  * Call the function ```tp_init()``` before any invocation to task primitives in order for 'tpswitch' to initialize the corresponding runtime system if necessary.
