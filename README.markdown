@@ -20,10 +20,9 @@ Following is a short description about the original PARSEC and then our task-par
  * ```-p``` (package): to specify which benchmark or library package to apply the action to, e.g., 'blackscholes', 'canneal', 'freqmine'.
  * ```-c``` (config): to specify the configuration to build or run the package, e.g., 'gcc', 'gcc-pthreads', 'icc-tbb'.
 
-When the action is 'run', you need to (basically) specify two more options: the input to use (```-i```) and the number of threads to run on (```-n```) in order for ```parsecmgmt``` to run the benchmark.
+ When the action is 'run', you need to (basically) specify two more options: the input to use (```-i```) and the number of threads to run on (```-n```) in order for ```parsecmgmt``` to run the benchmark.
 
 3. Some examples:
-
   * How to build blackscholes' pthreads version using gcc?
 ```
 parsec/bin $ ./parsecmgmt -a build -p blackscholes -c gcc-pthreads
@@ -81,7 +80,6 @@ tp-parsec/bin $ ./parsecmgmt2 -a build -p all -c gcc-task_mth
 2. 'parsecmgmt2' supports **multiple actions** specified by the option ```-a```, e.g., ```-a uninstall build``` is legitimate and effective now, the action 'uninstall' will be done first then the action 'build' will be carried on.
 
 3. **New global build configuration files** are added in ```tp-parsec/config/``` in order to provide system-specific compilation flags (CFLAGS, CXXFLAGS) and link options (LDFLAGS, LIBS) for ```parsecmgmt2``` to compile the program into corresponding executables.
-
 ```
 tp-parsec/bin $ ls -ahl ../config/task*
  ../config/task.bldconf
@@ -92,9 +90,7 @@ tp-parsec/bin $ ls -ahl ../config/task*
  ../config/task_serial.bldconf
  ../config/task_tbb.bldconf
 ```
-
   * 'task.bldconf' contains **common options** for task versions, and 'task_mth.bldconf', for example, contains **options specific to** MassiveThreads task version.
-
 {task.bldconf}
 ```
 /tp-parsec/bin $ cat ../config/task.bldconf 
@@ -114,7 +110,6 @@ if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" =
   CXXFLAGS="${CXXFLAGS} ${cflags}"
 fi
 ```
-
 {task\_mth.bldconf}
 ```
 /tp-parsec/bin $ cat ../config/task_mth.bldconf 
@@ -142,9 +137,7 @@ if [ "${act}" == "run" ]; then
   run_env="${run_env:+$run_env }${flags}"
 fi
 ```
-
 4. 'parsecmgmt2' also supports **DAG Recorder**. By appending '-dr' to the usual config ('gcc-task\_mth' -> 'gcc-task\_mth-dr'), we can demand 'parsecmgmt2' to compile the corresponding task version together with DAG Recorder (```... -DDAG_RECORDER=2 ... -ldr -lpthread ...```). Compile and link options for DAG Recorder are stored in ```tp-parsec/config/dr.bldconf```.
-
 {dr.bldconf}
 ```
 tp-parsec/bin $ cat ../config/dr.bldconf
@@ -166,6 +159,8 @@ if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" =
   LIBS="${LIBS} -lhooks -ldr -lpthread"
 fi
 ```
+
+### Summary
 
 * A brief summary of supported build configurations is shown in the table below.
 
@@ -215,7 +210,6 @@ You almost do not need to do anything in the application's Makefile to deal with
   * ```LIBS```: libraries to link against with ('-l')
   
   When you want to pass some additional options in the Makefile, you can branch out the case of ```version=task```. Following is a part of the streamcluster's Makefile which allows the option of using tbbmalloc for task versions. One note is that you actually do not need to append ```-DENABLE_TASK``` into 'CFLAGS' or 'CXXFLAGS' because it has been done automatically by 'parsecmgmt2'.
-
 ```
 ...
 ifdef version
@@ -237,15 +231,11 @@ ifdef version
 endif
 ...
 ```
-
 2. How to change **Source code**?
-
  * You use ```#ifdef ENABLE_TASK``` pragma to separate your task-parallel code from other versions.
  * Remember to include ```tpsiwtch.h``` which translates the generic task parallel primitives into corresponding equivalents of a specific task parallel system.
  * Call the function ```tp_init()``` before any invocation to task primitives in order for 'tpswitch' to initialize the corresponding runtime system if necessary.
  * Add ```cilk_begin``` and ```cilk_void_return``` (?).
-
-
 ```
 #ifdef ENABLE_TASK
 #include <tpswitch/tpswitch.h>
