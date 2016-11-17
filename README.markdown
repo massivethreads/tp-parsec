@@ -80,6 +80,7 @@ tp-parsec/bin $ ./parsecmgmt2 -a build -p all -c gcc-task_mth
 2. 'parsecmgmt2' supports **multiple actions** specified by the option ```-a```, e.g., ```-a uninstall build``` is legitimate and effective now, the action 'uninstall' will be done first then the action 'build' will be carried on.
 
 3. **New global build configuration files** are added in ```tp-parsec/config/``` in order to provide system-specific compilation flags (CFLAGS, CXXFLAGS) and link options (LDFLAGS, LIBS) for ```parsecmgmt2``` to compile the program into corresponding executables.
+
 ```
 tp-parsec/bin $ ls -ahl ../config/task*
  ../config/task.bldconf
@@ -90,7 +91,9 @@ tp-parsec/bin $ ls -ahl ../config/task*
  ../config/task_serial.bldconf
  ../config/task_tbb.bldconf
 ```
+
   * 'task.bldconf' contains **common options** for task versions, and 'task_mth.bldconf', for example, contains **options specific to** MassiveThreads task version.
+
 ```
 /tp-parsec/bin $ cat ../config/task.bldconf 
 #!/bin/bash
@@ -108,8 +111,7 @@ if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" =
   CFLAGS="${CFLAGS} ${cflags}"
   CXXFLAGS="${CXXFLAGS} ${cflags}"
 fi
-```
-```
+
 /tp-parsec/bin $ cat ../config/task_mth.bldconf 
 #!/bin/bash
 
@@ -135,7 +137,9 @@ if [ "${act}" == "run" ]; then
   run_env="${run_env:+$run_env }${flags}"
 fi
 ```
+
 4. 'parsecmgmt2' also supports **DAG Recorder**. By appending '-dr' to the usual config ('gcc-task\_mth' -> 'gcc-task\_mth-dr'), we can demand 'parsecmgmt2' to compile the corresponding task version together with DAG Recorder (```... -DDAG_RECORDER=2 ... -ldr -lpthread ...```). Compile and link options for DAG Recorder are stored in ```tp-parsec/config/dr.bldconf```.
+
 ```
 tp-parsec/bin $ cat ../config/dr.bldconf
 #!/bin/bash
