@@ -252,6 +252,19 @@ endif
 ...
 ```
 
+#### Tips
+* ```version=task``` is sometimes overwritten by local parsec/XXX.bldconf (e.g., apps/XXX/parsec/gcc.bldconf). If so, do as following:
+* 
+```
+#Makefile
+ifneq (,$(findstring ENABLE_TASK,$(CXXFLAGS)))
+   # for tasks
+else
+   # for others
+endif
+```
+
+
 ### 2. How to change **source code**?
 * You use ```#ifdef ENABLE_TASK``` pragma to separate your task-parallel code from other versions.
 * Remember to include ```tpsiwtch.h``` which translates the generic task parallel primitives into corresponding equivalents of a specific task parallel system.
@@ -300,16 +313,16 @@ int main() {
 }
 ```
 
+#### Tips
+* You must add OpenMP pragmas if you use ```create_task``` but ```pfor```.
+* Please use ```pfor``` with ```PFOR2_EXPERIMENTAL```, which enables an improved ```pfor``` version.
+
 ## How to evaluate correctness of code transformation?
 
 There seems no common way to check correctness of the output.
 For instance, blackscholes employs a chk_err flag, but bodytrack does nothing.
 
 It is strongly demanded to develop methods to check it.
-
-## How to live together with CMake and compile.mk?
-
-At present, I have no good idea. An example of ```raytrace``` shows how I struggled to forcedly combine them.
 
 ## Tips
 
