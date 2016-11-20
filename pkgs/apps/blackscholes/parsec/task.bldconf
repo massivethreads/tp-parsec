@@ -1,0 +1,3 @@
+
+CXXFLAGS="${CXXFLAGS} -std=c++11"
+version="task"
