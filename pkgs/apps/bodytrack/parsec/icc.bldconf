@@ -1,4 +1,6 @@
 #!/bin/bash
 
-source ${PARSECDIR}/pkgs/apps/bodytrack/parsec/gcc.bldconf
+if [ "${build}" == "icc" ]; then
+  source ${PARSECDIR}/pkgs/apps/bodytrack/parsec/gcc.bldconf
+fi
 

@@ -3,5 +3,7 @@
 # gcc.bldconf - configuration file for PARSEC
 
 # Default parallelization is pthreads
-source ${PARSECDIR}/pkgs/apps/bodytrack/parsec/gcc-pthreads.bldconf
+if [ "${build}" == "gcc" ]; then
+  source ${PARSECDIR}/pkgs/apps/bodytrack/parsec/gcc-pthreads.bldconf
+fi
 
