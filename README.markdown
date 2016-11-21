@@ -99,6 +99,8 @@ tp-parsec $ git submodule update --init pkgs/libs/qth/src
 tp-parsec $ git submodule update --init pkgs/libs/papi/src
 ```
 
+Note that ```git submodule update``` does not pull the latest source code of the submodule from its remote repository, but only the revision (commit) registered in the supermodule TP-PARSEC. If you want to use a submodule latest source code, go straight to its path (e.g., ```pkgs/libs/mth/src``` for MassiveThreads) and run ```git pull``` directly.
+
 
 ### 3. Multiple actions
 'parsecmgmt2' supports **multiple actions** specified by the option ```-a```, e.g., ```-a uninstall build``` is legitimate and effective now, the action 'uninstall' will be done first then the action 'build' will be carried on.
@@ -106,62 +108,23 @@ tp-parsec $ git submodule update --init pkgs/libs/papi/src
 ### 4. New bldconf(s)
 * **New global build configuration files** are added in ```tp-parsec/config/``` in order to provide system-specific compilation flags (CFLAGS, CXXFLAGS) and link options (LDFLAGS, LIBS) for ```parsecmgmt2``` to compile the program into corresponding executables.
 
-```
-tp-parsec/bin $ ls -ahl ../config/task*
- ../config/task.bldconf
- ../config/task_cilkplus.bldconf
- ../config/task_mth.bldconf
- ../config/task_omp.bldconf
- ../config/task_qth.bldconf
- ../config/task_serial.bldconf
- ../config/task_tbb.bldconf
-```
+ * tp-parsec/config/task.bldconf
+ * tp-parsec/config/task\_cilkplus.bldconf
+ * tp-parsec/config/task\_mth.bldconf
+ * tp-parsec/config/task\_omp.bldconf
+ * tp-parsec/config/task\_qth.bldconf
+ * tp-parsec/config/task\_serial.bldconf
+ * tp-parsec/config/task\_tbb.bldconf
 
 * 'task.bldconf' contains **common options** for task versions, and 'task_mth.bldconf', for example, contains **options specific to** MassiveThreads task version.
 
-```
-/tp-parsec/bin $ cat ../config/task.bldconf 
-#!/bin/bash
+* ```parsecmgmt2``` splits the configuration string specified by the '-c' option into sub-strings by hyphens, and sources all '.bldconf' files corresponding to these sub-strings. Especially in case of task versions, an additional ```task.bldconf``` file will be sourced right before the actual ```task_xxx.bldconf``` sub-configuration file is sourced. For examples, for a configuration of ```gcc-task_mth-dr``` ```parsecmgmt2``` will source four **global** configuration files of ```gcc.bldconf```, ```task.bldconf```, ```task_mth.bldconf```, ```dr.bldconf``` **in turn**, then it will continue to source four respective **local** configuration files in the benchmark's ```parsec``` sub-directory. For the original versions rather than 'task' (pthreads, openmp, tbb, serial), ```parsecmgmt2``` maintains the way how ```parsecmgmt``` does which is to source only one single global '.bldconf' file and one single local '.bldconf' file (e.g., ```tp-parsec/config/gcc-pthreads.bldconf``` and ```tp-parsec/pkgs/apps/blackscholes/parsec/gcc-pthreads.bldconf``` for the configuration of ```-c gcc-pthreads```).
 
-# Proclaim version for following bldconf soucing, and make
-export version=task
-
-# Package dependencies (need to reset it even to none)
-export global_build_deps=""
-
-# Only packages of the three benchmarking groups (apps, kernels, netapps) are targeted for task parallelization
-if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" == "netapps" ]; then
-  # for ENABLE_TASK macro
-  cflags="-DENABLE_TASK"
-  CFLAGS="${CFLAGS} ${cflags}"
-  CXXFLAGS="${CXXFLAGS} ${cflags}"
-fi
-
-/tp-parsec/bin $ cat ../config/task_mth.bldconf 
-#!/bin/bash
-
-export task_target=mth
-
-# Add options and links for mth task target
-# Only packages of the three benchmarking groups (apps, kernels, netapps) are targeted for task parallelization
-if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" == "netapps" ]; then
-  global_build_deps="${global_build_deps} mth"
-  # for mth
-  cflags="-I${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/include -DTO_MTHREAD_NATIVE -pthread"
-  CFLAGS="${CFLAGS} ${cflags}"
-  CXXFLAGS="${CXXFLAGS} ${cflags} -std=c++0x"
-  LDFLAGS="${LDFLAGS} -L${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/lib"
-  LIBS="${LIBS} -lmyth -lpthread"
-fi  
-
-# Options for running
-if [ "${act}" == "run" ]; then
-  flags="MYTH_NUM_WORKERS=${NTHREADS}"
-  #flags+=" MYTH_DEF_STKSIZE=${stack_size} MYTH_CPU_LIST=%(myth_cpu_list)"
-  # If run_env exists (not null nor empty), append it with a whitespace prior to flags
-  run_env="${run_env:+$run_env }${flags}"
-fi
-```
+ * e.g., in ```gcc.bldconf```: ```platform``` is assigned to ```g``` among other things
+ * e.g., in ```icc.bldconf```: ```platform``` is assigned to ```i``` among other things
+ * e.g., in ```task.bldconf```: ```version``` is assigned to ```task``` among other things
+ * e.g., in ```task_mth.bldconf```: ```task_target``` is assigned to ```mth``` among other things
+ * e.g., in ```task_qth.bldconf```: ```task_target``` is assigned to ```qth``` among other things
 
 ### 5. DAG Recorder
 'parsecmgmt2' also supports **DAG Recorder**. By appending '-dr' to the usual config ('gcc-task\_mth' -> 'gcc-task\_mth-dr'), we can demand 'parsecmgmt2' to compile the corresponding task version together with DAG Recorder (```... -DDAG_RECORDER=2 ... -ldr -lpthread ...```). Compile and link options for DAG Recorder are stored in ```tp-parsec/config/dr.bldconf```.
@@ -252,9 +215,17 @@ endif
 ...
 ```
 
+* The local configuration files ```gcc.bldconf``` and ```icc.bldconf``` sometimes source back to the Pthreads version ```gcc-pthreads.bldconf```. Its purpose is to indicate the preferred *default version* (Pthreads in this case) set by PARSEC creators. But ```gcc-pthreads.bldconf``` usually reassigns the variable ```version``` to ```pthreads``` which erroneously overwrites the assignment ```version=task``` done previously by the global ```task.bldconf``` in case of task configurations (*-task\_*). Hence, in order to avoid errors for task versions, we need to either remove the line ```source ...pthreads.bldconf``` from local ```gcc.bldconf``` or ```icc.bldconf```, or just wrap the line by an if condition of the simple configuration 'gcc' only.
+
+```
+if [ "${build}" == "gcc" ]; then
+  source ${PARSECDIR}/pkgs/apps/bodytrack/parsec/gcc-pthreads.bldconf
+fi
+```
+
 #### Tips
 * ```version=task``` is sometimes overwritten by local parsec/XXX.bldconf (e.g., apps/XXX/parsec/gcc.bldconf). If so, do as following:
-* 
+
 ```
 #Makefile
 ifneq (,$(findstring ENABLE_TASK,$(CXXFLAGS)))
