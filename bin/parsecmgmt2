@@ -328,13 +328,15 @@ function source_local_bldconf {
         echo "${oprefix} Warning: There is no local build configuration file '${conffile}'."
       fi
     fi
-    # Source the ${conf}.bldconf file
-    conffile="${confdir}/${conf}.bldconf"
-    if [ -f ${conffile} ]; then
-      echo "${oprefix} Source local build configuration file '${conffile}'."
-      source ${conffile}
-    else
-      echo "${oprefix} Warning: There is no local build configuration file '${conffile}'."
+    # Source the ${conf}.bldconf file only if it is not gcc.bldconf or icc.bldconf
+    if [ "$conf" != "gcc" -a "$conf" != "icc" ]; then
+      conffile="${confdir}/${conf}.bldconf"
+      if [ -f ${conffile} ]; then
+        echo "${oprefix} Source local build configuration file '${conffile}'."
+        source ${conffile}
+      else
+        echo "${oprefix} Warning: There is no local build configuration file '${conffile}'."
+      fi
     fi
   done
 }
