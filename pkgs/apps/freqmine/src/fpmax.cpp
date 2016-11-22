@@ -129,8 +129,8 @@ int main(int argc, char **argv)
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_bench_begin(__parsec_freqmine);
 #endif
-#if defined(ENABLE_TASK) && !defined(TO_CILKPLUS)
-	init_runtime(&argc,&argv);
+#if defined(ENABLE_TASK)
+	tp_init();
 #endif
 
 	if (argc < 3)

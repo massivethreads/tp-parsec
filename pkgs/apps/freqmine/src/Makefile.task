@@ -1,31 +1,41 @@
 PREFIX=${PARSECDIR}/pkgs/apps/freqmine/inst/${PARSECPLAT}
 
-TARGET  = freqmine
+TARGET = freqmine
 
 CXXFLAGS += -Wno-deprecated
+
 CXXFLAGS += -O2
 
-LIBS:=$(LIBS) -lm -ltbb
+all: $(TARGET)
 
-app_root       = ${PARSECDIR}/pkgs/apps/freqmine
-icc_dir       ?= ${CC_HOME}
-icc           ?= ${icc_dir}/bin/icc
-default_all    : ${task_target}_exes
-src_dir       ?= $(app_root)/src
-exe_prefix    ?= $(app_root)/inst/${PARSECPLAT}/${TARGET}
-obj_dir       ?= $(app_root)/obj/${PARSECPLAT}
+$(TARGET): fpgrowth.o data.o fp_tree.o buffer.o fsout.o fp_node.o wtime.o
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) fpgrowth.o data.o fp_tree.o buffer.o fsout.o fp_node.o wtime.o $(LIBS) -o $(TARGET)
 
-cpp_srcs := fpmax.cpp data.cpp fp_tree.cpp buffer.cpp fsout.cpp fp_node.cpp wtime.cpp
-cpp_opts := -std=c++11 $(CXXFLAGS) $(LDFLAGS) $(LIBS) -DENABLE_TASK -DPFOR2_EXPERIMENTAL
-targets  := freqmine
+wtime.o: wtime.cpp wtime.h
+	$(CXX) $(CXXFLAGS) -c wtime.cpp -o wtime.o
 
-include $(parallel2_dir)/sys/src/tools/makefiles/compile.mk
+fpgrowth.o: fpmax.cpp data.h fp_tree.h common.h fsout.h
+	$(CXX) $(CXXFLAGS) -c fpmax.cpp -o fpgrowth.o
+
+data.o: data.cpp data.h
+	$(CXX) $(CXXFLAGS) -c data.cpp
+
+fp_tree.o: fp_tree.cpp data.h fp_tree.h common.h fsout.h
+	$(CXX) $(CXXFLAGS) -c fp_tree.cpp
+
+buffer.o: buffer.cpp data.h buffer.h
+	$(CXX) $(CXXFLAGS) -c buffer.cpp
+
+fsout.o: fsout.cpp fsout.h common.h
+	$(CXX) $(CXXFLAGS) -c fsout.cpp
+
+fp_node.o: fp_node.cpp fp_node.h fsout.h common.h
+	$(CXX) $(CXXFLAGS) -c fp_node.cpp
 
 clean:
-	rm -f -r $(app_root)/inst/${PARSECPLAT}/*
+	rm -f *.o $(TARGET)
 
 install:
-	mkdir -p $(app_root)/inst/${PARSECPLAT}/bin
-	mv -f $(exe_prefix)* $(app_root)/inst/${PARSECPLAT}/bin/$(TARGET)_${task_target}
-	echo "\$${parallel2_dir}/sys/inst/${platform}/bin/urun -t ${task_target} -p \$${OMP_NUM_THREADS} -f ${platform} -- \$$(dirname \$$0)/$(TARGET)_${task_target} \$$1 \$$2 \$$3" > $(app_root)/inst/${PARSECPLAT}/bin/$(TARGET)
-	chmod 775 $(app_root)/inst/${PARSECPLAT}/bin/$(TARGET)
+	mkdir -p $(PREFIX)/bin
+	cp -f $(TARGET) $(PREFIX)/bin/$(TARGET)
+

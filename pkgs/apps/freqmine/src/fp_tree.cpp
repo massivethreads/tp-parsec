@@ -49,7 +49,7 @@ static int get_thread_num() {return omp_get_thread_num();}
 #elif ENABLE_TASK
 #ifdef TO_TBB
 tbb::mutex mtx;
-#elif TO_MTHREAD
+#elif TO_MTHREAD_NATIVE
 mth::mutex mtx;
 #else
 #include <mutex>
@@ -1398,7 +1398,7 @@ void FP_tree::release_node_array_after_mining(int sequence, int thread, int work
 #ifdef ENABLE_TASK
 #ifdef TO_TBB
         tbb::mutex::scoped_lock lock(mtx);
-#elif TO_MTHREAD
+#elif TO_MTHREAD_NATIVE
         mth::mutex::scoped_lock lock(mtx);
 #else // no library specific lock available, use default lock
         std::lock_guard<std::mutex> lock(mtx);

@@ -44,9 +44,7 @@ int *Data::parseDataFile(MapFile *mapfile)
 	int item, pos;
 	int j;
 	TRANSACTION_NO = 0;
-	
 	counts= new int[ITEM_NO];
-	
 	for(int i=0; i<ITEM_NO; i++)
 		counts[i] = 0;
 
@@ -64,7 +62,7 @@ int *Data::parseDataFile(MapFile *mapfile)
 			if (length == size) {
 				new_mapfilenode = (MapFileNode *)database_buf->newbuf(1, sizeof(MapFileNode));
 				new_mapfilenode->init(100000, 1);
-				new_mapfilenode->next = current_mapfilenode;		
+				new_mapfilenode->next = current_mapfilenode;
 				mapfile->first = new_mapfilenode;
 				mapfile->tablesize ++;
 				newTransactionContent = new_mapfilenode->TransactionContent;
@@ -104,7 +102,7 @@ int *Data::parseDataFile(MapFile *mapfile)
 				current_mapfilenode->top = length;
 				current_mapfilenode = (MapFileNode *)database_buf->newbuf(1, sizeof(MapFileNode));
 				current_mapfilenode->init(100000, 1);
-				current_mapfilenode->next = mapfile->first;		
+				current_mapfilenode->next = mapfile->first;
 				mapfile->first = current_mapfilenode;
 				mapfile->tablesize ++;
 				TransactionContent = current_mapfilenode->TransactionContent;
@@ -120,7 +118,7 @@ int *Data::parseDataFile(MapFile *mapfile)
 			current_mapfilenode->top = length;
 			ITEM_NO = net_itemno+1;
 			return counts;
-		}			 
+		}
 	};
 }
 
