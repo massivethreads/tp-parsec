@@ -2,7 +2,7 @@ PREFIX=${PARSECDIR}/pkgs/apps/fluidanimate/inst/${PARSECPLAT}
 
 TARGET   = fluidanimate
 OBJS     = cellpool.o task.o
-CXXFLAGS += -pthread -D_GNU_SOURCE -D__XOPEN_SOURCE=600 -save-temps -std=c++11
+CXXFLAGS += -D_GNU_SOURCE -D__XOPEN_SOURCE=600 -std=c++11
 
 # To enable visualization comment out the following lines (don't do this for benchmarking)
 #OBJS     += fluidview.o
@@ -15,7 +15,7 @@ ifeq "$(ostype)" "solaris"
     CXXFLAGS += -DSPARC_SOLARIS
 endif
 
-all: $(OBJS)
+all: $(OBJS) fluidcmp
 	$(CXX) $(CXXFLAGS) $(OBJS) $(LDFLAGS) $(LIBS) -o $(TARGET)
 
 %.o : %.cpp
