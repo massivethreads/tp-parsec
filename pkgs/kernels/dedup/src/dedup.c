@@ -21,6 +21,9 @@
 #include <hooks.h>
 #endif //ENABLE_PARSEC_HOOKS
 
+#ifdef ENABLE_TASK
+#include <tpswitch/tpswitch.h>
+#endif //ENABLE_TASK
 
 config_t * conf;
 
@@ -53,6 +56,10 @@ int main(int argc, char** argv) {
 #ifdef ENABLE_PARSEC_HOOKS
         __parsec_bench_begin(__parsec_dedup);
 #endif //ENABLE_PARSEC_HOOKS
+
+#ifdef ENABLE_TASK
+  tp_init();
+#endif
 
   int32 compress = TRUE;
 
