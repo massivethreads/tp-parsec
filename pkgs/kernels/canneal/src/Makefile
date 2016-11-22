@@ -10,7 +10,7 @@ ifdef version
     CXXFLAGS+=-DENABLE_THREADS -pthread
   endif
   ifeq "$(version)" "task"
-    MT = -DENABLE_TASK
+    MT =
   endif
 endif
 
