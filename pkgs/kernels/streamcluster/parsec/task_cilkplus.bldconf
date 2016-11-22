@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# Add options and links for cilkplus
+CXXFLAGS="${CXXFLAGS} -std=c++11"
+

@@ -19,7 +19,8 @@
 
 #include <tbb/tbb.h>
 
-//#define PFOR_TO_ORIGINAL
+//#define PFOR_TO_ORIGINAL 1
+//#define PFOR2_EXPERIMENTAL 1
 //#define USE_OLD_RANGE_BASED_PARALLEL_FOR
 #include <tpswitch/tpswitch.h>
 
@@ -396,6 +397,7 @@ pspeedy(Points * points, float z, long * kcenter) {
         //fprintf(stderr,"** New center for i=%d\n",i);
         //tbb::parallel_reduce(tbb::blocked_range<int>(0, points->num, env_grain_size), c);
         mtbb::parallel_for<tbb::blocked_range<int>, CenterOpen>(tbb::blocked_range<int>(0, points->num, env_grain_size), c);
+        //pfor(0, points->num, 1, env_grain_size, [&] (int f, int t) { c(tbb::blocked_range<int>(f, t, env_grain_size)); });
       }
     }
 
@@ -429,6 +431,7 @@ pspeedy(Points * points, float z, long * kcenter) {
 //double
 void
 pgain(long x, Points * points, double z, long int * numcenters, double * result) {
+  cilk_begin;
   int i;
   int number_of_centers_to_close = 0;
 
@@ -546,6 +549,7 @@ pgain(long x, Points * points, double z, long int * numcenters, double * result)
 
   //return -gl_cost_of_opening_x;
   *result = -gl_cost_of_opening_x;
+  cilk_void_return;
 }
 
 
@@ -678,6 +682,7 @@ selectfeasible_fast(Points * points, int ** feasible, int kmin) {
 /* compute approximate kmedian on the points */
 float
 pkmedian(Points * points, long kmin, long kmax, long * kfinal, int pid, pthread_barrier_t * barrier) {
+  cilk_begin;
   int i;
   double cost;
   double lastcost;
@@ -723,20 +728,20 @@ pkmedian(Points * points, long kmin, long kmax, long * kfinal, int pid, pthread_
     cost = 0;
     *kfinal = k;
 
-    return cost;
+    cilk_return(cost);
   }
 
   mk_task_group;
 
   shuffle(points);
-  create_task1( cost, spawn { cost = pspeedy(points, z, &k); } );
+  create_task1( cost, spawn [&](){ cost = pspeedy(points, z, &k); }() );
   wait_tasks;
 
   i=0;
 
   /* give speedy SP chances to get at least kmin/2 facilities */
   while ((k < kmin) && (i < SP)) {
-    create_task1( cost, spawn { cost = pspeedy(points, z, &k); } );
+	create_task1( cost, spawn [&](){ cost = pspeedy(points, z, &k); }() );
     wait_tasks;
     i++;
   }
@@ -750,7 +755,7 @@ pkmedian(Points * points, long kmin, long kmax, long * kfinal, int pid, pthread_
     }
     
     shuffle(points);
-    create_task1( cost, spawn { cost =  pspeedy(points, z, &k); });
+    create_task1( cost, spawn [&](){ cost =  pspeedy(points, z, &k); }() );
     wait_tasks;
     i++;
   }
@@ -772,7 +777,7 @@ pkmedian(Points * points, long kmin, long kmax, long * kfinal, int pid, pthread_
     
     /* first get a rough estimate on the FL solution */
     lastcost = cost;
-    create_task1( cost, spawn { cost = pFL(points, feasible, numfeasible, z, &k, cost, (long) (ITER * kmax * log((double) kmax)), 0.1); } );
+    create_task1( cost, spawn [&](){ cost = pFL(points, feasible, numfeasible, z, &k, cost, (long) (ITER * kmax * log((double) kmax)), 0.1); }() );
     wait_tasks;
 
     /* if number of centers seems good, try a more accurate FL */
@@ -781,7 +786,7 @@ pkmedian(Points * points, long kmin, long kmax, long * kfinal, int pid, pthread_
       
       /* may need to run a little longer here before halting without
          improvement */
-      create_task1( cost, spawn { cost = pFL(points, feasible, numfeasible, z, &k, cost, (long) (ITER * kmax * log((double) kmax)), 0.001); });
+      create_task1( cost, spawn [&](){ cost = pFL(points, feasible, numfeasible, z, &k, cost, (long) (ITER * kmax * log((double) kmax)), 0.001); }() );
       wait_tasks;
     }
 
@@ -813,7 +818,7 @@ pkmedian(Points * points, long kmin, long kmax, long * kfinal, int pid, pthread_
   free(feasible); 
   *kfinal = k;
 
-  return cost;
+  cilk_return(cost);
 }
 
 /* compute the means for the k clusters */
@@ -984,7 +989,7 @@ void outcenterIDs( Points* centers, long* centerIDs, char* outfile ) {
 
 void
 streamCluster(PStream * stream, long kmin, long kmax, int dim, long chunksize, long centersize, char * outfile) {
-
+  cilk_begin;
 #if USE_TBBMALLOC
   float * block = (float *) memoryFloat.allocate(chunksize * dim * sizeof(float));
   float * centerBlock = (float *) memoryFloat.allocate(centersize * dim * sizeof(float));
@@ -1105,6 +1110,7 @@ streamCluster(PStream * stream, long kmin, long kmax, int dim, long chunksize, l
   wait_tasks;
   contcenters( &centers );
   outcenterIDs( &centers, centerIDs, outfile );
+  cilk_void_return;
 }
 
 long parsec_usecs() {
