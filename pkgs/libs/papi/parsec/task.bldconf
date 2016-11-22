@@ -2,8 +2,8 @@
 
 if [ ${platform} == "g" ]; then
 	# load gcc.bldconf
-	source ${PARSECDIR}/pkgs/libs/mesa/parsec/gcc.bldconf
+	source ${PARSECDIR}/pkgs/libs/papi/parsec/gcc.bldconf
 else
 	# load icc.bldconf
-	source ${PARSECDIR}/pkgs/libs/mesa/parsec/icc.bldconf
+	source ${PARSECDIR}/pkgs/libs/papi/parsec/icc.bldconf
 fi
