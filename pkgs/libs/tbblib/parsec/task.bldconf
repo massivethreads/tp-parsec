@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [ ${platform} == "g" ]; then
+	# load gcc.bldconf
+	source ${PARSECDIR}/pkgs/libs/tbblib/parsec/gcc.bldconf
+else
+	# load icc.bldconf
+	source ${PARSECDIR}/pkgs/libs/tbblib/parsec/icc.bldconf
+fi
