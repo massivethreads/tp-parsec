@@ -1,0 +1,155 @@
+
+image: wendo/parsec
+
+variables:
+    PARSEC_RUN_COMMAND: "./parsecmgmt2 -a build run -n 8"
+
+before_script:
+    - git submodule update --init
+
+stages:
+    - test
+
+# blackscholes
+
+test_blackscholes_gcc_pthreads_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p blackscholes -c gcc-pthreads
+
+test_blackscholes_gcc_mth_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p blackscholes -c gcc-task_mth
+
+test_blackscholes_gcc_qth_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p blackscholes -c gcc-task_qth
+
+test_blackscholes_gcc_tbb_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p blackscholes -c gcc-task_tbb
+
+test_blackscholes_gcc_omp_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p blackscholes -c gcc-task_omp
+
+# raytrace
+
+test_raytrace_gcc_pthreads_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p raytrace -c gcc-pthreads
+
+test_raytrace_gcc_mth_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p raytrace -c gcc-task_mth
+
+test_raytrace_gcc_qth_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p raytrace -c gcc-task_qth
+
+test_raytrace_gcc_tbb_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p raytrace -c gcc-task_tbb
+
+test_raytrace_gcc_omp_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p raytrace -c gcc-task_omp
+
+# fluidanimate
+
+test_fluidanimate_gcc_pthreads_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p fluidanimate -c gcc-pthreads
+
+test_fluidanimate_gcc_mth_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p fluidanimate -c gcc-task_mth
+
+test_fluidanimate_gcc_qth_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p fluidanimate -c gcc-task_qth
+
+test_fluidanimate_gcc_tbb_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p fluidanimate -c gcc-task_tbb
+
+test_fluidanimate_gcc_omp_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p fluidanimate -c gcc-task_omp
+
+#dedup
+
+test_dedup_gcc_pthreads_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p dedup -c gcc-pthreads
+
+test_dedup_gcc_mth_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p dedup -c gcc-task_mth
+
+test_dedup_gcc_qth_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p dedup -c gcc-task_qth
+
+test_dedup_gcc_tbb_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p dedup -c gcc-task_tbb
+
+test_dedup_gcc_omp_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p dedup -c gcc-task_omp
+
+# canneal
+
+test_canneal_gcc_pthreads_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p canneal -c gcc-pthreads
+
+#test_canneal_gcc_mth_job:
+#    stage: test
+#    script:
+#        - cd bin
+#        - ${PARSEC_RUN_COMMAND} -p canneal -c gcc-task_mth
+
+
