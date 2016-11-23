@@ -65,6 +65,32 @@ tp-parsec/bin $ ./parsecmgmt2 -a run -p blackscholes -c gcc-task_mth -i simlarge
 tp-parsec/bin $ ./parsecmgmt2 -a build -p all -c gcc-task_mth
 ```
 
+It can be summarized as following.
+
+```
+#Install TP-PARSEC
+git clone git@gitlab.eidos.ic.i.u-tokyo.ac.jp:parallel/tp-parsec.git
+#To install sim input
+wget http://parsec.cs.princeton.edu/download/3.0/parsec-3.0-input-sim.tar.gz
+tar xvzf parsec-3.0-input-sim.tar.gz
+rsync -a --remove-source-files parsec-3.0/* tp-parsec/
+rm -r parsec-3.0 parsec-3.0-input-sim.tar.gz
+##To install native input
+#wget http://parsec.cs.princeton.edu/download/3.0/parsec-3.0-input-native.tar.gz
+#tar xvzf parsec-3.0-input-native.tar.gz
+#rsync -a --remove-source-files parsec-3.0/* tp-parsec/
+#rm -r parsec-3.0 parsec-3.0-input-native.tar.gz
+cd tp-parsec
+git submodule update -i
+
+#Run something
+cd bin
+#Run blackscholes with simlarge on 8 cores.
+./parsecmgmt2 -a build run -p blackscholes -c gcc-task_mth -i simlarge -n 8
+#Specify a library path for icc (if necessary)
+LD_LIBRARY_PATH=/opt/intel/lib/intel64 ./parsecmgmt2 -a build run -p blackscholes -c icc-task_mth -i simlarge -n 8
+```
+
 ## How is it different from the original PARSEC?
 
 ### 1. 'parsecmgmt2'
