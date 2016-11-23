@@ -19,17 +19,25 @@
 
 #include <tbb/tbb.h>
 
-//#define PFOR_TO_ORIGINAL 1
-//#define PFOR2_EXPERIMENTAL 1
-//#define USE_OLD_RANGE_BASED_PARALLEL_FOR
-#include <tpswitch/tpswitch.h>
+#define USE_PFOR 1
 
-#include <mtbb/parallel_for.h>
-#include <mtbb/parallel_reduce.h>
-//#include <tbb/parallel_for.h>
-//#include <tbb/parallel_reduce.h>
-//#include "tbb/blocked_range.h"
-//#include "tbb/task_scheduler_init.h"
+#if USE_PFOR
+  //use pfor
+  #define PFOR_TO_ORIGINAL 1
+  #define PFOR2_EXPERIMENTAL 1
+  #include <tpswitch/tpswitch.h>
+  #define PFOR2_REDUCE_EXPERIMENTAL 1
+  #include "pfor_reduce.h"
+#else
+  //use mtbb::parallel_for and parallel_reduce, which don't support OpenMP and Cilkplus.
+  #include <tpswitch/tpswitch.h>
+  //#include <tbb/parallel_for.h>
+  //#include <tbb/parallel_reduce.h>
+  //#include "tbb/blocked_range.h"
+  //#include "tbb/task_scheduler_init.h"
+  #include <mtbb/parallel_for.h>
+  #include <mtbb/parallel_reduce.h>
+#endif
 
 #define TBB_STEALER (tbb::task_scheduler_init::occ_stealer)
 #define NUM_DIVISIONS (nproc)
@@ -132,7 +140,7 @@ struct CenterCreate {
       float distance = dist(points->p[k], points->p[0], points->dim);
       points->p[k].cost = distance * points->p[k].weight;
       points->p[k].assign = 0;
-    } 
+    }
   }
 
 };
@@ -146,7 +154,7 @@ public:
   int type; /*type=0: compute. type=1: reduction */
   CenterOpen(Points * p) : points(p), total_cost(0), type(0) {}
   CenterOpen(CenterOpen & rhs, tbb::split) {
-    total_cost = 0; 
+    total_cost = 0;
     points = rhs.points;
     i = rhs.i;
     type = rhs.type;
@@ -169,7 +177,7 @@ public:
           points->p[k].assign = i;
         }
       }
-    }    
+    }
   }
 
   void join(CenterOpen & lhs) { total_cost += lhs.getTotalCost(); }
@@ -232,7 +240,7 @@ lower_cost(int pid, int stride, Points * points, long x, double * work_mem, int 
     if ( x_cost < current_cost ) {
 
       // point i would save cost just by switching to x
-      // (note that i cannot be a median, 
+      // (note that i cannot be a median,
       // or else dist(p[i], p[x]) would be 0)
         
       switch_membership[i] = 1;
@@ -246,7 +254,7 @@ lower_cost(int pid, int stride, Points * points, long x, double * work_mem, int 
       // if we reassigned that median and all its members to x;
       // note we've already accounted for the fact that the median
       // would save z by closing; now we have to subtract from the savings
-      // the extra cost of reassigning that median and its members 
+      // the extra cost of reassigning that median and its members
       int assign = points->p[i].assign;
       lower[center_table[assign]] += current_cost - x_cost;
       //fprintf(stderr,"Lower[%d]=%lf\n",center_table[assign], lower[center_table[assign]]);
@@ -261,7 +269,7 @@ center_close(int pid, int stride, Points * points, double * work_mem, int K, dou
   long bsize = points->num / ((NUM_DIVISIONS));
   long k1 = bsize * pid;
   long k2 = k1 + bsize;
-  if (pid == (NUM_DIVISIONS) - 1) 
+  if (pid == (NUM_DIVISIONS) - 1)
     k2 = points->num;
 
   double * gl_lower = &work_mem[(NUM_DIVISIONS) * stride];
@@ -282,9 +290,9 @@ center_close(int pid, int stride, Points * points, double * work_mem, int K, dou
       if (low > 0) {
         // i is a median, and
         // if we were to open x (which we still may not) we'd close i
-            
+
         // note, we'll ignore the following quantity unless we do open x
-        ++local_number_of_centers_to_close;  
+        ++local_number_of_centers_to_close;
         *cost_of_opening_x -= low;
       }
     }
@@ -297,11 +305,11 @@ save_money(int pid, int stride, Points * points, long x, double * work_mem) {
   long bsize = points->num / ((NUM_DIVISIONS));
   long k1 = bsize * pid;
   long k2 = k1 + bsize;
-  if (pid == (NUM_DIVISIONS) - 1) 
+  if (pid == (NUM_DIVISIONS) - 1)
     k2 = points->num;
 
   double * gl_lower = &work_mem[(NUM_DIVISIONS) * stride];
-    
+
   //  we'd save money by opening x; we'll do it
   int i;
   for (int i = k1; i < k2; i++) {
@@ -370,7 +378,7 @@ float
 pspeedy(Points * points, float z, long * kcenter) {
   static double totalcost;
   static bool open = false;
-  static double * costs; //cost for each thread. 
+  static double * costs; //cost for each thread.
   static int i;
 
 
@@ -379,9 +387,12 @@ pspeedy(Points * points, float z, long * kcenter) {
     CenterCreate c(points);
     //int grain_size = points->num / ((NUM_DIVISIONS));
     //tbb::parallel_for(tbb::blocked_range<int>(0, points->num, env_grain_size), c);
-    mtbb::parallel_for<tbb::blocked_range<int>, CenterCreate>(tbb::blocked_range<int>(0, points->num, env_grain_size), c);
+    #if USE_PFOR
+      pfor(0, points->num, 1, env_grain_size, [&c] (int f, int t) { c(tbb::blocked_range<int>(f, t, env_grain_size)); });
+    #else
+      mtbb::parallel_for<tbb::blocked_range<int>, CenterCreate>(tbb::blocked_range<int>(0, points->num, env_grain_size), c);
+    #endif
   }
-    
   *kcenter = 1;
 
 
@@ -396,17 +407,36 @@ pspeedy(Points * points, float z, long * kcenter) {
         c.i = i;
         //fprintf(stderr,"** New center for i=%d\n",i);
         //tbb::parallel_reduce(tbb::blocked_range<int>(0, points->num, env_grain_size), c);
-        mtbb::parallel_for<tbb::blocked_range<int>, CenterOpen>(tbb::blocked_range<int>(0, points->num, env_grain_size), c);
-        //pfor(0, points->num, 1, env_grain_size, [&] (int f, int t) { c(tbb::blocked_range<int>(f, t, env_grain_size)); });
+        #if USE_PFOR
+          pfor(0, points->num, 1, env_grain_size, [&c] (int f, int t) { c(tbb::blocked_range<int>(f, t, env_grain_size)); });
+        #else
+          mtbb::parallel_for<tbb::blocked_range<int>, CenterOpen>(tbb::blocked_range<int>(0, points->num, env_grain_size), c);
+        #endif
       }
     }
 
     c.type = 1; /* Once last time for actual reduction */
     //tbb::parallel_reduce(tbb::blocked_range<int>(0, points->num, env_grain_size), c);
-    mtbb::parallel_reduce<tbb::blocked_range<int>, CenterOpen>(tbb::blocked_range<int>(0, points->num, env_grain_size), c);
-
-    totalcost = z * (*kcenter);
-    totalcost += c.getTotalCost();
+    #if USE_PFOR
+      double c_total_cost = pfor_reduce(0, points->num, 1, env_grain_size,
+                                          [&points] (int f, int t) -> double {
+                                          int begin = f;
+                                          int end = t;
+                                          double local_total_cost = 0.0;
+                                          for(int k = begin; k != end; k++)
+                                            local_total_cost += points->p[k].cost;
+                                          return local_total_cost;
+                                        },
+                                        [] (double a, double b) -> double {
+                                          return a + b;
+                                        });
+      totalcost = z * (*kcenter);
+      totalcost += c_total_cost;
+    #else
+      mtbb::parallel_reduce<tbb::blocked_range<int>, CenterOpen>(tbb::blocked_range<int>(0, points->num, env_grain_size), c);
+      totalcost = z * (*kcenter);
+      totalcost += c.getTotalCost();
+    #endif
   }
   return totalcost;
 }
@@ -705,15 +735,32 @@ pkmedian(Points * points, long kmin, long kmax, long * kfinal, int pid, pthread_
   long k2 = k1 + bsize;
   if (pid == nproc - 1) k2 = points->num;
 
-  
+
   //fprintf(stderr,"Starting Kmedian procedure\n");
   //fprintf(stderr,"%i points in %i dimensions\n", numberOfPoints, ptDimension);
 
-  HizReduction h(points);
   //tbb::parallel_reduce(tbb::blocked_range<int>(0, points->num, env_grain_size), h);
-  mtbb::parallel_reduce<tbb::blocked_range<int>,HizReduction>(tbb::blocked_range<int>(0, points->num, env_grain_size), h);
-  hiz = h.getHiz();
-  
+  #if USE_PFOR
+    double h_hiz = pfor_reduce(0, points->num, 1, env_grain_size,
+                               [&points] (int f, int t) -> double {
+	                         long ptDimension = points->dim;
+                                 int begin = f;
+                                 int end = t;
+                                 double local_hiz = 0.0;
+                                 for (int kk = begin; kk != end; kk++)
+                                   local_hiz += dist(points->p[kk], points->p[0], ptDimension) * points->p[kk].weight;
+                                 return local_hiz;
+                               },
+                               [] (double a, double b) -> double {
+                                 return a + b;
+                               });
+    hiz = h_hiz;
+  #else
+    HizReduction h(points);
+    mtbb::parallel_reduce<tbb::blocked_range<int>,HizReduction>(tbb::blocked_range<int>(0, points->num, env_grain_size), h);
+    hiz = h.getHiz();
+  #endif
+
   loz = 0.0;
   z = (hiz + loz) / 2.0;
 
