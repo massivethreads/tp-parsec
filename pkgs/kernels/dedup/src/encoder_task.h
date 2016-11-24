@@ -57,12 +57,12 @@
 //Cut-off constants
 //Larger constants result in less parallelism and less overheads.
 #define TASK_CUTOFF_FRAGMENT 1
-#define TASK_CUTOFF_FRAGMENT_REFINE 1
+#define TASK_CUTOFF_FRAGMENT_REFINE 30
 //Frequency of writing data
 //It tries to write down after processing every (TASK_FRAGMENT_SYNC_FREQUENCY * TASK_CUTOFF_FRAGMENT) chunks
-//Note that larger frequency reduces parallelism, while it is desirable to write calculated date to file concurrently
+//Note that smaller frequency reduces parallelism, while it is desirable to write calculated date to file concurrently
 //For example, online processing is one typical example in which smaller frequency is preferable.
-#define TASK_FRAGMENT_SYNC_FREQUENCY 100
+#define TASK_FRAGMENT_SYNC_FREQUENCY 2
 
 //The configuration block defined in main
 static config_t * conf;
