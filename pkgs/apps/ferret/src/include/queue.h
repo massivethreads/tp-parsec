@@ -13,10 +13,18 @@ struct queue {
   pthread_cond_t empty, full;
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void queue_signal_terminate(struct queue * que);
 void queue_init(struct queue* que, int size, int prod_threads);
 void queue_destroy(struct queue* que);
 int  dequeue(struct queue* que, void** to_buf);
 void enqueue(struct queue* que, void* from_buf);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //QUEUE

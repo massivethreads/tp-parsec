@@ -105,7 +105,7 @@ test_fluidanimate_gcc_omp_job:
         - cd bin
         - ${PARSEC_RUN_COMMAND} -p fluidanimate -c gcc-task_omp
 
-#dedup
+# dedup
 
 test_dedup_gcc_pthreads_job:
     stage: test
@@ -137,7 +137,7 @@ test_dedup_gcc_omp_job:
         - cd bin
         - ${PARSEC_RUN_COMMAND} -p dedup -c gcc-task_omp
 
-#streamcluster
+# streamcluster
 
 test_streamcluster_gcc_pthreads_job:
     stage: test
@@ -168,6 +168,39 @@ test_streamcluster_gcc_omp_job:
     script:
         - cd bin
         - ${PARSEC_RUN_COMMAND} -p streamcluster -c gcc-task_omp
+
+
+# ferret
+
+test_ferret_gcc_pthreads_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p ferret -c gcc-pthreads
+
+test_ferret_gcc_mth_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p ferret -c gcc-task_mth
+
+test_ferret_gcc_qth_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p ferret -c gcc-task_qth
+
+test_ferret_gcc_tbb_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p ferret -c gcc-task_tbb
+
+test_ferret_gcc_omp_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p ferret -c gcc-task_omp
 
 # canneal
 

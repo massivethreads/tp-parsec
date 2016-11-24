@@ -38,6 +38,9 @@ typedef struct tdesc_s {
 } tdesc_t;
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*** Functions ***/
 
@@ -79,5 +82,9 @@ int tpool_join(tpool_t *pool, void **value_ptrs);
  * return:      -1 if an error occurred, 0 otherwise
  */
 int tpool_cancel(tpool_t *pool);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
