@@ -47,7 +47,7 @@
 #include <bzlib.h>
 #endif //ENABLE_BZIP2_COMPRESSION
 
-#include <tpswitch/tpswitch.h>
+#include <tp_parsec.h>
 #include "task_lock.h"
 
 #ifdef ENABLE_PARSEC_HOOKS

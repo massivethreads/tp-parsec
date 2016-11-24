@@ -24,7 +24,7 @@
 #if !defined(PFOR_TO_ALLATONCE) && !defined(PFOR_TO_BISECTION) && !defined(PFOR_TO_ORIGINAL)
   #define PFOR_TO_ORIGINAL 1
 #endif
-#include "tpswitch/tpswitch.h"
+#include <tp_parsec.h>
 
 #ifdef ENABLE_VISUALIZATION
 #include "fluidview.hpp"
