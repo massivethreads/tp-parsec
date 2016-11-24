@@ -11,7 +11,7 @@ if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" =
   # for tbb
   cflags="${cflags} -I${PARSECDIR}/pkgs/libs/tbb/inst/${PARSECPLAT}/include -DTO_TBB -pthread"
   CFLAGS="${CFLAGS} ${cflags}"
-  CXXFLAGS="${CXXFLAGS} ${cflags} -std=c++0x"
+  CXXFLAGS="${CXXFLAGS} ${cflags}"
   LDFLAGS="${LDFLAGS} -L${PARSECDIR}/pkgs/libs/tbb/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/tbb/inst/${PARSECPLAT}/lib"
   LIBS="${LIBS} -ltbb -lpthread"
 fi  

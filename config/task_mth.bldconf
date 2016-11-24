@@ -9,7 +9,7 @@ if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" =
   # for mth
   cflags="-I${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/include -DTO_MTHREAD_NATIVE -pthread"
   CFLAGS="${CFLAGS} ${cflags}"
-  CXXFLAGS="${CXXFLAGS} ${cflags} -std=c++0x"
+  CXXFLAGS="${CXXFLAGS} ${cflags}"
   LDFLAGS="${LDFLAGS} -L${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/lib"
   LIBS="${LIBS} -lmyth -lpthread"
 fi  
