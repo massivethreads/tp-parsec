@@ -11,7 +11,7 @@ if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" =
   # for qth
   cflags="${cflags} -I${PARSECDIR}/pkgs/libs/qth/inst/${PARSECPLAT}/include -DTO_QTHREAD -pthread"
   CFLAGS="${CFLAGS} ${cflags}"
-  CXXFLAGS="${CXXFLAGS} ${cflags} -std=c++0x"
+  CXXFLAGS="${CXXFLAGS} ${cflags}"
   LDFLAGS="${LDFLAGS} -L${PARSECDIR}/pkgs/libs/qth/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/qth/inst/${PARSECPLAT}/lib"
   LIBS="${LIBS} -lqthread -lpthread"
 fi  
