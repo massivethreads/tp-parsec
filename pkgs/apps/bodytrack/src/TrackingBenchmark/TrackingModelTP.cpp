@@ -28,7 +28,7 @@
 #if !defined(PFOR_TO_ALLATONCE) && !defined(PFOR_TO_BISECTION) && !defined(PFOR_TO_ORIGINAL)
 #define PFOR_TO_BISECTION 1
 #endif
-#include <tpswitch/tpswitch.h>
+#include <tp_parsec.h>
 
 using namespace std;
 

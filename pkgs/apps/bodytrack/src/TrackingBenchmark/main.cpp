@@ -57,18 +57,18 @@
 using namespace tbb;
 #endif //USE_TBB
 
-/* because autoreconf has not been performed, USE_TPSWITCH is not set */
-#if defined(ENABLE_TASK) && !defined(USE_TPSWITCH)
-#define USE_TPSWITCH 1
+/* because autoreconf has not been performed, USE_TP_PARSEC is not set */
+#if defined(ENABLE_TASK) && !defined(USE_TP_PARSEC)
+#define USE_TP_PARSEC 1
 #endif
 
-#if defined(USE_TPSWITCH)
+#if defined(USE_TP_PARSEC)
 
 #define PFOR2_EXPERIMENTAL 1
 #if !defined(PFOR_TO_ALLATONCE) && !defined(PFOR_TO_BISECTION) && !defined(PFOR_TO_ORIGINAL)
 #define PFOR_TO_BISECTION 1
 #endif
-#include <tpswitch/tpswitch.h>
+#include <tp_parsec.h>
 
 #define GRAIN_SIZE 1<<7
 
@@ -80,7 +80,7 @@ using namespace tbb;
 FILE * out_ls;
 #endif
 
-#endif /* USE_TPSWITCH */
+#endif /* USE_TP_PARSEC */
 
 #if defined(ENABLE_PARSEC_HOOKS)
 #include <hooks.h>
@@ -190,9 +190,9 @@ bool ProcessCmdLine(int argc, char **argv, string &path, int &cameras, int &fram
 }
 #endif
 
-//Body tracking parallelized with task parallelism and tpswitch
-#if defined(USE_TPSWITCH)
-int mainTPSWITCH(string path, int cameras, int frames, int particles, int layers, int threads, bool OutputBMP) {
+//Body tracking parallelized with task parallelism and tp_parsec
+#if defined(USE_TP_PARSEC)
+int mainTP_PARSEC(string path, int cameras, int frames, int particles, int layers, int threads, bool OutputBMP) {
 #ifdef COLLECT_LOOP_SIZES
   out_ls = fopen("distribution_of_loop_sizes.gpl", "w");
   fprintf(out_ls, "width=100.0\n");
@@ -206,7 +206,7 @@ int mainTPSWITCH(string path, int cameras, int frames, int particles, int layers
   fprintf(out_ls, "set ylabel \"counts\"\n");
   fprintf(out_ls, "plot \"-\" u (hist($1,width)):(1.0) smooth frequency w boxes notitle\n");
 #endif
-  cout << "Threading with tpswitch" << endl;
+  cout << "Threading with tp_parsec" << endl;
   if(threads < 1) {
     cout << "Warning: Illegal or unspecified number of threads, using 1 thread" << endl;
     threads = 1;
@@ -494,7 +494,7 @@ int main(int argc, char **argv) {
 #elif defined(USE_OPENMP)
     cout << "threadModel: OpenMP" << endl;
     threadModel = 3;
-#elif defined(USE_TPSWITCH)
+#elif defined(USE_TP_PARSEC)
     cout << "threadModel: tpswitch" << endl;
     threadModel = 5;
 #else
@@ -545,12 +545,12 @@ int main(int argc, char **argv) {
     break;
 
   case 5 : 
-#if defined(USE_TPSWITCH)
-    mainTPSWITCH(path, cameras, frames, particles, layers, threads, OutputBMP); //TPSWITCH parallelized tracking
+#if defined(USE_TP_PARSEC)
+    mainTP_PARSEC(path, cameras, frames, particles, layers, threads, OutputBMP); //TP_PERSEC parallelized tracking
     break;
 #else
     cout << "Not compiled with TASK support. " << endl;
-    cout << "If the environment supports tpswitch, rebuild with USE_TPSWITCH #defined." << endl;
+    cout << "If the environment supports tp_persec, rebuild with USE_TP_PERSEC #defined." << endl;
     break;
 #endif
 
