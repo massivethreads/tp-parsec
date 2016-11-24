@@ -63,9 +63,12 @@ CXXFLAGS += $(MT) $(NCO) $(FUNC) $(ERR) $(CSRC)
 all: $(TARGET)
 
 $(TARGET): clean $(CSRC)
+	echo "CSRC = $(CSRC)"
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(LIBS) -o $(TARGET)
 
 $(M4_SRC): $(SRC)
+	echo "SRC = $(SRC)"
+	echo "M4_SRC = $(M4_SRC)"
 	$(M4) $(M4_BASE)/$(MACROS) $< > $@
 
 clean:
