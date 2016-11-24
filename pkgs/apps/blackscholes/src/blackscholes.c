@@ -44,7 +44,7 @@ using namespace tbb;
   #define PFOR_TO_ORIGINAL 1
 #endif
 
-#include <tpswitch/tpswitch.h>
+#include <tp_parsec.h>
 
 #endif
 

@@ -16,7 +16,7 @@
 #endif
 
 #ifdef ENABLE_TASK
-#include "tpswitch/tpswitch.h"
+#include <tp_parsec.h>
 #endif
 
 using namespace RTTL;

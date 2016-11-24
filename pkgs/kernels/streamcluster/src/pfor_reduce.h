@@ -1,6 +1,6 @@
 //This feature will be introduced in tpswtich.h, in the near future.
 
-#include <tpswitch/tpswitch.h>
+#include <tp_parsec.h>
 
 #ifdef PFOR2_REDUCE_EXPERIMENTAL
 /*
