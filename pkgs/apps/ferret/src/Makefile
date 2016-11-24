@@ -64,29 +64,32 @@ server : $(server_tgt)
 
 # Default version to build
 benchmark_base := ferret-serial
+benchmark_src := $(benchmark_base).c
 
 ifdef version
   ifeq "$(version)" "pthreads"
     benchmark_base := ferret-pthreads
+    benchmark_src := $(benchmark_base).c
     LDLIBS += -lpthread
   endif
   ifeq "$(version)" "tbb"
     benchmark_base := ferret-tbb
+    benchmark_src := $(benchmark_base).cpp
     LDLIBS += -ltbb -ltbbmalloc
+  endif
+  
+  ## workaround for TP-PARSEC
+  #ifeq "$(version)" "task"
+  ifneq (,$(findstring ENABLE_TASK,$(CXXFLAGS)))
+    benchmark_base := ferret-task
+    benchmark_src := $(benchmark_base).cpp
   endif
 endif
 
-benchmark_src := $(benchmark_base).c
-ifeq "$(version)" "tbb"
-  benchmark_src := $(benchmark_base).cpp
-endif
-
 benchmark_tgt := $(notdir $(benchmark_src))
-ifeq "$(version)" "tbb"
-  benchmark_tgt := $(addprefix $(BINDIR)/, $(benchmark_tgt:.cpp=))
-else
-  benchmark_tgt := $(addprefix $(BINDIR)/, $(benchmark_tgt:.c=))
-endif
+benchmark_tgt := $(benchmark_tgt:.cpp=)
+benchmark_tgt := $(benchmark_tgt:.c=)
+benchmark_tgt := $(addprefix $(BINDIR)/, $(benchmark_tgt))
 
 benchmark : $(benchmark_tgt)
 
@@ -105,21 +108,21 @@ install:
 
 $(OBJDIR)/%.o : %.c
 	@echo "   CC '$<' ==> '$@'"
-	@$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJDIR)/%.o : %.cpp
 	@echo "   CXX '$<' ==> '$@'"
-	@$(CXX) $(CFLAGS) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CFLAGS) $(CXXFLAGS) -c $< -o $@
 
 $(tools_tgt): $(BINDIR)/% : $(OBJDIR)/%.o $(LIBDIR)/libcass.a
 	@echo "   CXX '$<' ==> '$@'"
-	@$(CXX) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(LDLIBS)
+	$(CXX) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(LDLIBS)
 
 $(benchmark_tgt): $(BINDIR)/% : $(OBJDIR)/%.o $(LIBDIR)/libcass.a $(LIBDIR)/libcassimage.a
 	@echo "   CXX '$<' ==> '$@'"
-	@$(CXX) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(LDLIBS)
+	$(CXX) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(LDLIBS)
 
 $(image_tgt): $(BINDIR)/% : $(OBJDIR)/%.o $(LIBDIR)/libcass.a $(LIBDIR)/libcassimage.a
 	@echo "   CXX '$<' ==> '$@'"
-	@$(CXX) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(LDLIBS)
+	$(CXX) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(LDLIBS)
 

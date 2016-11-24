@@ -9,8 +9,8 @@ export global_build_deps=""
 # Only packages of the three benchmarking groups (apps, kernels, netapps) are targeted for task parallelization
 if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" == "netapps" ]; then
   # for ENABLE_TASK macro
-  cflags="-DENABLE_TASK"
+  cflags="-DENABLE_TASK -I${PARSECDIR}/toolkit/tp_parsec"
   CFLAGS="${CFLAGS} ${cflags}"
-  CXXFLAGS="${CXXFLAGS} ${cflags}"
+  CXXFLAGS="${CXXFLAGS} ${cflags} -std=c++0x"
 fi
 

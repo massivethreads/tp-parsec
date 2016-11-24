@@ -49,7 +49,7 @@ THE POSSIBILITY OF SUCH DAMAGE.
 #define GRAIN_SIZE2 1
 //pfor2 is an experimental version, yet.
 #define PFOR2_EXPERIMENTAL
-#include <tpswitch/tpswitch.h>
+#include <tp_parsec.h>
 #endif  // ENABLE_TASK
 
 #define SORTHRESH 9

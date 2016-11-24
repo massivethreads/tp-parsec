@@ -62,7 +62,7 @@ CXXFLAGS += $(MT) $(NCO) $(FUNC) $(ERR) $(CSRC)
 
 all: $(TARGET)
 
-$(TARGET): clean $(CSRC)
+$(TARGET): $(CSRC)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(LIBS) -o $(TARGET)
 
 $(M4_SRC): $(SRC)

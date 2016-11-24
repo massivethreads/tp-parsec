@@ -23,7 +23,7 @@
 
 
 #ifdef ENABLE_TASK
-# include "tpswitch/tpswitch.h"
+# include <tp_parsec.h>
 #endif
 
 #define NORMALIZE_PRIMARY_RAYS

@@ -5,7 +5,7 @@ export task_target=serial
 # Add options and links for serial task target
 # Only packages of the three benchmarking groups (apps, kernels, netapps) are targeted for task parallelization
 if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" == "netapps" ]; then
-  global_build_deps="${global_build_deps} mth"
+  global_build_deps="${global_build_deps}"
   # for tpswitch (in mth)
   cflags="-I${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/include"
   # for serial
