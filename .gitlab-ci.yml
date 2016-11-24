@@ -1,8 +1,7 @@
-
 image: wendo/parsec
 
 variables:
-    PARSEC_RUN_COMMAND: "./parsecmgmt2 -a build run -n 8"
+    PARSEC_RUN_COMMAND: "./parsecmgmt2 -a build run -n 8 -i simdev"
 
 before_script:
     - git submodule update --init
