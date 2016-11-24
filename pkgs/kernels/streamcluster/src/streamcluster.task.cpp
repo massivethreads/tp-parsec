@@ -419,7 +419,7 @@ pspeedy(Points * points, float z, long * kcenter) {
     //tbb::parallel_reduce(tbb::blocked_range<int>(0, points->num, env_grain_size), c);
     #if USE_PFOR
       double c_total_cost = pfor_reduce(0, points->num, 1, env_grain_size,
-                                          [&points] (int f, int t) -> double {
+                                          [points] (int f, int t) -> double {
                                           int begin = f;
                                           int end = t;
                                           double local_total_cost = 0.0;
@@ -742,7 +742,7 @@ pkmedian(Points * points, long kmin, long kmax, long * kfinal, int pid, pthread_
   //tbb::parallel_reduce(tbb::blocked_range<int>(0, points->num, env_grain_size), h);
   #if USE_PFOR
     double h_hiz = pfor_reduce(0, points->num, 1, env_grain_size,
-                               [&points] (int f, int t) -> double {
+                               [points] (int f, int t) -> double {
 	                         long ptDimension = points->dim;
                                  int begin = f;
                                  int end = t;

@@ -42,10 +42,10 @@
       return leaffunc(first,last);
     }
   #elif TO_OMP || TO_TBB || TO_MTHREAD || TO_MTHREAD_NATIVE || TO_QTHREAD || TO_CILKPLUS || TO_NANOX
-    template<typename IntTy, typename StepIntTy, typename LeafFuncTy, typename ReduceTy, typename ReduceFuncTy> static void pfor_reduce_bisection_aux(IntTy first, IntTy a, IntTy b, StepIntTy step, IntTy grainsize, LeafFuncTy leaffunc, ReduceFuncTy reducefunc, ReduceTy* returnvalue, const char * file, int line) {
+    template<typename IntTy, typename StepIntTy, typename LeafFuncTy, typename ReduceTy, typename ReduceFuncTy> static void pfor_reduce_bisection_aux(IntTy first, IntTy a, IntTy b, StepIntTy step, IntTy grainsize, LeafFuncTy* leaffunc, ReduceFuncTy* reducefunc, ReduceTy* returnvalue, const char * file, int line) {
       cilk_begin;
       if (b - a <= grainsize) {
-        *returnvalue = leaffunc(first + a * step, first + b * step);
+        *returnvalue = (*leaffunc)(first + a * step, first + b * step);
         cilk_void_return;
       } else {
         const IntTy c = a + (b - a) / 2;
@@ -56,24 +56,27 @@
         create_task0(spawn pfor_reduce_bisection_aux(first, a, c, step, grainsize, leaffunc, reducefunc, value1_ptr, file, line));
         call_task   (spawn pfor_reduce_bisection_aux(first, c, b, step, grainsize, leaffunc, reducefunc, value2_ptr, file, line));
         wait_tasks_(file, line);
-        *returnvalue = reducefunc(value1, value2);
+        *returnvalue = (*reducefunc)(value1, value2);
         cilk_void_return;
       }
     }
-    template<typename IntTy, typename StepIntTy, typename LeafFuncTy, typename ReduceFuncTy> static typename std::result_of<LeafFuncTy(IntTy,IntTy)>::type pfor_reduce_bisection(IntTy first, IntTy last, StepIntTy step, IntTy grainsize, LeafFuncTy leaffunc, ReduceFuncTy reducefunc, const char * file, int line) {
+    template<typename IntTy, typename StepIntTy, typename LeafFuncTy, typename ReduceFuncTy>
+    static typename std::result_of<LeafFuncTy(IntTy,IntTy)>::type pfor_reduce_bisection(IntTy first, IntTy last, StepIntTy step, IntTy grainsize, LeafFuncTy leaffunc, ReduceFuncTy reducefunc, const char * file, int line) {
       IntTy a = 0;
       IntTy b = (last - first + step - 1) / step;
       typedef typename std::result_of<LeafFuncTy(IntTy,IntTy)>::type ResultTy;
       ResultTy ret;
       volatile ResultTy* ret_ptr=&ret;
+      LeafFuncTy*   leaffunc_ptr   = &leaffunc;
+      ReduceFuncTy* reducefunc_ptr = &reducefunc;
       #if defined(ENABLE_TASK) && defined(TO_OMP)
         #pragma omp parallel
         #pragma omp single nowait
         {
-          pfor_reduce_bisection_aux(first, a, b, step, grainsize, leaffunc, reducefunc, ret_ptr, file, line);
+          pfor_reduce_bisection_aux(first, a, b, step, grainsize, leaffunc_ptr, reducefunc_ptr, ret_ptr, file, line);
         }
       #else
-        pfor_reduce_bisection_aux(first, a, b, step, grainsize, leaffunc, reducefunc, ret_ptr, file, line);
+        pfor_reduce_bisection_aux(first, a, b, step, grainsize, leaffunc_ptr, reducefunc_ptr, ret_ptr, file, line);
       #endif
       return ret;
     }
