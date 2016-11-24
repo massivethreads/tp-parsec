@@ -1,0 +1,4 @@
+#!/bin/bash
+
+flags+=" QTHREAD_STACK_SIZE=$((2**20))"
+
