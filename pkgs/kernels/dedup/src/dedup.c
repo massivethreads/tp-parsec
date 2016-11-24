@@ -22,7 +22,7 @@
 #endif //ENABLE_PARSEC_HOOKS
 
 #ifdef ENABLE_TASK
-#include <tpswitch/tpswitch.h>
+#include <tp_parsec.h>
 #endif //ENABLE_TASK
 
 config_t * conf;

@@ -25,12 +25,12 @@
   //use pfor
   #define PFOR_TO_ORIGINAL 1
   #define PFOR2_EXPERIMENTAL 1
-  #include <tpswitch/tpswitch.h>
+  #include <tp_parsec.h>
   #define PFOR2_REDUCE_EXPERIMENTAL 1
   #include "pfor_reduce.h"
 #else
   //use mtbb::parallel_for and parallel_reduce, which don't support OpenMP and Cilkplus.
-  #include <tpswitch/tpswitch.h>
+  #include <tp_parsec.h>
   //#include <tbb/parallel_for.h>
   //#include <tbb/parallel_reduce.h>
   //#include "tbb/blocked_range.h"

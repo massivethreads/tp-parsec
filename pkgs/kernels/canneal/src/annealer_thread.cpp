@@ -42,7 +42,7 @@
 #include <fstream>
 #include "rng.h"
 #ifdef ENABLE_TASK
-#include <tpswitch/tpswitch.h>
+#include <tp_parsec.h>
 #endif
 
 using std::cout;
