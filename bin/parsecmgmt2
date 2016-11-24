@@ -1326,15 +1326,19 @@ function run_benchmark {
   else
       UPTCPIP_RX_THREADS=1
       export UPTCPIP_RX_THREADS
-  fi 
+  fi
+
   eval cmd="\"${run_env} ${submit} ${bmexec} ${bmexec_args}\""
   echo "${oprefix} Run directory: $(pwd)"
   echo "${oprefix} Run command: '${cmd}':" | ${TEE} ${log}
   echo "${oprefix} [---------- Beginning of output ----------]" | ${TEE} ${log}
-  (eval ${cmd} 2>&1) 2>&1 | ${TEE} ${bmrundir}/benchmark.out | ${TEE} ${log}
+  set -e
+  (eval ${cmd} 2>&1) 2>&1 | ${TEE} ${bmrundir}/benchmark.out | ${TEE} ${log} ; retval=${PIPESTATUS[0]}
   echo "${oprefix} [----------    End of output    ----------]" | ${TEE} ${log}
-
-
+  if [ "$retval" -ne "0" ]; then
+    echo "${oprefix} Error: '${cmd}' failed." 2>&1 | ${TEE} ${log}
+    exit 1
+  fi
   # Unpack reference output and compare
   #echo "${oprefix} Unpacking benchmark reference output for '${inputsize}'." | ${TEE} ${log}
   #${MKDIR} ${bmrundir}/output.ref | ${TEE} ${log}
