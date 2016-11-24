@@ -17,6 +17,7 @@ fi
 # Options for running
 if [ "${act}" == "run" ]; then
   flags="MYTH_NUM_WORKERS=${NTHREADS}"
+  flags+=" MYTH_DEF_STKSIZE=2097152"
   #flags+=" MYTH_DEF_STKSIZE=${stack_size} MYTH_CPU_LIST=%(myth_cpu_list)"
   # If run_env exists (not null nor empty), append it with a whitespace prior to flags
   run_env="${run_env:+$run_env }${flags}"
