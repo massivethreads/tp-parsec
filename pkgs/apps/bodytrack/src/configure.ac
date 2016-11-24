@@ -8,7 +8,7 @@ AC_ARG_ENABLE([gprof], AC_HELP_STRING([--enable-gprof], [add profiling code for 
 AC_ARG_ENABLE([threads], AC_HELP_STRING([--enable-threads], [enable conventional threading @<:@default=yes@:>@]), [], [enable_threads=yes])
 AC_ARG_ENABLE([openmp], AC_HELP_STRING([--enable-openmp], [enable OpenMP threading @<:@default=no@:>@]), [], [enable_openmp=no])
 AC_ARG_ENABLE([tbb], AC_HELP_STRING([--enable-tbb], [enable Intel TBB threading @<:@default=no@:>@]), [], [enable_tbb=no])
-#AC_ARG_ENABLE([tpswitch], AC_HELP_STRING([--enable-tpswitch], [enable Intel TPSWITCH-based task parallelism @<:@default=no@:>@]), [], [enable_tpswitch=no])
+#AC_ARG_ENABLE([tp_parsec], AC_HELP_STRING([--enable-tp_parsec], [enable TP_PARSEC-based task parallelism @<:@default=no@:>@]), [], [enable_tp_parsec=no])
 
 # Checks for programs.
 AC_PROG_LIBTOOL
@@ -61,11 +61,11 @@ fi
 AM_CONDITIONAL([ENABLE_OPENMP], [test "x$enable_openmp" == "xyes"])
 AC_SUBST([ENABLE_OPENMP])
 
-#if test "x$enable_tpswitch" == "xyes"; then
-#  AC_DEFINE([USE_TPSWITCH], [1], [Define to 1 to enable tpswitch])
+#if test "x$enable_tp_parsec" == "xyes"; then
+#  AC_DEFINE([USE_TP_PARSEC], [1], [Define to 1 to enable tp_parsec])
 #fi
-#AM_CONDITIONAL([ENABLE_TPSWITCH], [test "x$enable_tpswitch" == "xyes"])
-#AC_SUBST([ENABLE_TPSWITCH])
+#AM_CONDITIONAL([ENABLE_TP_PARSEC], [test "x$enable_tp_parsec" == "xyes"])
+#AC_SUBST([ENABLE_TP_PARSEC])
 
 if test "x$enable_tbb" == "xyes"; then
   AC_DEFINE([USE_TBB], [1], [Define to 1 to enable Intel TBB threading])

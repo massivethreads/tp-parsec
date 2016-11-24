@@ -49,7 +49,7 @@ if ENABLE_TBB
                        TrackingModelTBB.cpp
 endif
 
-if ENABLE_TPSWITCH
+if ENABLE_TP_PARSEC
   bodytrack_SOURCES += ParticleFilterTP.h \
                        TrackingModelTP.h #\ TrackingModelTP.cpp
 endif
