@@ -1,0 +1,18 @@
+#!/bin/bash
+#
+# hooks.bldconf - file containing global information necessary to build
+#                 PARSEC with hooks lib which instruments each benchmark's
+#                 start, end; and its ROI's start, end.
+#
+
+# Add options and links for hooks
+# Only packages of the three benchmarking groups (apps, kernels, netapps) are targeted for task parallelization
+if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" == "netapps" ]; then
+  global_build_deps="${global_build_deps} hooks"
+  # for hooks
+  cflags="-DENABLE_PARSEC_HOOKS -I${PARSECDIR}/pkgs/libs/hooks/inst/${PARSECPLAT}/include"
+  CFLAGS="${CFLAGS} ${cflags}"
+  CXXFLAGS="${CXXFLAGS} ${cflags}"
+  LDFLAGS="${LDFLAGS} -L${PARSECDIR}/pkgs/libs/hooks/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/hooks/inst/${PARSECPLAT}/lib"
+  LIBS="${LIBS} -lhooks"
+fi
