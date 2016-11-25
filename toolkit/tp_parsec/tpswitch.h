@@ -112,7 +112,7 @@
 /* TBB, MassiveThredhads, Qthreads, Nanos++ */
 #elif defined(__cplusplus) && (TO_TBB || TO_MTHREAD || TO_MTHREAD_NATIVE || TO_QTHREAD || TO_NANOX)
 
-#include <mtbb/task_group.h>
+#include "mtbb/task_group.h"
 
 #define mk_task_group mtbb::task_group __tg__
 #define create_task0(statement)			\
@@ -393,7 +393,7 @@ int main() {
 
 #elif TO_TBB || TO_MTHREAD || TO_MTHREAD_NATIVE || TO_QTHREAD || TO_NANOX
 
-#include <mtbb/parallel_for.h>
+#include "mtbb/parallel_for.h"
 #define pfor_original(T, first, last, step, grainsize, S) \
   mtbb::parallel_for(first, last, step, grainsize, [=] (T FIRST_, T LAST_) { S } )
 
@@ -602,6 +602,10 @@ static void pfor_allatonce_aux(T first, T a, T b, T step, T grainsize, std::func
   #include "tpswitch.h"
 
   int main() {
+      #ifdef TO_OMP
+        #pragma omp parallel
+        #pragma omp single nowait
+      #endif
     int first = 10 - 1;
     int last = 0;
     int step = -1;
@@ -625,39 +629,41 @@ static void pfor_allatonce_aux(T first, T a, T b, T step, T grainsize, std::func
       template<typename IntTy, typename StepIntTy, typename LeafFuncTy> static void pfor_original(IntTy first, IntTy last, StepIntTy step, IntTy grainsize, LeafFuncTy leaffunc, const char * file, int line) {
         const IntTy elementnum = (last - first) / step;
         const IntTy tasknum = (elementnum + grainsize - 1) / grainsize;
+        LeafFuncTy* leaffunc_ptr = &leaffunc;
         pragma_omp(parallel for)
         for(IntTy i = 0; i < tasknum; i++) {
           IntTy leaf_first = first + i * step * grainsize;
           IntTy leaf_last  = first + (i + 1) * step * grainsize;
           if (leaf_last > last)
             leaf_last = last;
-          leaffunc(leaf_first,leaf_last);
+          (*leaffunc_ptr)(leaf_first,leaf_last);
         }
       }
     #elif TO_CILKPLUS
       template<typename IntTy, typename StepIntTy, typename LeafFuncTy> static void pfor_original(IntTy first, IntTy last, StepIntTy step, IntTy grainsize, LeafFuncTy leaffunc, const char * file, int line) {
         const IntTy elementnum = (last - first) / step;
         const IntTy tasknum = (elementnum + grainsize - 1) / grainsize;
-        cilk_for (IntTy i = 0; i < tasknum; i++) {
+        LeafFuncTy* leaffunc_ptr = &leaffunc;
+	cilk_for (IntTy i = 0; i < tasknum; i++) {
           IntTy leaf_first = first + i * step * grainsize;
           IntTy leaf_last  = first + (i + 1) * step * grainsize;
           if (leaf_last > last)
             leaf_last = last;
-          leaffunc(leaf_first,leaf_last);
+          (*leaffunc_ptr)(leaf_first,leaf_last);
         }
       }
     #elif TO_TBB || TO_MTHREAD || TO_MTHREAD_NATIVE || TO_QTHREAD || TO_NANOX
-      #include <mtbb/parallel_for.h>
+      #include "mtbb/parallel_for.h"
       template<typename IntTy, typename StepIntTy, typename LeafFuncTy> static void pfor_original(IntTy first, IntTy last, StepIntTy step, IntTy grainsize, LeafFuncTy leaffunc, const char * file, int line) {
         mtbb::parallel_for(first, last, step, grainsize, leaffunc);
       }
     #endif
   #elif PFOR_TO_BISECTION
     #define PFOR_IMPL pfor_bisection
-    template<typename IntTy, typename StepIntTy, typename LeafFuncTy> void pfor_bisection_aux(IntTy first, IntTy a, IntTy b, StepIntTy step, IntTy grainsize, LeafFuncTy leaffunc, const char * file, int line) {
+    template<typename IntTy, typename StepIntTy, typename LeafFuncTy> void pfor_bisection_aux(IntTy first, IntTy a, IntTy b, StepIntTy step, IntTy grainsize, LeafFuncTy* leaffunc, const char * file, int line) {
       cilk_begin;
       if (b - a <= grainsize) {
-        leaffunc(first + a * step, first + b * step);
+        (*leaffunc)(first + a * step, first + b * step);
       } else {
         mk_task_group;
         const IntTy c = a + (b - a) / 2;
@@ -670,12 +676,18 @@ static void pfor_allatonce_aux(T first, T a, T b, T step, T grainsize, std::func
     template<typename IntTy, typename StepIntTy, typename LeafFuncTy> static void pfor_bisection(IntTy first, IntTy last, StepIntTy step, IntTy grainsize, LeafFuncTy leaffunc, const char * file, int line) {
       IntTy a = 0;
       IntTy b = (last - first + step - 1) / step;
-      pfor_bisection_aux(first, a, b, step, grainsize, leaffunc, file, line);
+      LeafFuncTy* leaffunc_ptr=&leaffunc;
+      #ifdef TO_OMP
+        #pragma omp parallel
+        #pragma omp single nowait
+      #endif
+      pfor_bisection_aux(first, a, b, step, grainsize, leaffunc_ptr, file, line);
     }
   #elif PFOR_TO_ALLATONCE
     #define PFOR_IMPL pfor_allatonce
     template<typename IntTy, typename StepIntTy, typename LeafFuncTy> static void pfor_allatonce_aux(IntTy first, IntTy a, IntTy b, StepIntTy step, IntTy grainsize, LeafFuncTy leaffunc, const char * file, int line) {
       cilk_begin;
+      LeafFuntTy* leaffunc_ptr=&leaffunc;
       mk_task_group;
       IntTy ia = a;
       IntTy ib = a;
@@ -683,7 +695,7 @@ static void pfor_allatonce_aux(T first, T a, T b, T step, T grainsize, std::func
         ib += grainsize;
         if (ib > b)
           ib = b;
-        create_task0_(spawn leaffunc(first + ia * step, first + ib * step), file, line);
+        create_task0_(spawn (*leaffunc_ptr)(first + ia * step, first + ib * step), file, line);
         ia = ib;
       }
       wait_tasks;
@@ -692,6 +704,10 @@ static void pfor_allatonce_aux(T first, T a, T b, T step, T grainsize, std::func
     template<typename IntTy, typename StepIntTy, typename LeafFuncTy> static void pfor_allatonce(IntTy first, IntTy last, StepIntTy step, IntTy grainsize, LeafFuncTy leaffunc, const char * file, int line) {
       IntTy a = 0;
       IntTy b = (last - first + step - 1) / step;
+      #ifdef TO_OMP
+        #pragma omp parallel
+        #pragma omp single nowait
+      #endif
       pfor_allatonce_aux(first, a, b, step, grainsize, leaffunc, file, line);
     }
   #endif
