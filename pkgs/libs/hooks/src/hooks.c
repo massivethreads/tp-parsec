@@ -45,27 +45,16 @@
 #include <stdio.h>
 #include <assert.h>
 
+/* Time measurement can be enabled in file config.h. */
 #if ENABLE_TIMING
 #include <sys/time.h>
-/** \brief Time at beginning of execution of Region-of-Interest.
- *
- * This variable will store the time when the Region-of-Interest is entered.
- * time_begin and time_end allow an accurate measurement of the execution time
- * of the benchmark.
- *
- * Time measurement can be enabled in file config.h.
- */
-static double time_begin;
-/** \brief Time at end of execution of Region-of-Interest.
- *
- * This variable will store the time when the Region-of-Interest is left.
- * time_begin and time_end allow an accurate measurement of the execution time
- * of the benchmark.
- *
- * Time measurement can be enabled in file config.h.
- */
-static double time_end;
-#endif //ENABLE_TIMING
+/* Elapsed time of the whole benchmark run */
+static double bench_time;              /* unit: second */
+static unsigned long long bench_clock; /* unit: clock cycle */
+/* Elapsed time of the Region-of-Interest (ROI) */
+static double roi_time;                /* unit: second */
+static unsigned long long roi_clock;   /* unit: clock cycle */
+#endif /* ENABLE_TIMING */
 
 #if ENABLE_SETAFFINITY
 #include <sched.h>
@@ -89,6 +78,41 @@ static int num_roi_ends = 0;
 static int num_bench_ends = 0;
 #endif
 
+/* get current time by syscall */
+double hooks_cur_time() {
+  struct timeval tp[1];
+  gettimeofday(tp, 0);
+  return tp->tv_sec + 1.0e-6 * tp->tv_usec;
+}
+
+/* get current clock (time stamp counter) */
+#if defined(__x86_64__)
+
+  static unsigned long long hooks_rdtsc() {
+    unsigned long long u;
+    asm volatile ("rdtsc;shlq $32,%%rdx;orq %%rdx,%%rax":"=a"(u)::"%rdx");
+    return u;
+  }
+  
+#elif defined(__sparc__) && defined(__arch64__)
+  
+  static unsigned long long hooks_rdtsc(void) {
+    unsigned long long u;
+    asm volatile("rd %%tick, %0" : "=r" (u));
+    return u;
+  }
+
+#else
+  
+  static unsigned long long hooks_rdtsc() {
+    unsigned long long u;
+    asm volatile ("rdtsc" : "=A" (u));
+    return u;
+  }
+  
+#endif
+
+
 /** \brief Variable for unique identifier of workload.
  *
  * This variable stores the unique identifier of the current benchmark program.
@@ -107,7 +131,7 @@ void __parsec_bench_begin(enum __parsec_benchmark __bench) {
   assert(num_bench_ends==0);
   #endif //DEBUG
 
-  printf(HOOKS_PREFIX" PARSEC Hooks Version "HOOKS_VERSION"\n");
+  printf(HOOKS_PREFIX" PARSEC Hooks (Version "HOOKS_VERSION") entering bench\n");
   fflush(NULL);
 
   //Store global benchmark ID for other hook functions
@@ -157,9 +181,21 @@ void __parsec_bench_begin(enum __parsec_benchmark __bench) {
     sched_setaffinity(0, sizeof(mask), &mask);
   }
   #endif //ENABLE_SETAFFINITY
+
+  /* Get bench start time */
+#if ENABLE_TIMING
+  bench_time = hooks_cur_time();
+  bench_clock = hooks_rdtsc();
+#endif /* ENABLE_TIMING */
 }
 
 void __parsec_bench_end() {
+  /* Get bench time */
+#if ENABLE_TIMING
+  bench_time = hooks_cur_time() - bench_time;
+  bench_clock = hooks_rdtsc() - bench_clock;
+#endif /* ENABLE_TIMING */
+    
   #if DEBUG
   num_bench_ends++;
   assert(num_bench_begins==1);
@@ -169,15 +205,15 @@ void __parsec_bench_end() {
   #endif //DEBUG
 
   fflush(NULL);
-  #if ENABLE_TIMING
-  printf(HOOKS_PREFIX" Total time spent in ROI: %.3fs\n", time_end-time_begin);
-  #endif //ENABLE_TIMING
 
   #if DAG_RECORDER == 2
   dr_dump();
   #endif
 
-  printf(HOOKS_PREFIX" Terminating\n");
+  printf(HOOKS_PREFIX" PARSEC Hooks terminating\n");
+#if ENABLE_TIMING
+  printf(HOOKS_PREFIX" Bench time: %lf sec, %llu clocks.\n", bench_time, bench_clock);
+#endif /* ENABLE_TIMING */
 }
 
 void __parsec_roi_begin() {
@@ -192,12 +228,6 @@ void __parsec_roi_begin() {
   printf(HOOKS_PREFIX" Entering ROI\n");
   fflush(NULL);
 
-  #if ENABLE_TIMING
-  struct timeval t;
-  gettimeofday(&t,NULL);
-  time_begin = (double)t.tv_sec+(double)t.tv_usec*1e-6;
-  #endif //ENABLE_TIMING
-
   #if ENABLE_SIMICS_MAGIC
   MAGIC_BREAKPOINT;
   #endif //ENABLE_SIMICS_MAGIC
@@ -209,10 +239,22 @@ void __parsec_roi_begin() {
   #if DAG_RECORDER == 2
   dr_start(NULL);
   #endif
+
+  /* Get roi start time */
+#if ENABLE_TIMING
+  roi_time = hooks_cur_time();
+  roi_clock = hooks_rdtsc();
+#endif /* ENABLE_TIMING */
 }
 
 
 void __parsec_roi_end() {
+  /* Get roi time */
+#if ENABLE_TIMING
+  roi_time = hooks_cur_time() - roi_time;
+  roi_clock = hooks_rdtsc() - roi_clock;
+#endif /* ENABLE_TIMING */
+
   #if DAG_RECORDER == 2
   dr_stop();
   #endif
@@ -233,13 +275,10 @@ void __parsec_roi_end() {
   ptlcall_switch_to_native();
   #endif //ENABLE_PTLSIM_TRIGGER
 
-  #if ENABLE_TIMING
-  struct timeval t;
-  gettimeofday(&t,NULL);
-  time_end = (double)t.tv_sec+(double)t.tv_usec*1e-6;
-  #endif //ENABLE_TIMING
-
   printf(HOOKS_PREFIX" Leaving ROI\n");
+#if ENABLE_TIMING
+  printf(HOOKS_PREFIX" ROI time: %lf sec, %llu clocks.\n", roi_time, roi_clock);
+#endif /* ENABLE_TIMING */
   fflush(NULL);
 }
 
