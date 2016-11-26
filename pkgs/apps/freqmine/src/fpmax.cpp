@@ -63,7 +63,6 @@ static int get_max_threads() {
     if (max_threads < 0) {
         max_threads = atoi(getenv("OMP_NUM_THREADS")) * THREADS_PER_HWTHREAD;
     }
-    // printf("(fpmax)max_threads: %d\n", max_threads);
     return max_threads;
 }
 #else
@@ -194,8 +193,6 @@ int main(int argc, char **argv)
 	}
 
 	fptree->FP_growth_first(fout);
-    // printf("HERE\nHERE\nHERE\nHERE\nHERE\n");
-    // fflush(NULL);
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_roi_end();
 #endif

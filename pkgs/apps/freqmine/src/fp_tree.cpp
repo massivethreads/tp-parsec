@@ -579,7 +579,7 @@ void FP_tree::database_tiling(int workingthread)
     // (workingthread - thread_remainder) loops with length thread_step
     int thread_step = mapfile->tablesize / workingthread;
     int thread_remainder = mapfile->tablesize % workingthread;
-    pfor(0, workingthread, 1, 1,
+    pfor(0, workingthread, 1, GRAIN_SIZE,
          [&] (int innerFirst, int innerLast) {
              for (int thread = innerFirst; thread < innerLast; thread++) {
                  int loop_start;
@@ -593,7 +593,6 @@ void FP_tree::database_tiling(int workingthread)
                  }
                  for (int ii = loop_start; ii < loop_end; ii++)
 #else
-    // printf("mapfile->tablesize: %d\n", mapfile->tablesize);
 #pragma omp parallel for schedule(dynamic, 1)
                 for (int ii = 0; ii < mapfile->tablesize; ii ++)
 #endif
@@ -1179,7 +1178,7 @@ void FP_tree::scan2_DB(int workingthread)
     // (workingthread - thread_remainder) loops with length thread_step
     int thread_step = mergedworknum / workingthread;
     int thread_remainder = mergedworknum % workingthread;
-    pfor(0, workingthread, 1, 1,
+    pfor(0, workingthread, 1, GRAIN_SIZE,
          [&] (int innerFirst, int innerLast) {
              for (int thread = innerFirst; thread < innerLast; thread++) {
                  int loop_start;
@@ -1193,15 +1192,12 @@ void FP_tree::scan2_DB(int workingthread)
                  }
                  for (int jj = loop_start; jj < loop_end; jj++)
 #else
-    // printf("mergedworknum: %d\n", mergedworknum);
 #pragma omp parallel for schedule(dynamic,1)
                 for (int jj = 0; jj < mergedworknum; jj++)
 #endif
                     {
 #ifndef ENABLE_TASK
                         int thread = get_thread_num();
-// #else
-//                         j = jj;
 #endif
                         int localthreadworkloadnum = threadworkloadnum[thread];
                         int *localthreadworkload = threadworkload[thread];
@@ -1551,20 +1547,11 @@ int FP_tree::FP_growth_first(FSout* fout)
         wtime(&loop_start);
 #endif
 #ifdef ENABLE_TASK
-// #if TO_TBB || TO_QTHREAD
-//         int grain_size = ((upperbound - lowerbound + workingthread - 1) / workingthread) * 2 - 1;
-// #else
-//         int grain_size = GRAIN_SIZE2;
-// #endif
-//         int grain_size = (upperbound - lowerbound) * 3; // todo
-//         pfor_backward(upperbound - 1, lowerbound, -1, grain_size,
-//              [&] (int innerFirst, int innerLast) {
-//                  for (int sequence = innerFirst; sequence >= innerLast; sequence--)
     // thread_remainder loops with length thread_step + 1,
     // (workingthread - thread_remainder) loops with length thread_step
     int thread_step = (upperbound - lowerbound) / workingthread;
     int thread_remainder = (upperbound - lowerbound) % workingthread;
-    pfor(0, workingthread, 1, 1,
+    pfor(0, workingthread, 1, GRAIN_SIZE,
          [&] (int innerFirst, int innerLast) {
              for (int thread = innerFirst; thread < innerLast; thread++) {
                  int loop_start;
@@ -1590,8 +1577,6 @@ int FP_tree::FP_growth_first(FSout* fout)
                 char* MB2;
 #ifndef ENABLE_TASK
                 int thread = get_thread_num();
-// #else
-//                 int thread = 0;
 #endif
                 //release_node_array_before_mining(sequence, thread, workingthread); remove due to data race
                 memory *local_fp_tree_buf = fp_tree_buf[thread];
