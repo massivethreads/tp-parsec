@@ -43,7 +43,7 @@ using namespace tbb;
 #if !defined(PFOR_TO_ALLATONCE) && !defined(PFOR_TO_BISECTION) && !defined(PFOR_TO_ORIGINAL)
   #define PFOR_TO_ORIGINAL 1
 #endif
-
+#define PFOR2_EXPERIMENTAL
 #include <tp_parsec.h>
 
 #endif
@@ -282,12 +282,12 @@ int bs_thread(void *tid_ptr) {
 
 void bs_thread(void *tid_ptr) {
     int tid = *(int *)tid_ptr;
-    int start = tid * (numOptions / nThreads);
-    int end = start + (numOptions / nThreads);
+    int start = 0;
+    int end = numOptions;
     const int GRAIN_SIZE = 40;
     for(int j=0; j<NUM_RUNS; j++) {
-        pfor(int, start, end, 1, GRAIN_SIZE, {
-            for (int i = FIRST_; i < LAST_;i++) { 
+        pfor(start, end, 1, GRAIN_SIZE, [](int first, int last) {
+            for (int i = first; i < last;i++) {
                 fptype price = BlkSchlsEqEuroNoDiv( sptprice[i], strike[i], rate[i],
                                                     volatility[i], otime[i], otype[i], 0);
                 prices[i] = price;
