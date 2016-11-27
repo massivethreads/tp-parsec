@@ -46,7 +46,6 @@ THE POSSIBILITY OF SUCH DAMAGE.
   #define PFOR_TO_ORIGINAL 1
 #endif
 #define GRAIN_SIZE 1
-#define GRAIN_SIZE2 1
 //pfor2 is an experimental version, yet.
 #define PFOR2_EXPERIMENTAL
 #include <tp_parsec.h>

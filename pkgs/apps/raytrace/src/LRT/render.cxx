@@ -648,12 +648,20 @@ void Context::renderFrame(Camera *camera,
 
   BVH_STAT_COLLECTOR(BVHStatCollector::global.reset());
 #ifdef ENABLE_TASK
+    #ifdef TO_OMP
+    #pragma omp parallel
+    #pragma omp master
+    {
+    #endif
     if (m_geometryMode == MINIRT_POLYGONAL_GEOMETRY)
       renderTileTask<StandardTriangleMesh,RAY_PACKET_LAYOUT_TRIANGLE>(frameBuffer,0,0,resX,resY);
     else if (m_geometryMode == MINIRT_SUBDIVISION_SURFACE_GEOMETRY)
       renderTileTask<DirectedEdgeMesh,RAY_PACKET_LAYOUT_SUBDIVISION>(frameBuffer,0,0,resX,resY);
     else
       FATAL("unknown mesh type");
+    #ifdef TO_OMP
+    }
+    #endif
 #else
   if (m_threads>1)
     {

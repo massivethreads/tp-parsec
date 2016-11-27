@@ -43,9 +43,7 @@
 #include <hooks.h>
 #endif
 
-
 #ifdef ENABLE_TASK
-#include <tbb/tbb.h>
 #include <tp_parsec.h>
 #endif
 

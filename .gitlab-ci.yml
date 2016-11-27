@@ -210,10 +210,26 @@ test_canneal_gcc_pthreads_job:
         - cd bin
         - ${PARSEC_RUN_COMMAND} -p canneal -c gcc-pthreads
 
-#test_canneal_gcc_mth_job:
-#    stage: test
-#    script:
-#        - cd bin
-#        - ${PARSEC_RUN_COMMAND} -p canneal -c gcc-task_mth
+test_canneal_gcc_mth_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p canneal -c gcc-task_mth
 
+test_canneal_gcc_qth_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p canneal -c gcc-task_qth
 
+test_canneal_gcc_tbb_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p canneal -c gcc-task_tbb
+
+test_canneal_gcc_omp_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p canneal -c gcc-task_omp	
