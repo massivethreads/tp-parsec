@@ -56,6 +56,7 @@ class ParticleFilterTP : public ParticleFilter<T> {
 template<class T>
 void ParticleFilterTP<T>::CalcWeights(std::vector<Vectorf > &particles)
 {
+  cilk_begin;
   std::vector<unsigned char> valid(particles.size());
   mBestParticle = 0;
   fpType total = 0, best = 0, minWeight = 1e30f, annealingFactor = 1;
@@ -99,13 +100,15 @@ void ParticleFilterTP<T>::CalcWeights(std::vector<Vectorf > &particles)
         }
     }
   mWeights *= fpType(1.0) / total; //normalize weights
+  cilk_void_return;
 }
 
 
 //generate new particles distributed with std deviation given by the model annealing parameter - threaded
 template<class T> 
-void ParticleFilterTP<T>::GenerateNewParticles(int k)
-{  int p = 0;
+void ParticleFilterTP<T>::GenerateNewParticles(int k) {
+  cilk_begin;
+  int p = 0;
   mNewParticles.resize(mNParticles);
   mIndex.resize(mNParticles);
   for(int i = 0; i < (int)mBins.size(); i++)                    
@@ -122,6 +125,7 @@ void ParticleFilterTP<T>::GenerateNewParticles(int k)
            this->AddGaussianNoise(this->mNewParticles[i], this->mModel->StdDevs()[k], this->mRnd[i]);
          }
        });
+  cilk_void_return;
 }
 
 
