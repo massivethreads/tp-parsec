@@ -37,6 +37,8 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #include <string>
 #include <memory>
 
+#define PFOR_TO_ORIGINAL 1
+#define PFOR2_EXPERIMENTAL
 #include <tp_parsec.h>
 
 namespace /*unnamed*/ {
@@ -338,6 +340,34 @@ inline void output_multiple_results(FILE* const fout, InputIterator first, const
     }
 }
 
+#if 1
+inline void exec_ferret(const char* const query_dir, FILE* const fout, const std::size_t /*depth*/)
+{
+    // Load (sequential)
+    const auto paths = scan_dir_rec(query_dir);
+    
+    const auto size = paths.size();
+    
+    std::vector<all_data> buf(size);
+    
+    const int from = 0;
+    const int to = static_cast<int>(size);
+    const int grain_size = 1;
+    
+    // Process (parallel)
+    pfor(from, to, 1, grain_size,
+        [&] (const int first, const int /*last*/)
+        {
+            const auto* const data = &buf[first];
+            const auto* const path = paths[first].c_str();
+            
+            process_image(data, path);
+        });
+    
+    // Save (sequential)
+    output_multiple_results(fout, std::begin(buf), std::end(buf));
+}
+#else
 inline void exec_ferret(const char* const query_dir, FILE* const fout, const std::size_t depth)
 {
     cilk_begin;
@@ -392,6 +422,7 @@ inline void exec_ferret(const char* const query_dir, FILE* const fout, const std
     
     cilk_void_return;
 }
+#endif
 
 } // unnamed namespace
 
