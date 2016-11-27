@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# icc-openmp.bldconf - configuration file for PARSEC
+
+source ${PARSECDIR}/pkgs/libs/hooks/parsec/icc.bldconf
+
