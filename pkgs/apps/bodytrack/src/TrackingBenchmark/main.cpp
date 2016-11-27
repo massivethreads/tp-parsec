@@ -70,7 +70,7 @@ using namespace tbb;
 #endif
 #include <tp_parsec.h>
 
-#define GRAIN_SIZE 1<<7
+#define GRAIN_SIZE 1<<4
 
 #include "ParticleFilterTP.h"
 #include "TrackingModelTP.h"
@@ -466,6 +466,9 @@ int mainSingleThread(string path, int cameras, int frames, int particles, int la
 }
 
 int main(int argc, char **argv) {
+#ifdef ENABLE_TASK
+  cilk_begin;
+#endif
   string path;
   bool OutputBMP;
   int cameras, frames, particles, layers, threads, threadModel; //process command line parameters to get path, cameras, and frames
@@ -546,7 +549,13 @@ int main(int argc, char **argv) {
 
   case 5 : 
 #if defined(USE_TP_PARSEC)
-    mainTP_PARSEC(path, cameras, frames, particles, layers, threads, OutputBMP); //TP_PERSEC parallelized tracking
+    //#if defined(TO_OMP)    
+    pragma_omp_parallel_single(nowait, {
+        call_task(spawn mainTP_PARSEC(path, cameras, frames, particles, layers, threads, OutputBMP));
+      });
+    //#else    
+    //mainTP_PARSEC(path, cameras, frames, particles, layers, threads, OutputBMP);
+    //#endif
     break;
 #else
     cout << "Not compiled with TASK support. " << endl;
@@ -575,5 +584,7 @@ int main(int argc, char **argv) {
   printf("exported collected loop sizes to file.\n");
 #endif  
 
-  return 0;
+#ifdef ENABLE_TASK
+  cilk_return(0);
+#endif
 }

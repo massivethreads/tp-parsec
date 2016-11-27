@@ -61,6 +61,11 @@
 
 #pragma once
 
+#if !defined(TO_OMP)
+#define pragma_omp(x)
+#define pragma_omp_parallel_single(clause, S) do { S } while(0)
+#endif
+
 /* OpenMP */
 #if TO_OMP
 

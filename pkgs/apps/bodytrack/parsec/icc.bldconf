@@ -1,6 +1,7 @@
 #!/bin/bash
 
-if [ "${build}" == "icc" ]; then
-  source ${PARSECDIR}/pkgs/apps/bodytrack/parsec/gcc.bldconf
-fi
+# icc.bldconf - configuration file for PARSEC
+
+# Default parallelization is pthreads
+source ${PARSECDIR}/pkgs/apps/bodytrack/parsec/icc-pthreads.bldconf
 
