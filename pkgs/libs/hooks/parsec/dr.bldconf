@@ -18,7 +18,7 @@ case ${task_target} in
     echo "${oprefix} hooks with dr: added options and links for task_target=mth"
     # for mth
     cflags="-I${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/include -DTO_MTHREAD_NATIVE -pthread"
-    CFLAGS="${CFLAGS} ${cflags}"
+    CFLAGS="${CFLAGS} ${cflags} -x c++"
     CXXFLAGS="${CXXFLAGS} ${cflags} -std=c++0x"
     LDFLAGS="${LDFLAGS} -L${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/lib"
     LIBS="${LIBS} -lmyth -lpthread"
@@ -28,7 +28,7 @@ case ${task_target} in
     build_deps="${build_deps} tbb"
     # for tbb
     cflags="${cflags} -I${PARSECDIR}/pkgs/libs/tbb/inst/${PARSECPLAT}/include -DTO_TBB -pthread"
-    CFLAGS="${CFLAGS} ${cflags}"
+    CFLAGS="${CFLAGS} ${cflags} -x c++"
     CXXFLAGS="${CXXFLAGS} ${cflags} -std=c++0x"
     LDFLAGS="${LDFLAGS} -L${PARSECDIR}/pkgs/libs/tbb/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/tbb/inst/${PARSECPLAT}/lib"
     LIBS="${LIBS} -ltbb -lpthread"
@@ -38,7 +38,7 @@ case ${task_target} in
     build_deps="${build_deps} qth"
     # for qth
     cflags="${cflags} -I${PARSECDIR}/pkgs/libs/qth/inst/${PARSECPLAT}/include -DTO_QTHREAD -pthread"
-    CFLAGS="${CFLAGS} ${cflags}"
+    CFLAGS="${CFLAGS} ${cflags} -x c++"
     CXXFLAGS="${CXXFLAGS} ${cflags} -std=c++0x"
     LDFLAGS="${LDFLAGS} -L${PARSECDIR}/pkgs/libs/qth/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/qth/inst/${PARSECPLAT}/lib"
     LIBS="${LIBS} -lqthread -lpthread"
