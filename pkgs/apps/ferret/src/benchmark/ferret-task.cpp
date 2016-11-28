@@ -356,12 +356,14 @@ inline void exec_ferret(const char* const query_dir, FILE* const fout, const std
     
     // Process (parallel)
     pfor(from, to, 1, grain_size,
-        [&] (const int first, const int /*last*/)
+        [&] (const int first, const int last)
         {
-            const auto* const data = &buf[first];
-            const auto* const path = paths[first].c_str();
-            
-            process_image(data, path);
+            for (int i = first; i < last; ++i) {
+                const auto* const data = &buf[i];
+                const char* const path = paths[i].c_str();
+                
+                process_image(data, path);
+            }
         });
     
     // Save (sequential)
