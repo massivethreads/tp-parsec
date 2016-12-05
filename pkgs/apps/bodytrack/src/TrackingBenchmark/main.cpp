@@ -188,7 +188,6 @@ bool ProcessCmdLine(int argc, char **argv, string &path, int &cameras, int &fram
     }
   return true;
 }
-#endif
 
 //Body tracking parallelized with task parallelism and tp_parsec
 #if defined(USE_TP_PARSEC)
