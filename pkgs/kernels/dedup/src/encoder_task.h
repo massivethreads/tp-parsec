@@ -57,12 +57,26 @@
 //Cut-off constants
 //Larger constants result in less parallelism and less overheads.
 #define TASK_CUTOFF_FRAGMENT 1
-#define TASK_CUTOFF_FRAGMENT_REFINE 30
+#define TASK_CUTOFF_FRAGMENT_REFINE 20
 //Frequency of writing data
 //It tries to write down after processing every (TASK_FRAGMENT_SYNC_FREQUENCY * TASK_CUTOFF_FRAGMENT) chunks
 //Note that smaller frequency reduces parallelism, while it is desirable to write calculated date to file concurrently
 //For example, online processing is one typical example in which smaller frequency is preferable.
-#define TASK_FRAGMENT_SYNC_FREQUENCY 2
+#define TASK_FRAGMENT_SYNC_FREQUENCY 25
+//Use a buffer for xwrite
+#define TASK_USE_XWRITE_BUFFER 1
+
+#if TASK_USE_XWRITE_BUFFER
+  //Buffer size of xwrite_buffer
+  #define TASK_XWRITE_BUFFER_SIZE (1024*1024*8)
+#endif
+//Parallelize detecting segments in Fragment.
+#define TASK_PARALLEL_FRAGMENT 1
+#if TASK_PARALLEL_FRAGMENT
+  //Granularity of parallel fragment.
+  #define TASK_CUTOFF_PARALLEL_FRAGMENT 1
+#endif
+
 
 //The configuration block defined in main
 static config_t * conf;
@@ -173,7 +187,54 @@ static void print_stats(stats_t *s) {
 
 #endif //ENABLE_STATISTICS
 
+#if TASK_USE_XWRITE_BUFFER
+typedef struct {
+  u_char buffer[TASK_XWRITE_BUFFER_SIZE];
+  size_t length;
+} xwrite_buffer_t;
 
+static int flush_xwrite_buffer(int fd, xwrite_buffer_t* xwrite_buffer) {
+ if (xwrite(fd, xwrite_buffer->buffer, xwrite_buffer->length) < 0){
+    perror("xwrite:");
+    EXIT_TRACE("xwrite buffer fails\n");
+    return -1;
+  }
+  xwrite_buffer->length = 0;
+  return 0;
+}
+static int write_xwrite_buffer(xwrite_buffer_t* xwrite_buffer, int fd, void* data, int len) {
+  if(xwrite_buffer->length + len > TASK_XWRITE_BUFFER_SIZE) {
+    if(flush_xwrite_buffer(fd, xwrite_buffer) == -1)
+      return -1;
+    if(len > TASK_XWRITE_BUFFER_SIZE) {
+      if(xwrite(fd, data, len) < 0) {
+        perror("xwrite:");
+        EXIT_TRACE("xwrite data fails\n");
+        return -1;
+      }
+      return 0;
+    }
+  }
+  //Append data.
+  memcpy(xwrite_buffer->buffer + xwrite_buffer->length, data, len);
+  xwrite_buffer->length += len;
+  return 0;
+}
+static int write_file_use_buffer(xwrite_buffer_t* xwrite_buffer, int fd, u_char type, u_long len, u_char * content) {
+  if (write_xwrite_buffer(xwrite_buffer, fd, &type, sizeof(type)) < 0){
+    perror("xwrite:");
+    EXIT_TRACE("xwrite type fails\n");
+    return -1;
+  }
+  if (write_xwrite_buffer(xwrite_buffer, fd, &len, sizeof(len)) < 0){
+    EXIT_TRACE("xwrite content fails\n");
+  }
+  if (write_xwrite_buffer(xwrite_buffer, fd, content, len) < 0){
+    EXIT_TRACE("xwrite content fails\n");
+  }
+  return 0;
+}
+#else
 //Simple write utility function
 static int write_file(int fd, u_char type, u_long len, u_char * content) {
   if (xwrite(fd, &type, sizeof(type)) < 0){
@@ -189,6 +250,7 @@ static int write_file(int fd, u_char type, u_long len, u_char * content) {
   }
   return 0;
 }
+#endif//TASK_USE_XWRITE_BUFFER
 
 /*
  * Helper function that creates and initializes the output file
@@ -223,6 +285,29 @@ static int create_output_file(char *outfile) {
  */
 //NOTE: The serial version relies on the fact that chunks are processed in-order,
 //      which means if it reaches the function it is guaranteed all data is ready.
+#if TASK_USE_XWRITE_BUFFER
+static void write_chunk_to_file_use_buffer(int fd, chunk_t *_chunk, xwrite_buffer_t* xwrite_buffer) {
+  chunk_t* chunk = _chunk;
+  assert(chunk!=NULL);
+  if(chunk->header.state == CHUNK_STATE_EMPTY) {
+    //Nothing to do.
+    return;
+  }
+  if(chunk->header.isDuplicate)
+    chunk = chunk->compressed_data_ref;
+
+  if(chunk->header.state == CHUNK_STATE_COMPRESSED) {
+    //Chunk data has not been written yet, do so now
+    write_file_use_buffer(xwrite_buffer, fd, TYPE_COMPRESS, chunk->compressed_data.n, (u_char*)chunk->compressed_data.ptr);
+    mbuffer_free(&chunk->compressed_data);
+    chunk->header.state = CHUNK_STATE_FLUSHED;
+  } else {
+    assert(chunk->header.state == CHUNK_STATE_FLUSHED);
+    //Duplicate chunk, data has been written to file before, just write SHA1
+    write_file_use_buffer(xwrite_buffer, fd, TYPE_FINGERPRINT, SHA1_LEN, (unsigned char *)(chunk->sha1));
+  }
+}
+#else
 static void write_chunk_to_file(int fd, chunk_t *_chunk) {
   chunk_t* chunk = _chunk;
   assert(chunk!=NULL);
@@ -244,10 +329,21 @@ static void write_chunk_to_file(int fd, chunk_t *_chunk) {
     write_file(fd, TYPE_FINGERPRINT, SHA1_LEN, (unsigned char *)(chunk->sha1));
   }
 }
+#endif
 /*
  * Write chunks starting from head_chunk.
  * This funciton will be parallelized.
  */
+#if TASK_USE_XWRITE_BUFFER
+void write_all_chunks_to_file_use_buffer(int fd, chunk_t *chunk_in, xwrite_buffer_t* xwrite_buffer) {
+  chunk_t* chunk = chunk_in;
+  while(chunk){
+    write_chunk_to_file_use_buffer(fd,chunk,xwrite_buffer);
+    chunk = chunk->next;
+  }
+  flush_xwrite_buffer(fd, xwrite_buffer);
+}
+#else
 void write_all_chunks_to_file(int fd, chunk_t *chunk_in) {
   chunk_t* chunk = chunk_in;
   while(chunk){
@@ -255,6 +351,7 @@ void write_all_chunks_to_file(int fd, chunk_t *chunk_in) {
     chunk = chunk->next;
   }
 }
+#endif
 
 int rf_win;
 int rf_win_dataprocess;
@@ -514,6 +611,231 @@ void FragmentRefine(chunk_t * _chunk_in, int _chunk_num) {
 /*
  * Task for Fragmentation. It is a root task.
  */
+#if TASK_PARALLEL_FRAGMENT
+//Try to find segment from {head + ANCHOR_JUMP} to {head + size}.
+//If it succeeds to find a suitable break, it return offsets of offsets_len.
+//Otherwise, offsets_len becomes 0.
+typedef struct {
+  size_t* offsets;
+  int offsets_len;
+} fragment_task_offset_t;
+
+void SplitStream(u_char* head, size_t size, fragment_task_offset_t* offset_info) {
+  cilk_begin;
+  if(size < ANCHOR_JUMP * 2 * TASK_CUTOFF_PARALLEL_FRAGMENT) {
+    //Try to split the region: head ~ head + size.
+    u32int * rabintab = (u32int*) malloc(256*sizeof rabintab[0]);
+    u32int * rabinwintab = (u32int*) malloc(256*sizeof rabintab[0]);
+    if(rabintab == NULL || rabinwintab == NULL) {
+      EXIT_TRACE("Memory allocation failed.\n");
+    }
+    rabininit(rf_win_dataprocess, rabintab, rabinwintab);
+
+    offset_info->offsets = NULL;
+    offset_info->offsets_len = 0;
+    size_t head_offset = 0;
+    while(size > ANCHOR_JUMP + head_offset) {
+      int offset = rabinseg(head + head_offset + ANCHOR_JUMP, size - ANCHOR_JUMP - head_offset, rf_win_dataprocess, rabintab, rabinwintab);
+      //Did we find a split location?
+      if(offset == 0) {
+        //Ignore this case.
+        break;
+      } else if(head_offset + offset + ANCHOR_JUMP < size) {
+        //Successfully find a split location.
+        if(!offset_info->offsets)
+          //The number of offsets is at most size / ANCHOR_JUMP
+          offset_info->offsets = (size_t*)malloc(sizeof(size_t) * (size / ANCHOR_JUMP));
+        head_offset += offset + ANCHOR_JUMP;
+        offset_info->offsets[offset_info->offsets_len++] = head_offset;
+      }
+    }
+    free(rabintab);
+    free(rabinwintab);
+  } else {
+    //divide-and-conquer.
+    mk_task_group;
+
+    u_char* head1 = head;
+    size_t  size1 = size / 2;
+    fragment_task_offset_t* offset_info1=(fragment_task_offset_t*)malloc(sizeof(fragment_task_offset_t));;
+    create_task0(spawn SplitStream(head1, size1, offset_info1));
+
+    u_char* head2 = head1 + size1;
+    size_t  size2 = size - size1;
+    fragment_task_offset_t* offset_info2=(fragment_task_offset_t*)malloc(sizeof(fragment_task_offset_t));;
+    call_task   (spawn SplitStream(head2, size2, offset_info2));
+
+    wait_tasks;
+    int new_offsets_len = offset_info1->offsets_len + offset_info2->offsets_len;
+    offset_info->offsets_len = new_offsets_len;
+    if(new_offsets_len > 0) {
+      offset_info->offsets = (size_t*)malloc(sizeof(size_t) * new_offsets_len);
+      int index = 0;
+      for(int i = 0; i < offset_info1->offsets_len; i++)
+        offset_info->offsets[index++] = offset_info1->offsets[i];
+      if(offset_info1->offsets_len > 0)
+        free(offset_info1->offsets);
+      for(int i = 0; i < offset_info2->offsets_len; i++)
+        offset_info->offsets[index++] = offset_info2->offsets[i] + size1;
+      if(offset_info2->offsets_len > 0)
+        free(offset_info2->offsets);
+    }
+    free(offset_info1);
+    free(offset_info2);
+  }
+  cilk_void_return;
+}
+
+void Fragment(int fd, void *input_file_buffer, size_t input_file_size) {
+  cilk_begin;
+
+  if(!conf->preloading)
+    EXIT_TRACE("This version assumes preloading. Disable TASK_PARALLEL_FRAGMENT to disable preloading.\n");
+
+  int r;
+
+  u32int * rabintab = (u32int*) malloc(256*sizeof rabintab[0]);
+  u32int * rabinwintab = (u32int*) malloc(256*sizeof rabintab[0]);
+  if(rabintab == NULL || rabinwintab == NULL) {
+    EXIT_TRACE("Memory allocation failed.\n");
+  }
+
+  rf_win_dataprocess = 0;
+  rabininit(rf_win_dataprocess, rabintab, rabinwintab);
+
+  #if TASK_USE_XWRITE_BUFFER
+    xwrite_buffer_t* xwrite_buffer = (xwrite_buffer_t*)malloc(sizeof(xwrite_buffer_t));
+    xwrite_buffer->length = 0;
+  #endif
+  //Sanity check
+  if(MAXBUF < 8 * ANCHOR_JUMP) {
+    printf("WARNING: I/O buffer size is very small. Performance degraded.\n");
+    fflush(NULL);
+  }
+
+  int fd_out = create_output_file(conf->outfile);
+
+  //First, roughly extract chunks.
+  size_t* chunk_offsets = 0;
+  int chunk_offsets_len = 0;
+  {
+    u_char* head = (u_char*)input_file_buffer;
+    size_t size = input_file_size;
+    fragment_task_offset_t* offset_info=(fragment_task_offset_t*)malloc(sizeof(fragment_task_offset_t));
+    mk_task_group;
+    call_task(spawn SplitStream(head, size, offset_info));
+    wait_tasks;
+    chunk_offsets = offset_info->offsets;
+    chunk_offsets_len = offset_info->offsets_len;
+    free(offset_info);
+  }
+  //processed_chunk_head is a head of chunks which are ready to write to a file.
+  //NOTE: processing_chunk_head and processed_chunk_head are not connected by links. 
+  //processign_chunk_head is declared in the following while-loop. 
+  chunk_t* processed_chunk_head = NULL;
+
+  //read from input buffer
+  int chunk_offset_index = 0;
+  size_t buffer_seek = 0;
+  while (1) {
+    //These values will be given to child tasks (FragmentRefine)
+    int task_creation_num = 0;
+    //Head chunk of current loop.
+    chunk_t* head_chunk = NULL;
+    //Head chunk of chunks, which are not refined.
+    chunk_t* child_task_chunk_head = NULL;
+    //This is for cut-off.
+    int child_task_chunk_num = 0;
+    //processing_chunk_head is a head of chunks which are now being refined, deduplicated and perhaps compressed.  
+    chunk_t* processing_chunk_head = NULL;
+    //Flag to distinguish between end of read and periodic synchronization.
+    int read_all_flag = 0;
+    mk_task_group;
+    if(processed_chunk_head) {
+      #if TASK_USE_XWRITE_BUFFER
+        create_task0(spawn write_all_chunks_to_file_use_buffer(fd_out, processed_chunk_head, xwrite_buffer));
+      #else
+        create_task0(spawn write_all_chunks_to_file(fd_out, processed_chunk_head));
+      #endif
+    }
+    while(1) {
+      //Check how much data left over from previous iteration resp. create an initial chunk
+      //Allocate a new chunk and create a new memory buffer
+      size_t chunk_offset = (chunk_offset_index >= chunk_offsets_len) ? input_file_size : chunk_offsets[chunk_offset_index];
+      if(chunk_offset == buffer_seek)
+        //No data can be read.
+        break;
+      chunk_t* new_chunk = (chunk_t *)malloc(sizeof(chunk_t));
+      //Setup chunk.
+      {
+        if(new_chunk==NULL) EXIT_TRACE("Memory allocation failed.\n");
+        new_chunk->next = NULL;
+        if(child_task_chunk_head == NULL)
+          child_task_chunk_head = new_chunk;
+        if(processing_chunk_head == NULL)
+          processing_chunk_head = new_chunk;
+        //Make sure that system supports new buffer size
+        r = mbuffer_create(&new_chunk->uncompressed_data, chunk_offset - buffer_seek);
+        if(r!=0) EXIT_TRACE("Unable to initialize memory buffer.\n");
+        new_chunk->header.state = CHUNK_STATE_UNCOMPRESSED;
+      }
+      memcpy((unsigned char*)new_chunk->uncompressed_data.ptr, (unsigned char*)input_file_buffer + buffer_seek, chunk_offset - buffer_seek);
+      //Update offsets.
+      buffer_seek = chunk_offset;
+      chunk_offset_index++;
+      //Connect chunk to newchunk
+      if(!head_chunk) {
+        head_chunk = new_chunk;
+      } else {
+        head_chunk->next = new_chunk;
+        head_chunk = new_chunk;
+        child_task_chunk_num++;
+        if(child_task_chunk_num >= TASK_CUTOFF_FRAGMENT) {
+          //Now chunks is processed.
+          create_task0(spawn FragmentRefine(child_task_chunk_head, child_task_chunk_num));
+          child_task_chunk_head = new_chunk;
+          child_task_chunk_num = 0;
+          task_creation_num++;
+        }
+      }
+      if(task_creation_num > TASK_FRAGMENT_SYNC_FREQUENCY)
+        goto SYNCHRONIZE;
+    }
+    //end of read.
+    read_all_flag = 1;
+SYNCHRONIZE:
+    //Process remaining chunks.
+    //chunk becomes a tail.
+    if(head_chunk && head_chunk->header.state != CHUNK_STATE_EMPTY) {
+      assert(!head_chunk->next);
+      child_task_chunk_num++;
+    }
+    //Process remaining chunks.
+    call_task(spawn FragmentRefine(child_task_chunk_head, child_task_chunk_num));
+    wait_tasks;
+    processed_chunk_head = processing_chunk_head;
+    if(read_all_flag == 1) {
+      //Be sure to write all chunks.
+      mk_task_group;
+      #if TASK_USE_XWRITE_BUFFER
+        call_task(spawn write_all_chunks_to_file_use_buffer(fd_out, processed_chunk_head, xwrite_buffer));
+      #else
+        call_task(spawn write_all_chunks_to_file(fd_out, processed_chunk_head));
+      #endif
+      wait_tasks;
+      break;
+    }
+  }
+  #if TASK_USE_XWRITE_BUFFER
+    free(xwrite_buffer);
+  #endif
+  free(chunk_offsets);
+  free(rabintab);
+  free(rabinwintab);
+  close(fd_out);
+  cilk_void_return;
+}
+#else
 void Fragment(int fd, void *input_file_buffer, size_t input_file_size) {
   cilk_begin;
   size_t preloading_buffer_seek = 0;
@@ -528,6 +850,10 @@ void Fragment(int fd, void *input_file_buffer, size_t input_file_size) {
   rf_win_dataprocess = 0;
   rabininit(rf_win_dataprocess, rabintab, rabinwintab);
 
+  #if TASK_USE_XWRITE_BUFFER
+    xwrite_buffer_t* xwrite_buffer = (xwrite_buffer_t*)malloc(sizeof(xwrite_buffer_t));
+    xwrite_buffer->length = 0;
+  #endif
   //Sanity check
   if(MAXBUF < 8 * ANCHOR_JUMP) {
     printf("WARNING: I/O buffer size is very small. Performance degraded.\n");
@@ -540,6 +866,7 @@ void Fragment(int fd, void *input_file_buffer, size_t input_file_size) {
   //NOTE: processing_chunk_head and processed_chunk_head are not connected by links. 
   //processign_chunk_head is declared in the following while-loop. 
   chunk_t* processed_chunk_head = NULL;
+
 
   //read from input file / buffer
   while (1) {
@@ -555,8 +882,13 @@ void Fragment(int fd, void *input_file_buffer, size_t input_file_size) {
     //Flag to distinguish between end of read and periodic synchronization.
     int read_all_flag = 0;
     mk_task_group;
-    if(processed_chunk_head)
-      create_task0(spawn write_all_chunks_to_file(fd_out, processed_chunk_head));
+    if(processed_chunk_head) {
+      #if TASK_USE_XWRITE_BUFFER
+        create_task0(spawn write_all_chunks_to_file_use_buffer(fd_out, processed_chunk_head, xwrite_buffer));
+      #else
+        create_task0(spawn write_all_chunks_to_file(fd_out, processed_chunk_head));
+      #endif
+    }
     while (1) {
       //This while-loop is for reading data.
       size_t bytes_left; //amount of data left over in last_mbuffer from previous iteration
@@ -706,18 +1038,24 @@ SYNCHRONIZE:
     if(read_all_flag == 1) {
       //Be sure to write all chunks.
       mk_task_group;
-      call_task(spawn write_all_chunks_to_file(fd_out, processed_chunk_head));
+      #if TASK_USE_XWRITE_BUFFER
+        call_task(spawn write_all_chunks_to_file_use_buffer(fd_out, processed_chunk_head, xwrite_buffer));
+      #else
+        call_task(spawn write_all_chunks_to_file(fd_out, processed_chunk_head));
+      #endif
       wait_tasks;
       break;
     }
   }
-
+  #if TASK_USE_XWRITE_BUFFER
+    free(xwrite_buffer);
+  #endif
   free(rabintab);
   free(rabinwintab);
   close(fd_out);
   cilk_void_return;
 }
-
+#endif//TASK_PARALLEL_FRAGMENT
 /*--------------------------------------------------------------------------*/
 /* Encode
  * Compress an input stream
