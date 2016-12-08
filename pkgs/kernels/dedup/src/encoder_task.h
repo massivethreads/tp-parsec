@@ -64,12 +64,12 @@
 //For example, online processing is one typical example in which smaller frequency is preferable.
 #define TASK_FRAGMENT_SYNC_FREQUENCY 25
 //Use a buffer for xwrite
-#define TASK_USE_XWRITE_BUFFER 1
-
+#define TASK_USE_XWRITE_BUFFER 0
 #if TASK_USE_XWRITE_BUFFER
   //Buffer size of xwrite_buffer
   #define TASK_XWRITE_BUFFER_SIZE (1024*1024*8)
 #endif
+
 //Parallelize detecting segments in Fragment.
 #define TASK_PARALLEL_FRAGMENT 1
 #if TASK_PARALLEL_FRAGMENT
