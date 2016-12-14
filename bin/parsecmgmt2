@@ -349,6 +349,10 @@ function source_bldconf {
     source_local_bldconf ${build}
   else
     if [ "${build##*-}" == "hooks" ]; then
+      # Clean global_build_deps variable so that the old build dependencies
+      # does not get remained and messes the new build up (for task versions
+      # this variable is cleaned in global task.bldconf)
+      global_build_deps=""
       buildfile="${pkgparsecdir}/${build%-*}.bldconf"
     else
       buildfile="${pkgparsecdir}/${build}.bldconf"
@@ -1032,7 +1036,6 @@ function build_package {
   local dep=""
   for dep in ${global_build_deps} ${build_deps}; do
     if [ ${dep} != ${pkgname} ]; then
-      echo "${dep} is different from ${pkgname}"
       local tmpdep
       local index
       tmpdep=${dep}

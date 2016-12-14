@@ -7,3 +7,6 @@
 [submodule "papi"]
 	path = pkgs/libs/papi/src
 	url = https://bitbucket.org/icl/papi.git
+[submodule "toolkit/tp_parsec/mth_tpswitch"]
+	path = toolkit/tp_parsec/mth_tpswitch
+	url = https://github.com/massivethreads/massivethreads

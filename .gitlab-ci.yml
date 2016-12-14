@@ -233,3 +233,67 @@ test_canneal_gcc_omp_job:
     script:
         - cd bin
         - ${PARSEC_RUN_COMMAND} -p canneal -c gcc-task_omp	
+
+# streamcluster
+
+test_streamcluster_gcc_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p streamcluster -c gcc
+
+test_streamcluster_gcc_mth_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p streamcluster -c gcc-task_mth
+
+test_streamcluster_gcc_qth_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p streamcluster -c gcc-task_qth
+
+test_streamcluster_gcc_tbb_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p streamcluster -c gcc-task_tbb
+
+test_streamcluster_gcc_omp_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p streamcluster -c gcc-task_omp
+
+# bodytrack
+
+test_bodytrack_gcc_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p bodytrack -c gcc
+
+test_bodytrack_gcc_mth_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p bodytrack -c gcc-task_mth
+
+test_bodytrack_gcc_qth_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p bodytrack -c gcc-task_qth
+
+test_bodytrack_gcc_tbb_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p bodytrack -c gcc-task_tbb
+
+test_bodytrack_gcc_omp_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p bodytrack -c gcc-task_omp

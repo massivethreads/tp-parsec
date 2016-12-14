@@ -49,6 +49,11 @@ if ENABLE_TBB
                        TrackingModelTBB.cpp
 endif
 
+if ENABLE_TP_PARSEC
+  bodytrack_SOURCES += ParticleFilterTP.h \
+                       TrackingModelTP.h #\ TrackingModelTP.cpp
+endif
+
 AM_CPPFLAGS = -I$(VPATH)/../FlexImageLib
 bodytrack_LDADD = ../FlexImageLib/libflex.la -lm
 
