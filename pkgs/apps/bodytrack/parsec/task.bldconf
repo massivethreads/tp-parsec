@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Package dependencies
+build_deps=""
+
+# In-place compilation.
+build_inplace="FALSE"
+
+# Environment to use for configure script and Makefile
+build_env="${build_env}"
+
+# Arguments to pass to the configure script, if it exists
+build_conf="--enable-tp_parsec --disable-threads --disable-openmp --disable-tbb"
+
+# Add options and links for tbb
+CXXFLAGS="${CXXFLAGS} -fexceptions"
+

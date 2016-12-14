@@ -38,11 +38,13 @@
 #if __cplusplus >= 201103L
   #define PFOR_REDUCE_IMPL pfor_reduce_bisection
   #if TO_SERIAL
-    template<typename IntTy, typename StepIntTy, typename LeafFuncTy, typename ReduceFuncTy> static typename std::result_of<LeafFuncTy(IntTy,IntTy)>::type pfor_reduce_bisection_aux(IntTy first, IntTy a, IntTy b, StepIntTy step, IntTy grainsize, LeafFuncTy leaffunc, ReduceFuncTy reducefunc, const char * file, int line) {
-      return leaffunc(first,last);
+    template<typename IntTy, typename StepIntTy, typename LeafFuncTy, typename ReduceFuncTy>
+    static typename std::result_of<LeafFuncTy(IntTy,IntTy)>::type pfor_reduce_bisection(IntTy first, IntTy last, StepIntTy step, IntTy grainsize, LeafFuncTy leaffunc, ReduceFuncTy reducefunc, const char * file, int line) {
+      return leaffunc(first, last);
     }
   #elif TO_OMP || TO_TBB || TO_MTHREAD || TO_MTHREAD_NATIVE || TO_QTHREAD || TO_CILKPLUS || TO_NANOX
-    template<typename IntTy, typename StepIntTy, typename LeafFuncTy, typename ReduceTy, typename ReduceFuncTy> static void pfor_reduce_bisection_aux(IntTy first, IntTy a, IntTy b, StepIntTy step, IntTy grainsize, LeafFuncTy* leaffunc, ReduceFuncTy* reducefunc, ReduceTy* returnvalue, const char * file, int line) {
+    template<typename IntTy, typename StepIntTy, typename LeafFuncTy, typename ReduceTy, typename ReduceFuncTy>
+    static void pfor_reduce_bisection_aux(IntTy first, IntTy a, IntTy b, StepIntTy step, IntTy grainsize, LeafFuncTy* leaffunc, ReduceFuncTy* reducefunc, ReduceTy* returnvalue, const char * file, int line) {
       cilk_begin;
       if (b - a <= grainsize) {
         *returnvalue = (*leaffunc)(first + a * step, first + b * step);
