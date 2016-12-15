@@ -190,5 +190,118 @@ bool TrackingModelTP::GetObservation(float timeval) {
 }
 
 
+/* TrackingModelTP2: version 2 of the tpswitch-based task parallel model */
+
+#include <deque>
+typedef vector<FlexImage<Im8u,1>> ImageSet;
+typedef vector<BinaryImage> BinaryImageSet;
+vector<ImageSet>       mImageBuffer; /* image buffer */
+vector<BinaryImageSet> mFGBuffer;    /* foreground image buffer */
+  
+static void load_image(string path, int cameras, int frames, int frame) {
+  int n = cameras;
+  vector<string> FGfiles(n), ImageFiles(n);
+  /* Generate image filenames */
+  for(int i = 0; i < n; i++) {
+    FGfiles[i] = path + "FG" + str(i + 1) + DIR_SEPARATOR + "image" + str(frame, 4) + ".bmp";
+    ImageFiles[i] = path + "CAM" + str(i + 1) + DIR_SEPARATOR + "image" + str(frame, 4) + ".bmp";
+  }
+  ImageSet images(n);
+  BinaryImageSet FGImages(n);
+  for(int i = 0; i < (int)FGfiles.size(); i++) {
+    FlexImage8u im;
+    if(!FlexLoadBMP(FGfiles[i].c_str(), im)) { //Load foreground maps and raw images
+      cout << "Unable to load image: " << FGfiles[i].c_str() << endl;
+      exit(1);
+    }  
+    FGImages[i].ConvertToBinary(im); //binarize foreground maps to 0 and 1
+    if(!FlexLoadBMP(ImageFiles[i].c_str(), images[i])) {
+      cout << "Unable to load image: " << ImageFiles[i].c_str() << endl;
+      exit(1);
+    }
+  }
+  mImageBuffer.push_back(images);
+  mFGBuffer.push_back(FGImages);
+}
+
+static void load_images(string path, int cameras, int frames) {
+  int frame = 0;
+  while (frame < frames) {
+    load_image(path, cameras, frames, frame);
+    printf("loaded images of frame %d\n", frame);
+    frame++;
+  }
+}
+
+class TrackingModelTP2 : public TrackingModel {
+  void CreateEdgeMap(FlexImage8u &src, FlexImage8u &dst);
+
+ public:
+  
+  TrackingModelTP2() {};
+  
+  ~TrackingModelTP2() {};
+  
+  bool GetObservation(float timeval);
+  void LoadImages(int frames);
+};
+
+void TrackingModelTP2::CreateEdgeMap(FlexImage8u &src, FlexImage8u &dst) {
+  FlexImage8u gr = GradientMagThresholdTP(src, 16.0f); //calc gradient magnitude and threshold
+  GaussianBlurTP(gr, dst); //Blur to create distance error map
+}
+
+bool TrackingModelTP2::GetObservation(float timeval) {
+  /* spin-wait for images to be loaded */
+  //while(mImageBuffer.size() == 0) {}
+  int frame = (int) timeval;
+
+  /* Get images for this time frame */
+  ImageSet images = mImageBuffer[frame];
+  mFGMaps = mFGBuffer[frame];
+
+  /* Create edge map */
+  for(int i = 0; i < images.size(); i++) {
+    CreateEdgeMap(images[i], mEdgeMaps[i]);
+  }
+  return true;
+}
+
+#if 0
+void TrackingModelTP2::LoadImages(int frames) {
+  mImageBuffer.resize(0);
+  mFGBuffer.resize(0);
+  int frame = 0;
+  while (frame < frames && !mFailed) {
+    int n = mCameras.GetCameraCount();
+    vector<string> FGfiles(n), ImageFiles(n);
+    /* Generate image filenames */
+    for(int i = 0; i < n; i++) {
+      FGfiles[i] = mPath + "FG" + str(i + 1) + DIR_SEPARATOR + "image" + str(frame, 4) + ".bmp";
+      ImageFiles[i] = mPath + "CAM" + str(i + 1) + DIR_SEPARATOR + "image" + str(frame, 4) + ".bmp";
+    }
+    ImageSet images(n);
+    BinaryImageSet FGImages(n);
+    for(int i = 0; i < (int)FGfiles.size(); i++) {
+      FlexImage8u im;
+      if(!FlexLoadBMP(FGfiles[i].c_str(), im)) { //Load foreground maps and raw images
+        cout << "Unable to load image: " << FGfiles[i].c_str() << endl;
+        mFailed = true;
+        return;
+      }  
+      FGImages[i].ConvertToBinary(im); //binarize foreground maps to 0 and 1
+      if(!FlexLoadBMP(ImageFiles[i].c_str(), images[i])) {
+        cout << "Unable to load image: " << ImageFiles[i].c_str() << endl;
+        mFailed = true;
+        return;
+      }
+    }
+    mImageBuffer.push_back(images);
+    mFGBuffer.push_back(FGImages);
+    printf("loaded images of frame %d\n", frame);
+  }
+}
+#endif
+
 #endif
 
