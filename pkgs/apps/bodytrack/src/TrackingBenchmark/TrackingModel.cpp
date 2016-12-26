@@ -27,6 +27,10 @@
 #include "FlexLib.h"
 #include "system.h"
 
+#ifdef ENABLE_TASK
+#include <tp_parsec.h>
+#endif
+
 #ifndef uint
 #define uint unsigned int
 #endif
@@ -183,6 +187,9 @@ bool TrackingModel::GetObservation(float timeval)
 
 bool TrackingModel::OutputBMP(const std::vector<float> &pose, int frame)
 {  
+#ifdef ENABLE_TASK
+  cilk_begin;
+#endif  
   vector<string> ImageFiles(mNCameras);
   for(int i = 0; i < mNCameras; i++)                          
     ImageFiles[i] = mPath + "CAM" + str(i + 1) + DIR_SEPARATOR + "image" + str(frame, 4) + ".bmp";
@@ -217,5 +224,9 @@ bool TrackingModel::OutputBMP(const std::vector<float> &pose, int frame)
         }
     }
   string outFname = mPath + "Result" + str(frame, 4) + ".bmp";
+#ifdef ENABLE_TASK
+  cilk_return_t(bool, FlexSaveBMP(outFname.c_str(), result));
+#else
   return FlexSaveBMP(outFname.c_str(), result);
+#endif  
 }

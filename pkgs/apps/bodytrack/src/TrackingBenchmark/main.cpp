@@ -67,6 +67,7 @@ using namespace tbb;
 #define PFOR2_EXPERIMENTAL 1
 #if !defined(PFOR_TO_ALLATONCE) && !defined(PFOR_TO_BISECTION) && !defined(PFOR_TO_ORIGINAL)
 #define PFOR_TO_BISECTION 1
+//#define PFOR_TO_ALLATONCE 1
 #endif
 
 #if !defined(TO_OMP)
@@ -198,15 +199,17 @@ bool ProcessCmdLine(int argc, char **argv, string &path, int &cameras, int &fram
 //Body tracking parallelized with task parallelism and tp_parsec
 #if defined(USE_TP_PARSEC)
 
-#if USE_TP_PARSEC >= 2
+#if USE_TP_PARSEC == 2
 
-void process_frame(ParticleFilterTP2<TrackingModel> pf, vector<float> estimate, int i) {
+void process_frame(ParticleFilterTP2<TrackingModel> &pf, vector<float> &estimate, int i) {
+  cilk_begin;
   cout << "Processing frame " << i << endl;
   if(!pf.Update((float)i)) { //Run particle filter step
     cout << "Error loading observation data" << endl;
     exit(1);
   }    
   pf.Estimate(estimate); //get average pose of the particle distribution
+  cilk_void_return;
 }
 
 int mainTP_PARSEC(string path, int cameras, int frames, int particles, int layers, int threads, bool OutputBMP) {
@@ -238,7 +241,7 @@ int mainTP_PARSEC(string path, int cameras, int frames, int particles, int layer
   wait_tasks;
   */
 
-  load_image(path, cameras, frames, 0);
+  call_task(spawn load_image(path, cameras, frames, 0));
   model.SetNumThreads(particles);
   model.GetObservation(0); //load data for first frame
   ParticleFilterTP2<TrackingModel> pf; //particle filter (tp_parsec threaded) instantiated with body tracking model type
@@ -253,16 +256,49 @@ int mainTP_PARSEC(string path, int cameras, int frames, int particles, int layer
 
   for(int i = 0; i < frames; i++) { //process each set of frames
     mk_task_group;
-    create_task0(spawn process_frame(pf, estimate, i));
+    
+    /* compute */
+    create_task2(pf, estimate, spawn process_frame(pf, estimate, i));
+    
+    /* output */
+    WritePose(outputFileAvg, estimate);
+    if(OutputBMP && i > 0) {
+      create_task2(pf, estimate, spawn pf.Model().OutputBMP(estimate, i - 1));
+    }
+    
+    /* input */
     if (i < frames - 1) {
       create_task0(spawn load_image(path, cameras, frames, i + 1));
     }
-    if(OutputBMP && i > 0) {
-      create_task0(spawn pf.Model().OutputBMP(estimate, i));
-    }
+    
     wait_tasks;
-    WritePose(outputFileAvg, estimate);
   }
+
+#if 0
+  pfor(0, frames, 1, 10, [=,&pf,&estimate,&outputFileAvg] (int from, int to) {
+      for (int i = from; i < to; i++) {
+        mk_task_group;
+        
+        /* input */
+        if (i < frames - 1 && i > 0) {
+          create_task0(spawn load_image(path, cameras, frames, i));
+        }
+        wait_tasks;
+    
+        /* compute */
+        create_task2(pf, estimate, spawn process_frame(pf, estimate, i));
+        wait_tasks;
+    
+        /* output */
+        WritePose(outputFileAvg, estimate);
+        if(OutputBMP && i >= 0) {
+          create_task2(pf, estimate, spawn pf.Model().OutputBMP(estimate, i));
+        }
+    
+        wait_tasks;
+      }
+    });
+#endif
 
 #if defined(ENABLE_PARSEC_HOOKS)
   __parsec_roi_end();
@@ -271,7 +307,7 @@ int mainTP_PARSEC(string path, int cameras, int frames, int particles, int layer
   return 1;
 }
 
-#else
+#elif USE_TP_PARSEC == 1
 
 int mainTP_PARSEC(string path, int cameras, int frames, int particles, int layers, int threads, bool OutputBMP) {
 #ifdef COLLECT_LOOP_SIZES
@@ -341,9 +377,13 @@ int mainTP_PARSEC(string path, int cameras, int frames, int particles, int layer
   return 1;
 }
 
-#endif /* USE_TP_PARSEC >= 2 */
+#else
 
-#endif
+#error "Unknown version specified by USE_TP_PARSEC"
+
+#endif  /* USE_TP_PARSEC == 1 or 2 */
+
+#endif  /* USE_TP_PARSEC */
 
 //Body tracking threaded with OpenMP
 #if defined(USE_OPENMP)
@@ -561,9 +601,6 @@ int mainSingleThread(string path, int cameras, int frames, int particles, int la
 }
 
 int main(int argc, char **argv) {
-#ifdef ENABLE_TASK
-  cilk_begin;
-#endif
   string path;
   bool OutputBMP;
   int cameras, frames, particles, layers, threads, threadModel; //process command line parameters to get path, cameras, and frames
@@ -646,7 +683,7 @@ int main(int argc, char **argv) {
 #if defined(USE_TP_PARSEC)
 #if defined(TO_OMP)    
     pragma_omp_parallel_single(nowait, {
-        call_task(spawn mainTP_PARSEC(path, cameras, frames, particles, layers, threads, OutputBMP));
+        mainTP_PARSEC(path, cameras, frames, particles, layers, threads, OutputBMP);
       });
 #else    
     mainTP_PARSEC(path, cameras, frames, particles, layers, threads, OutputBMP);
@@ -678,8 +715,4 @@ int main(int argc, char **argv) {
   fclose(out_ls);
   printf("exported collected loop sizes to file.\n");
 #endif  
-
-#ifdef ENABLE_TASK
-  cilk_return(0);
-#endif
 }
