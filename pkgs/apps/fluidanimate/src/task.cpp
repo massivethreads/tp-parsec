@@ -1249,7 +1249,10 @@ int main(int argc, char *argv[])
 #ifdef ENABLE_PARSEC_HOOKS
   __parsec_roi_begin();
 #endif
-  AdvanceFramesMT(tasknum, framenum);
+
+  task_parallel_region(
+    AdvanceFramesMT(tasknum, framenum);
+  );
   // *** PARALLEL PHASE *** //
 #ifdef ENABLE_VISUALIZATION
   //It does not support visualization.

@@ -648,20 +648,14 @@ void Context::renderFrame(Camera *camera,
 
   BVH_STAT_COLLECTOR(BVHStatCollector::global.reset());
 #ifdef ENABLE_TASK
-    #ifdef TO_OMP
-    #pragma omp parallel
-    #pragma omp master
-    {
-    #endif
-    if (m_geometryMode == MINIRT_POLYGONAL_GEOMETRY)
-      renderTileTask<StandardTriangleMesh,RAY_PACKET_LAYOUT_TRIANGLE>(frameBuffer,0,0,resX,resY);
-    else if (m_geometryMode == MINIRT_SUBDIVISION_SURFACE_GEOMETRY)
-      renderTileTask<DirectedEdgeMesh,RAY_PACKET_LAYOUT_SUBDIVISION>(frameBuffer,0,0,resX,resY);
-    else
-      FATAL("unknown mesh type");
-    #ifdef TO_OMP
-    }
-    #endif
+    task_parallel_region({
+      if (m_geometryMode == MINIRT_POLYGONAL_GEOMETRY)
+        renderTileTask<StandardTriangleMesh,RAY_PACKET_LAYOUT_TRIANGLE>(frameBuffer,0,0,resX,resY);
+      else if (m_geometryMode == MINIRT_SUBDIVISION_SURFACE_GEOMETRY)
+        renderTileTask<DirectedEdgeMesh,RAY_PACKET_LAYOUT_SUBDIVISION>(frameBuffer,0,0,resX,resY);
+      else
+        FATAL("unknown mesh type");
+    });
 #else
   if (m_threads>1)
     {
@@ -749,7 +743,7 @@ void Context::renderTileTask(LRT::FrameBuffer *frameBuffer,
                         const int endX,
                         const int endY)
 {
-  cilk_begin;
+  task_begin;
   const int CUTOFF_X = PACKET_WIDTH;
   const int CUTOFF_Y = PACKET_WIDTH;
   if(endX-startX > CUTOFF_X || endY-startY > CUTOFF_Y){
@@ -830,7 +824,7 @@ void Context::renderTileTask(LRT::FrameBuffer *frameBuffer,
           frameBuffer->writeBlock(x,y,PACKET_WIDTH,PACKET_WIDTH,rgb32);
         }
   }
-  cilk_void_return;
+  task_void_return;
 }
 #endif
 

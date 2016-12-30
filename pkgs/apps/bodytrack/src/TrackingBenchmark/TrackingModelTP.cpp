@@ -38,7 +38,7 @@ using namespace std;
 //TP threaded - 1D filter Row wise 1 channel any type data or kernel valid pixels only
 template<class T, class T2>
 bool FlexFilterRowVTP(FlexImage<T,1> &src, FlexImage<T,1> &dst, T2 *kernel, int kernelSize, bool allocate = true) {
-  cilk_begin;
+  task_begin;
   if(kernelSize % 2 == 0) //enforce odd length kernels
     return false;
   if(allocate)
@@ -60,14 +60,14 @@ bool FlexFilterRowVTP(FlexImage<T,1> &src, FlexImage<T,1> &dst, T2 *kernel, int 
            }
          }
        });  
-  cilk_return(true);
+  task_return(true);
   //return true;
 }
 
 //TP threaded - 1D filter Column wise 1 channel any type data or kernel valid pixels only
 template<class T, class T2>
 bool FlexFilterColumnVTP(FlexImage<T,1> &src, FlexImage<T,1> &dst, T2 *kernel, int kernelSize, bool allocate = true) {
-  cilk_begin;
+  task_begin;
   if(kernelSize % 2 == 0) //enforce odd length kernels
     return false;
   if(allocate)
@@ -90,7 +90,7 @@ bool FlexFilterColumnVTP(FlexImage<T,1> &src, FlexImage<T,1> &dst, T2 *kernel, i
            }
          }
        });
-  cilk_return(true);
+  task_return(true);
   //return true;
 }
 
@@ -107,7 +107,7 @@ inline void GaussianBlurTP(FlexImage8u &src, FlexImage8u &dst) {
 
 //Calculate gradient magnitude and threshold to binarize - threaded
 inline FlexImage8u GradientMagThresholdTP(FlexImage8u &src, float threshold) {
-  cilk_begin;
+  task_begin;
   FlexImage8u r(src.Size());
   ZeroBorder(r);
   pfor(1, src.Height() - 1, 1, GRAIN_SIZE,
@@ -123,7 +123,7 @@ inline FlexImage8u GradientMagThresholdTP(FlexImage8u &src, float threshold) {
            }
          }
        });
-  cilk_return(r);
+  task_return(r);
   //return r;
 }
 

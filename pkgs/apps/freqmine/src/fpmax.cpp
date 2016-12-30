@@ -160,6 +160,11 @@ int main(int argc, char **argv)
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_roi_begin();
 #endif
+
+#if defined(ENABLE_TASK)
+        task_parallel_region({
+#endif
+
 	fptree -> scan1_DB(fdat);
 	wtime(&tdatap);
 
@@ -193,6 +198,11 @@ int main(int argc, char **argv)
 	}
 
 	fptree->FP_growth_first(fout);
+
+#if defined(ENABLE_TASK)
+        )};//end of task_parallel_region
+#endif
+
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_roi_end();
 #endif

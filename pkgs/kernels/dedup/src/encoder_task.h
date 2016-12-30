@@ -485,7 +485,7 @@ int sub_Deduplicate(chunk_t *chunk) {
  * This funciton just modifies chunks of size chunk_num.
  */
 void DeduplicateAndCompress(chunk_t * _chunk_in, int _chunk_num) {
-  cilk_begin;
+  task_begin;
   int chunk_num = _chunk_num;
   chunk_t *chunk = _chunk_in;
 #ifdef ENABLE_STATISTICS
@@ -517,7 +517,7 @@ void DeduplicateAndCompress(chunk_t * _chunk_in, int _chunk_num) {
   atomic_fetch_and_add(&g_stats.total_dedup, stats_total_dedup);
   atomic_fetch_and_add(&g_stats.total_compressed, stats_total_compressed);
 #endif //ENABLE_STATISTICS
-  cilk_void_return;
+  task_void_return;
 }
 
 /*
@@ -526,7 +526,7 @@ void DeduplicateAndCompress(chunk_t * _chunk_in, int _chunk_num) {
  * Note that this function may increase the number of chunks.
  */
 void FragmentRefine(chunk_t * _chunk_in, int _chunk_num) {
-  cilk_begin;
+  task_begin;
   int r;
 
   u32int * rabintab = (u32int*) malloc(256*sizeof rabintab[0]);
@@ -605,7 +605,7 @@ void FragmentRefine(chunk_t * _chunk_in, int _chunk_num) {
   free(rabintab);
   free(rabinwintab);
 
-  cilk_void_return;
+  task_void_return;
 }
 
 /*
@@ -621,7 +621,7 @@ typedef struct {
 } fragment_task_offset_t;
 
 void SplitStream(u_char* head, size_t size, fragment_task_offset_t* offset_info) {
-  cilk_begin;
+  task_begin;
   if(size < ANCHOR_JUMP * 2 * TASK_CUTOFF_PARALLEL_FRAGMENT) {
     //Try to split the region: head ~ head + size.
     u32int * rabintab = (u32int*) malloc(256*sizeof rabintab[0]);
@@ -683,11 +683,11 @@ void SplitStream(u_char* head, size_t size, fragment_task_offset_t* offset_info)
     free(offset_info1);
     free(offset_info2);
   }
-  cilk_void_return;
+  task_void_return;
 }
 
 void Fragment(int fd, void *input_file_buffer, size_t input_file_size) {
-  cilk_begin;
+  task_begin;
 
   if(!conf->preloading)
     EXIT_TRACE("This version assumes preloading. Disable TASK_PARALLEL_FRAGMENT to disable preloading.\n");
@@ -833,11 +833,11 @@ SYNCHRONIZE:
   free(rabintab);
   free(rabinwintab);
   close(fd_out);
-  cilk_void_return;
+  task_void_return;
 }
 #else
 void Fragment(int fd, void *input_file_buffer, size_t input_file_size) {
-  cilk_begin;
+  task_begin;
   size_t preloading_buffer_seek = 0;
   int r;
 
@@ -1053,7 +1053,7 @@ SYNCHRONIZE:
   free(rabintab);
   free(rabinwintab);
   close(fd_out);
-  cilk_void_return;
+  task_void_return;
 }
 #endif//TASK_PARALLEL_FRAGMENT
 /*--------------------------------------------------------------------------*/
@@ -1141,11 +1141,13 @@ void Encode(config_t * _conf) {
 #ifdef ENABLE_PARSEC_HOOKS
   __parsec_roi_begin();
 #endif
-#if defined(ENABLE_TASK) && defined(TO_OMP)
-  #pragma omp parallel
-  #pragma omp single nowait
-#endif
+
+#ifdef ENABLE_TASK
+  task_parallel_region(Fragment(fd, input_file_buffer, input_file_size););
+#else//ENABLE_TASK
   Fragment(fd, input_file_buffer, input_file_size);
+#endif
+
 #ifdef ENABLE_PARSEC_HOOKS
   __parsec_roi_end();
 #endif

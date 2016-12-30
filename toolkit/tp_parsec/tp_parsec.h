@@ -15,6 +15,6 @@
   #define pragma_omp_parallel_single(clause, S) do { S } while(0)
 #endif//pragma_omp_parallel_single
 
-#define task_parallel_region pragma_omp_parallel_single
+#define task_parallel_region(S) pragma_omp_parallel_single(nowait, S)
 
 #endif//_TP_PARSEC_HEADER_
