@@ -68,11 +68,13 @@ void ParticleFilterTP<T>::CalcWeights(std::vector<Vectorf > &particles)
 #endif  
   pfor(0, np, 1, GRAIN_SIZE,
        [&] (int from, int to) {
+         cilk_begin;
          for(int j = from; j < to; j++) {
            bool vflag;
            mWeights[j] = mModel->LogLikelihood(particles[j], vflag, j); //compute log-likelihood weights for each particle
            valid[j] = vflag ? 1 : 0;
          }
+         cilk_void_return;
        });
   uint i = 0;
   while(i < particles.size())
@@ -117,10 +119,12 @@ void ParticleFilterTP<T>::GenerateNewParticles(int k) {
 #endif  
   pfor(0, mNParticles, 1, GRAIN_SIZE,
        [&] (int from, int to) {
+         cilk_begin;
          for(int i = from; i < to; i++) { //distribute new particles randomly according to model stdDevs
            this->mNewParticles[i] = mParticles[mIndex[i]]; //add new particle for each entry in each bin distributed randomly about duplicated particle
            this->AddGaussianNoise(this->mNewParticles[i], this->mModel->StdDevs()[k], this->mRnd[i]);
          }
+         cilk_void_return;
        });
 }
 
@@ -169,11 +173,13 @@ void ParticleFilterTP2<T>::CalcWeights(std::vector<Vectorf > &particles) {
 #endif  
   pfor(0, np, 1, GRAIN_SIZE,
        [&] (int from, int to) {
+         cilk_begin;
          for(int j = from; j < to; j++) {
            bool vflag;
            mWeights[j] = mModel->LogLikelihood(particles[j], vflag, j); //compute log-likelihood weights for each particle
            valid[j] = vflag ? 1 : 0;
          }
+         cilk_void_return;
        });
   uint i = 0;
   while(i < particles.size())
@@ -217,10 +223,12 @@ void ParticleFilterTP2<T>::GenerateNewParticles(int k) {
 #endif  
   pfor(0, mNParticles, 1, GRAIN_SIZE,
        [&] (int from, int to) {
+         cilk_begin;
          for(int i = from; i < to; i++) { //distribute new particles randomly according to model stdDevs
            this->mNewParticles[i] = mParticles[mIndex[i]]; //add new particle for each entry in each bin distributed randomly about duplicated particle
            this->AddGaussianNoise(this->mNewParticles[i], this->mModel->StdDevs()[k], this->mRnd[i]);
          }
+         cilk_void_return;
        });
 }
 

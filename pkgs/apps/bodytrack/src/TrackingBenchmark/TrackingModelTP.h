@@ -65,6 +65,7 @@ bool FlexFilterRowVTP(FlexImage<T,1> &src, FlexImage<T,1> &dst, T2 *kernel, int 
 #endif  
   pfor(0, h, 1, GRAIN_SIZE,
        [n,&src,&dst,kernel] (int from, int to) {
+         cilk_begin;
          for(int y = from; y < to; y++) {
            T *psrc = &src(n, y), *pdst = &dst(n, y);
            for(int x = n; x < src.Width() - n; x++) {
@@ -77,6 +78,7 @@ bool FlexFilterRowVTP(FlexImage<T,1> &src, FlexImage<T,1> &dst, T2 *kernel, int 
              psrc++;
            }
          }
+         cilk_void_return;
        });  
   return true;
 }
@@ -97,6 +99,7 @@ bool FlexFilterColumnVTP(FlexImage<T,1> &src, FlexImage<T,1> &dst, T2 *kernel, i
 #endif  
   pfor(n, h, 1, GRAIN_SIZE,
        [n,sb,&src,&dst,kernel] (int from, int to) {
+         cilk_begin;
          for(int y = from; y < to; y++) {
            T *psrc = &src(0, y), *pdst = &dst(0, y);
            for(int x = 0; x < src.Width(); x++) {
@@ -109,6 +112,7 @@ bool FlexFilterColumnVTP(FlexImage<T,1> &src, FlexImage<T,1> &dst, T2 *kernel, i
              psrc++;
            }
          }
+         cilk_void_return;
        });
   return true;
 }
@@ -134,6 +138,7 @@ inline FlexImage8u GradientMagThresholdTP(FlexImage8u &src, float threshold) {
 #endif  
   pfor(1, src.Height() - 1, 1, GRAIN_SIZE,
        [&src,threshold,&r] (int from, int to) {
+         cilk_begin;
          for(int y = from; y < to; y++) { //for each pixel
            Im8u *p = &src(1,y), *ph = &src(1,y - 1), *pl = &src(1,y + 1), *pr = &r(1,y);
            for(int x = 1; x < src.Width() - 1; x++) {
@@ -144,6 +149,7 @@ inline FlexImage8u GradientMagThresholdTP(FlexImage8u &src, float threshold) {
              p++; ph++; pl++; pr++;
            }
          }
+         cilk_void_return;
        });
   return r;
 }
