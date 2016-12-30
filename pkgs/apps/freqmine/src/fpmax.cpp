@@ -131,10 +131,6 @@ int main(int argc, char **argv)
 	tp_init();
 #endif
 
-#if defined(ENABLE_TASK)
-        task_parallel_region({
-#endif
-
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_bench_begin(__parsec_freqmine);
 #endif
@@ -167,10 +163,19 @@ int main(int argc, char **argv)
 	__parsec_roi_begin();
 #endif
 
-	fptree -> scan1_DB(fdat);
+#if defined(ENABLE_TASK)
+	task_parallel_region(fptree->scan1_DB(fdat););
+#else
+	fptree->scan1_DB(fdat);
+#endif
 	wtime(&tdatap);
 
+#if defined(ENABLE_TASK)
+	task_parallel_region(fptree->scan2_DB(workingthread););
+#else
 	fptree->scan2_DB(workingthread);
+#endif
+
 	fdat->close();
 	if(fptree->itemno==0)return 0;
 	FSout* fout;
@@ -193,13 +198,21 @@ int main(int argc, char **argv)
 		}
 
 		if (fout)
+#if defined(ENABLE_TASK)
+			task_parallel_region(fptree->generate_all(fptree->itemno, 0, fout););
+#else
 			fptree->generate_all(fptree->itemno, 0, fout);
+#endif
 
 		printLen();
 		return 0;
 	}
 
+#if defined(ENABLE_TASK)
+	task_parallel_region(fptree->FP_growth_first(fout););
+#else
 	fptree->FP_growth_first(fout);
+#endif
 
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_roi_end();
@@ -224,10 +237,5 @@ int main(int argc, char **argv)
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_bench_end();
 #endif
-
-#if defined(ENABLE_TASK)
-        });//end of task_parallel_region
-#endif
-
 	return 0;
 }
