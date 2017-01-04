@@ -76,15 +76,8 @@ int main (int argc, char * argv[]) {
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_bench_begin(__parsec_canneal);
 #endif
-#if defined ENABLE_TASK && !defined TO_CILKPLUS
+#if defined ENABLE_TASK
 	tp_init();
-#endif
-
-#ifdef TO_OMP
-#pragma omp parallel
-{
-#pragma omp master
-{
 #endif
 
 	srandom(3);
@@ -141,7 +134,11 @@ int main (int argc, char * argv[]) {
 	__parsec_roi_begin();
 #endif
 
-#ifdef  ENABLE_THREADS  
+#ifdef ENABLE_TASK
+        task_parallel_region({
+#endif
+
+#ifdef  ENABLE_THREADS
 	std::vector<pthread_t> threads(num_threads);
 	void* thread_in = static_cast<void*>(&a_thread);
 	for(int i=0; i<num_threads; i++){
@@ -150,10 +147,13 @@ int main (int argc, char * argv[]) {
 	for (int i=0; i<num_threads; i++){
 		pthread_join(threads[i], NULL);
 	}
-#endif
-#ifndef ENABLE_THREADS
+#else //ENABLE_THREADS
 	// original serial version or task parallel version
 	a_thread.Run();
+#endif
+
+#ifdef ENABLE_TASK
+        });// end of task_parallel_region
 #endif
 
 #ifdef ENABLE_PARSEC_HOOKS
@@ -164,11 +164,6 @@ int main (int argc, char * argv[]) {
 
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_bench_end();
-#endif
-
-#ifdef TO_OMP
-}
-}
 #endif
 	return 0;
 }

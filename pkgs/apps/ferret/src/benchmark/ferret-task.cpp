@@ -372,7 +372,7 @@ inline void exec_ferret(const char* const query_dir, FILE* const fout, const std
 #else
 inline void exec_ferret(const char* const query_dir, FILE* const fout, const std::size_t depth)
 {
-    cilk_begin;
+    task_begin;
     
     const auto paths = scan_dir_rec(query_dir);
     
@@ -422,7 +422,7 @@ inline void exec_ferret(const char* const query_dir, FILE* const fout, const std
     
     output_multiple_results(fout, write_buf.begin(), write_buf.end());
     
-    cilk_void_return;
+    task_void_return;
 }
 #endif
 
@@ -514,7 +514,13 @@ int main(const int argc, char* const argv[])
     __parsec_roi_begin();
 #endif
     
+#if defined(ENABLE_TASK)
+    task_parallel_region(
+        exec_ferret(query_dir, fout, static_cast<std::size_t>(depth));
+    );
+#else
     exec_ferret(query_dir, fout, static_cast<std::size_t>(depth));
+#endif
     
 #ifdef ENABLE_PARSEC_HOOKS
     __parsec_roi_end();

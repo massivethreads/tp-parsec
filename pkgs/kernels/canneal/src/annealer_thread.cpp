@@ -55,7 +55,7 @@ using std::endl;
 #ifdef ENABLE_TASK
 void annealer_thread::Run()
 {
-	cilk_begin;
+	task_begin;
 	int accepted_good_moves=0;
 	int accepted_bad_moves=-1;
 	double T = _start_temp;
@@ -76,7 +76,7 @@ void annealer_thread::Run()
 		wait_tasks;
 		temp_steps_completed++;
 	}
-	cilk_void_return;
+	task_void_return;
 }
 #endif
 

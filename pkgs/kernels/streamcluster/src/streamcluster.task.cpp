@@ -461,7 +461,7 @@ pspeedy(Points * points, float z, long * kcenter) {
 //double
 void
 pgain(long x, Points * points, double z, long int * numcenters, double * result) {
-  cilk_begin;
+  task_begin;
   int i;
   int number_of_centers_to_close = 0;
 
@@ -579,7 +579,7 @@ pgain(long x, Points * points, double z, long int * numcenters, double * result)
 
   //return -gl_cost_of_opening_x;
   *result = -gl_cost_of_opening_x;
-  cilk_void_return;
+  task_void_return;
 }
 
 
@@ -712,7 +712,7 @@ selectfeasible_fast(Points * points, int ** feasible, int kmin) {
 /* compute approximate kmedian on the points */
 float
 pkmedian(Points * points, long kmin, long kmax, long * kfinal, int pid, pthread_barrier_t * barrier) {
-  cilk_begin;
+  task_begin;
   int i;
   double cost;
   double lastcost;
@@ -775,7 +775,7 @@ pkmedian(Points * points, long kmin, long kmax, long * kfinal, int pid, pthread_
     cost = 0;
     *kfinal = k;
 
-    cilk_return(cost);
+    task_return(cost);
   }
 
   mk_task_group;
@@ -865,7 +865,7 @@ pkmedian(Points * points, long kmin, long kmax, long * kfinal, int pid, pthread_
   free(feasible); 
   *kfinal = k;
 
-  cilk_return(cost);
+  task_return(cost);
 }
 
 /* compute the means for the k clusters */
@@ -1036,7 +1036,7 @@ void outcenterIDs( Points* centers, long* centerIDs, char* outfile ) {
 
 void
 streamCluster(PStream * stream, long kmin, long kmax, int dim, long chunksize, long centersize, char * outfile) {
-  cilk_begin;
+  task_begin;
 #if USE_TBBMALLOC
   float * block = (float *) memoryFloat.allocate(chunksize * dim * sizeof(float));
   float * centerBlock = (float *) memoryFloat.allocate(centersize * dim * sizeof(float));
@@ -1157,7 +1157,7 @@ streamCluster(PStream * stream, long kmin, long kmax, int dim, long chunksize, l
   wait_tasks;
   contcenters( &centers );
   outcenterIDs( &centers, centerIDs, outfile );
-  cilk_void_return;
+  task_void_return;
 }
 
 long parsec_usecs() {
@@ -1230,15 +1230,17 @@ main(int argc, char ** argv) {
     stream = new FileStream(infilename);
   }
 
+  tp_init();
+
 #ifdef ENABLE_PARSEC_HOOKS
   __parsec_roi_begin();
 #endif
-
-  tp_init();
   
   double time = (double) parsec_usecs();
   
-  streamCluster(stream, kmin, kmax, dim, chunksize, clustersize, outfilename);
+  task_parallel_region({
+    streamCluster(stream, kmin, kmax, dim, chunksize, clustersize, outfilename);
+  });
   
   time = (((double) parsec_usecs()) - time) / 1000000.0;
   printf("kernel_execution_time = %lf seconds\n", time);

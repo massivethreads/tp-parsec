@@ -466,7 +466,7 @@ int mainSingleThread(string path, int cameras, int frames, int particles, int la
 
 int main(int argc, char **argv) {
 #ifdef ENABLE_TASK
-  cilk_begin;
+  task_begin;
 #endif
   string path;
   bool OutputBMP;
@@ -548,13 +548,9 @@ int main(int argc, char **argv) {
 
   case 5 : 
 #if defined(USE_TP_PARSEC)
-    //#if defined(TO_OMP)    
-    pragma_omp_parallel_single(nowait, {
+    task_parallel_region(
         call_task(spawn mainTP_PARSEC(path, cameras, frames, particles, layers, threads, OutputBMP));
-      });
-    //#else    
-    //mainTP_PARSEC(path, cameras, frames, particles, layers, threads, OutputBMP);
-    //#endif
+    );
     break;
 #else
     cout << "Not compiled with TASK support. " << endl;
@@ -584,6 +580,6 @@ int main(int argc, char **argv) {
 #endif  
 
 #ifdef ENABLE_TASK
-  cilk_return(0);
+  task_return(0);
 #endif
 }

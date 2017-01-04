@@ -186,6 +186,9 @@ protected:
   /*_INLINE*/ void renderTileTask(LRT::FrameBuffer *frameBuffer,
                           const int startX,const int startY,
                           const int resX,const int resY);
+  //To escape a comma-in-macro problem.
+  #define renderTileTaskFunc(mesh, layout) (renderTileTask<mesh, layout>)
+
 #endif
 
 public:
@@ -648,20 +651,14 @@ void Context::renderFrame(Camera *camera,
 
   BVH_STAT_COLLECTOR(BVHStatCollector::global.reset());
 #ifdef ENABLE_TASK
-    #ifdef TO_OMP
-    #pragma omp parallel
-    #pragma omp master
-    {
-    #endif
-    if (m_geometryMode == MINIRT_POLYGONAL_GEOMETRY)
-      renderTileTask<StandardTriangleMesh,RAY_PACKET_LAYOUT_TRIANGLE>(frameBuffer,0,0,resX,resY);
-    else if (m_geometryMode == MINIRT_SUBDIVISION_SURFACE_GEOMETRY)
-      renderTileTask<DirectedEdgeMesh,RAY_PACKET_LAYOUT_SUBDIVISION>(frameBuffer,0,0,resX,resY);
-    else
-      FATAL("unknown mesh type");
-    #ifdef TO_OMP
-    }
-    #endif
+    task_parallel_region({
+      if (m_geometryMode == MINIRT_POLYGONAL_GEOMETRY)
+        renderTileTaskFunc(StandardTriangleMesh,RAY_PACKET_LAYOUT_TRIANGLE)(frameBuffer,0,0,resX,resY);
+      else if (m_geometryMode == MINIRT_SUBDIVISION_SURFACE_GEOMETRY)
+        renderTileTaskFunc(DirectedEdgeMesh,RAY_PACKET_LAYOUT_SUBDIVISION)(frameBuffer,0,0,resX,resY);
+      else
+        FATAL("unknown mesh type");
+    });
 #else
   if (m_threads>1)
     {
@@ -749,12 +746,10 @@ void Context::renderTileTask(LRT::FrameBuffer *frameBuffer,
                         const int endX,
                         const int endY)
 {
-  cilk_begin;
+  task_begin;
   const int CUTOFF_X = PACKET_WIDTH;
   const int CUTOFF_Y = PACKET_WIDTH;
   if(endX-startX > CUTOFF_X || endY-startY > CUTOFF_Y){
-    //To escape a comma-in-macro problem.
-    #define renderTileTaskFunc (renderTileTask<MESH,LAYOUT>)
     //Not cut-off: divide-and-conquer
     if(endX-startX < endY-startY) {
       //Divide Y-axis.
@@ -763,8 +758,8 @@ void Context::renderTileTask(LRT::FrameBuffer *frameBuffer,
       int startY2 = endY1;
       int endY2   = endY;
       mk_task_group;
-      create_task0(spawn renderTileTaskFunc(frameBuffer,startX,startY1,endX,endY1));
-      call_task   (spawn renderTileTaskFunc(frameBuffer,startX,startY2,endX,endY2));
+      create_task0(spawn renderTileTaskFunc(MESH,LAYOUT)(frameBuffer,startX,startY1,endX,endY1));
+      call_task   (spawn renderTileTaskFunc(MESH,LAYOUT)(frameBuffer,startX,startY2,endX,endY2));
       wait_tasks;
     } else {
       //Divide X-axis.
@@ -773,8 +768,8 @@ void Context::renderTileTask(LRT::FrameBuffer *frameBuffer,
       int startX2 = endX1;
       int endX2   = endX;
       mk_task_group;
-      create_task0(spawn renderTileTaskFunc(frameBuffer,startX1,startY,endX1,endY));
-      call_task   (spawn renderTileTaskFunc(frameBuffer,startX2,startY,endX2,endY));
+      create_task0(spawn renderTileTaskFunc(MESH,LAYOUT)(frameBuffer,startX1,startY,endX1,endY));
+      call_task   (spawn renderTileTaskFunc(MESH,LAYOUT)(frameBuffer,startX2,startY,endX2,endY));
       wait_tasks;
     }
     #undef renderTileTaskFunc
@@ -830,7 +825,7 @@ void Context::renderTileTask(LRT::FrameBuffer *frameBuffer,
           frameBuffer->writeBlock(x,y,PACKET_WIDTH,PACKET_WIDTH,rgb32);
         }
   }
-  cilk_void_return;
+  task_void_return;
 }
 #endif
 
