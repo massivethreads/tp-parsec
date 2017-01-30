@@ -204,7 +204,7 @@ typedef vector<BinaryImage> BinaryImageSet;
 vector<ImageSet>       mImageBuffer; /* image buffer */
 vector<BinaryImageSet> mFGBuffer;    /* foreground image buffer */
   
-static void load_image(string path, int cameras, int frames, int frame) {
+cilk_static void load_image(string path, int cameras, int frames, int frame) {
   cilk_begin;
   int n = cameras;
   vector<string> FGfiles(n), ImageFiles(n);
@@ -232,10 +232,10 @@ static void load_image(string path, int cameras, int frames, int frame) {
   cilk_void_return;
 }
 
-static void load_images(string path, int cameras, int frames) {
+cilk_static void load_images(string path, int cameras, int frames) {
   int frame = 0;
   while (frame < frames) {
-    call_task(spawn load_image(path, cameras, frames, frame));
+    call_task(mit_spawn load_image(path, cameras, frames, frame));
     printf("loaded images of frame %d\n", frame);
     frame++;
   }

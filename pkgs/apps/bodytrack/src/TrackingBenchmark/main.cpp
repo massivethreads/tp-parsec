@@ -64,15 +64,9 @@ using namespace tbb;
 
 #if defined(USE_TP_PARSEC)
 
-#define PFOR2_EXPERIMENTAL 1
 #if !defined(PFOR_TO_ALLATONCE) && !defined(PFOR_TO_BISECTION) && !defined(PFOR_TO_ORIGINAL)
 #define PFOR_TO_BISECTION 1
 //#define PFOR_TO_ALLATONCE 1
-#endif
-
-#if !defined(TO_OMP)
-#define pragma_omp(x)
-#define pragma_omp_parallel_single(clause, S) do { S } while(0)
 #endif
 
 #include <tp_parsec.h>
@@ -235,13 +229,8 @@ int mainTP_PARSEC(string path, int cameras, int frames, int particles, int layer
 
   mImageBuffer.resize(0);
   mFGBuffer.resize(0);
-  /*
-  mk_task_group;
-  create_task0(spawn load_images(path, cameras, frames));  
-  wait_tasks;
-  */
 
-  call_task(spawn load_image(path, cameras, frames, 0));
+  call_task(mit_spawn load_image(path, cameras, frames, 0));
   model.SetNumThreads(particles);
   model.GetObservation(0); //load data for first frame
   ParticleFilterTP2<TrackingModel> pf; //particle filter (tp_parsec threaded) instantiated with body tracking model type
@@ -682,7 +671,7 @@ int main(int argc, char **argv) {
   case 5 : 
 #if defined(USE_TP_PARSEC)
     pragma_omp_parallel_single(nowait, {
-        mainTP_PARSEC(path, cameras, frames, particles, layers, threads, OutputBMP);
+        call_task(mit_spawn mainTP_PARSEC(path, cameras, frames, particles, layers, threads, OutputBMP));
       });
     break;
 #else
