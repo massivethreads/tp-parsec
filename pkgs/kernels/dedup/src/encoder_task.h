@@ -336,20 +336,24 @@ static void write_chunk_to_file(int fd, chunk_t *_chunk) {
  */
 #if TASK_USE_XWRITE_BUFFER
 void write_all_chunks_to_file_use_buffer(int fd, chunk_t *chunk_in, xwrite_buffer_t* xwrite_buffer) {
+  cilk_begin;
   chunk_t* chunk = chunk_in;
   while(chunk){
     write_chunk_to_file_use_buffer(fd,chunk,xwrite_buffer);
     chunk = chunk->next;
   }
   flush_xwrite_buffer(fd, xwrite_buffer);
+  cilk_void_return;
 }
 #else
 void write_all_chunks_to_file(int fd, chunk_t *chunk_in) {
+  cilk_begin;
   chunk_t* chunk = chunk_in;
   while(chunk){
     write_chunk_to_file(fd,chunk);
     chunk = chunk->next;
   }
+  cilk_void_return;
 }
 #endif
 
@@ -598,9 +602,7 @@ void FragmentRefine(chunk_t * _chunk_in, int _chunk_num) {
     }
   }
   //Create tasks to process the remaming chunks.
-  call_task(spawn DeduplicateAndCompress(child_task_chunk_head, child_task_chunk_num));
-  //sync here.
-  wait_tasks;
+  create_task_and_wait(mit_spawn DeduplicateAndCompress(child_task_chunk_head, child_task_chunk_num));
 
   free(rabintab);
   free(rabinwintab);
@@ -663,9 +665,8 @@ void SplitStream(u_char* head, size_t size, fragment_task_offset_t* offset_info)
     u_char* head2 = head1 + size1;
     size_t  size2 = size - size1;
     fragment_task_offset_t* offset_info2=(fragment_task_offset_t*)malloc(sizeof(fragment_task_offset_t));;
-    call_task   (spawn SplitStream(head2, size2, offset_info2));
+    create_task_and_wait(mit_spawn SplitStream(head2, size2, offset_info2));
 
-    wait_tasks;
     int new_offsets_len = offset_info1->offsets_len + offset_info2->offsets_len;
     offset_info->offsets_len = new_offsets_len;
     if(new_offsets_len > 0) {
@@ -722,9 +723,7 @@ void Fragment(int fd, void *input_file_buffer, size_t input_file_size) {
     u_char* head = (u_char*)input_file_buffer;
     size_t size = input_file_size;
     fragment_task_offset_t* offset_info=(fragment_task_offset_t*)malloc(sizeof(fragment_task_offset_t));
-    mk_task_group;
-    call_task(spawn SplitStream(head, size, offset_info));
-    wait_tasks;
+    SplitStream(head, size, offset_info);
     chunk_offsets = offset_info->offsets;
     chunk_offsets_len = offset_info->offsets_len;
     free(offset_info);
@@ -811,18 +810,16 @@ SYNCHRONIZE:
       child_task_chunk_num++;
     }
     //Process remaining chunks.
-    call_task(spawn FragmentRefine(child_task_chunk_head, child_task_chunk_num));
-    wait_tasks;
+    create_task_and_wait(mit_spawn FragmentRefine(child_task_chunk_head, child_task_chunk_num));
     processed_chunk_head = processing_chunk_head;
     if(read_all_flag == 1) {
       //Be sure to write all chunks.
       mk_task_group;
       #if TASK_USE_XWRITE_BUFFER
-        call_task(spawn write_all_chunks_to_file_use_buffer(fd_out, processed_chunk_head, xwrite_buffer));
+        write_all_chunks_to_file_use_buffer(fd_out, processed_chunk_head, xwrite_buffer);
       #else
-        call_task(spawn write_all_chunks_to_file(fd_out, processed_chunk_head));
+        write_all_chunks_to_file(fd_out, processed_chunk_head);
       #endif
-      wait_tasks;
       break;
     }
   }
@@ -1032,18 +1029,15 @@ SYNCHRONIZE:
       child_task_chunk_num++;
     }
     //Now chunks is processed.
-    call_task(spawn FragmentRefine(child_task_chunk_head, child_task_chunk_num));
-    wait_tasks;
+    create_task_and_wait(mit_spawn FragmentRefine(child_task_chunk_head, child_task_chunk_num));
     processed_chunk_head = processing_chunk_head;
     if(read_all_flag == 1) {
       //Be sure to write all chunks.
-      mk_task_group;
       #if TASK_USE_XWRITE_BUFFER
-        call_task(spawn write_all_chunks_to_file_use_buffer(fd_out, processed_chunk_head, xwrite_buffer));
+        write_all_chunks_to_file_use_buffer(fd_out, processed_chunk_head, xwrite_buffer);
       #else
-        call_task(spawn write_all_chunks_to_file(fd_out, processed_chunk_head));
+        write_all_chunks_to_file(fd_out, processed_chunk_head);
       #endif
-      wait_tasks;
       break;
     }
   }
@@ -1141,11 +1135,9 @@ void Encode(config_t * _conf) {
 #ifdef ENABLE_PARSEC_HOOKS
   __parsec_roi_begin();
 #endif
-#if defined(ENABLE_TASK) && defined(TO_OMP)
-  #pragma omp parallel
-  #pragma omp single nowait
-#endif
-  Fragment(fd, input_file_buffer, input_file_size);
+  pragma_omp_parallel_single(nowait, {
+      Fragment(fd, input_file_buffer, input_file_size);
+    });
 #ifdef ENABLE_PARSEC_HOOKS
   __parsec_roi_end();
 #endif
