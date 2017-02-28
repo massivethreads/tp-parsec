@@ -160,13 +160,16 @@ int main(int argc, char **argv)
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_roi_begin();
 #endif
+	FSout* fout;
+#ifdef ENABLE_TASK
+        pragma_omp_parallel_single(nowait, {
+#endif        
 	fptree -> scan1_DB(fdat);
 	wtime(&tdatap);
 
 	fptree->scan2_DB(workingthread);
 	fdat->close();
-	if(fptree->itemno==0)return 0;
-	FSout* fout;
+	if(fptree->itemno==0) exit(0); //return 0;
 	if(argc==4)
 	{
 		fout = new FSout(argv[3]);
@@ -189,10 +192,13 @@ int main(int argc, char **argv)
 			fptree->generate_all(fptree->itemno, 0, fout);
 
 		printLen();
-		return 0;
+		exit(0); //return 0;
 	}
 
 	fptree->FP_growth_first(fout);
+#ifdef ENABLE_TASK
+          });
+#endif        
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_roi_end();
 #endif

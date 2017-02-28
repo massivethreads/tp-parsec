@@ -1,7 +1,4 @@
 #!/bin/bash
 
-source ${PARSECDIR}/pkgs/apps/freqmine/parsec/gcc.bldconf
-
-# Override build environment
-build_env="CXXFLAGS=\"${CXXFLAGS} -openmp\""
+source ${PARSECDIR}/pkgs/apps/freqmine/parsec/icc-openmp.bldconf
 
