@@ -29,6 +29,16 @@ tbb::cache_aligned_allocator<parm> memory_parm;
 #endif // TBB_VERSION
 #endif //ENABLE_THREADS
 
+#ifdef ENABLE_TASK
+#if !defined(PFOR_TO_ALLATONCE) && !defined(PFOR_TO_BISECTION) && !defined(PFOR_TO_ORIGINAL)
+  #define PFOR_TO_BISECTION 1
+#endif
+#if !defined(GRAIN_SIZE)
+  #define GRAIN_SIZE 1
+#endif
+#include <tp_parsec.h>
+#endif
+
 
 #ifdef ENABLE_PARSEC_HOOKS
 #include <hooks.h>
@@ -181,6 +191,12 @@ int main(int argc, char *argv[])
 
 #ifdef TBB_VERSION
 	tbb::task_scheduler_init init(nThreads);
+#elif ENABLE_TASK
+	if ((nThreads < 1) || (nThreads > MAX_THREAD)) {
+          fprintf(stderr,"Number of threads must be between 1 and %d.\n", MAX_THREAD);
+          exit(1);
+	}
+        tp_init();        
 #else
 	pthread_t      *threads;
 	pthread_attr_t  pthread_custom_attr;
@@ -288,6 +304,26 @@ int main(int argc, char *argv[])
 #ifdef TBB_VERSION
 	Worker w;
 	tbb::parallel_for(tbb::blocked_range<int>(0,nSwaptions,TBB_GRAINSIZE),w);
+#elif ENABLE_TASK
+        pragma_omp_parallel_single(nowait, {
+            pfor(0, nSwaptions, 1, GRAIN_SIZE, [&] (int first, int last) {
+                cilk_begin;
+                FTYPE pdSwaptionPrice[2];
+#pragma ivdep
+                for (int i = first; i < last; i++) {
+                  int iSuccess = HJM_Swaption_Blocking(pdSwaptionPrice,  swaptions[i].dStrike, 
+                                                       swaptions[i].dCompounding, swaptions[i].dMaturity, 
+                                                       swaptions[i].dTenor, swaptions[i].dPaymentInterval,
+                                                       swaptions[i].iN, swaptions[i].iFactors, swaptions[i].dYears, 
+                                                       swaptions[i].pdYield, swaptions[i].ppdFactors,
+                                                       swaption_seed+i, NUM_TRIALS, BLOCK_SIZE, 0);
+                  assert(iSuccess == 1);
+                  swaptions[i].dSimSwaptionMeanPrice = pdSwaptionPrice[0];
+                  swaptions[i].dSimSwaptionStdError = pdSwaptionPrice[1];
+                }
+                cilk_void_return;
+              });
+          });
 #else
 	
 	int threadIDs[nThreads];
