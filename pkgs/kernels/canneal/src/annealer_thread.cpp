@@ -26,7 +26,7 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if defined ENABLE_THREADS || defined ENABLE_TASK
+#if defined ENABLE_THREADS
 #include <pthread.h>
 #endif
 
@@ -42,7 +42,7 @@
 #include <fstream>
 #include "rng.h"
 #ifdef ENABLE_TASK
-#include <tp_parsec.h>
+#include <tp_parsec.h> 
 #include <list> 
 #include <algorithm>
 #endif
@@ -66,20 +66,20 @@ void annealer_thread::Run()
 		T = T / 1.5;
 		accepted_good_moves = 0;
 		accepted_bad_moves = 0;
-		int movesLeftInThisTemp = _moves_per_thread_temp;
+		int moves_left_in_this_temp = _moves_per_thread_temp;
 		mk_task_group;
 		std::list<int> local_accepted_good_moves; // use list because insertion of new elements does not invalidate existing iterators
 		std::list<int> local_accepted_bad_moves;
-		while(movesLeftInThisTemp > _cutoff)
+		while(moves_left_in_this_temp > _cutoff)
 		{
 			local_accepted_good_moves.push_back(0);
 			local_accepted_bad_moves.push_back(0);
 			create_taskA(spawn doMoves(_cutoff,T,local_accepted_good_moves.front(),local_accepted_bad_moves.front()));
-			movesLeftInThisTemp -= _cutoff;
+			moves_left_in_this_temp -= _cutoff;
 		}
 		local_accepted_good_moves.push_back(0);
 		local_accepted_bad_moves.push_back(0);
-		call_task(spawn doMoves(movesLeftInThisTemp,T,local_accepted_good_moves.front(),local_accepted_bad_moves.front()));
+		call_task(spawn doMoves(moves_left_in_this_temp,T,local_accepted_good_moves.front(),local_accepted_bad_moves.front()));
 		wait_tasks;
 		accepted_good_moves = std::accumulate(local_accepted_good_moves.begin(),local_accepted_good_moves.end(),0);
 		accepted_bad_moves = std::accumulate(local_accepted_bad_moves.begin(),local_accepted_bad_moves.end(),-1);
