@@ -91,7 +91,7 @@ protected:
 	routing_cost_t calculate_delta_routing_cost(netlist_elem* a, netlist_elem* b);
 	bool keep_going(int temp_steps_completed, int accepted_good_moves, int accepted_bad_moves);
 #ifdef ENABLE_TASK
-	void doMoves(const int numMoves, const double T, int& accepted_good_moves, int& accepted_bad_moves, pthread_mutex_t& movesMutex);
+	void doMoves(const int numMoves, const double T, int& accepted_good_moves, int& accepted_bad_moves);
 #endif
 
 	netlist* _netlist;		
