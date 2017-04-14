@@ -11,6 +11,9 @@
 #include "../Utilities/LOG.h"
 #include "../Utilities/DEBUG_UTILITIES.h"
 #include "../Thread_Utilities/THREAD_POOL.h"
+#ifdef ENABLE_TASK
+#include <tpswitch/tpswitch.h>
+#endif
 using namespace PhysBAM;
 extern bool PHYSBAM_THREADED_RUN;
 //#####################################################################
@@ -131,6 +134,26 @@ One_Newton_Step_Toward_Steady_State (const T convergence_tolerance, const int ma
 }
 
 #else
+#ifdef ENABLE_TASK
+template<class T, class TV> void DEFORMABLE_OBJECT<T, TV>::
+One_Newton_Step_Toward_Steady_State_CG_Helper_I (void* helper_raw)
+{
+	cilk_begin;
+	CONJUGATE_GRADIENTS_HELPER<T, TV>const& helper = * (CONJUGATE_GRADIENTS_HELPER<T, TV>*) helper_raw;
+	DEFORMABLE_OBJECT<T, TV>& deformable_object = *helper.deformable_object;
+	int partition_id = helper.partition_id;
+	VECTOR_2D<int> particle_range = (*deformable_object.particles.particle_ranges) (partition_id);
+	T beta = helper.beta;
+//	ARRAY<TV>& negative_Q_full = deformable_object.F_full;
+	ARRAY<TV>& S_full = deformable_object.S_full;
+	ARRAY_RANGE<ARRAY<TV> > S (deformable_object.S_full, particle_range);
+	ARRAY_RANGE<ARRAY<TV> > R (deformable_object.R_full, particle_range);
+//	double& S_dot_Q = (*helper.S_dot_Q_partial) (partition_id);
+
+	for (int i = 1; i <= S.m; i++) S (i) = beta * S (i) + R (i);
+	cilk_void_return;
+}
+#else
 template<class T, class TV> void DEFORMABLE_OBJECT<T, TV>::
 One_Newton_Step_Toward_Steady_State_CG_Helper_I (long thread_id, void* helper_raw)
 {
@@ -147,7 +170,28 @@ One_Newton_Step_Toward_Steady_State_CG_Helper_I (long thread_id, void* helper_ra
 
 	for (int i = 1; i <= S.m; i++) S (i) = beta * S (i) + R (i);
 }
+#endif
 
+#ifdef ENABLE_TASK
+template<class T,class TV> void DEFORMABLE_OBJECT<T,TV>::
+One_Newton_Step_Toward_Steady_State_CG_Helper_II(void * helper_raw)
+{
+	cilk_begin;
+	CONJUGATE_GRADIENTS_HELPER<T,TV>const& helper=*(CONJUGATE_GRADIENTS_HELPER<T,TV>*)helper_raw;
+	DEFORMABLE_OBJECT<T,TV>& deformable_object=*helper.deformable_object;
+	int partition_id = helper.partition_id;
+	VECTOR_2D<int> particle_range=(*deformable_object.particles.particle_ranges)(partition_id);
+	ARRAY<TV>& negative_Q_full=deformable_object.F_full;
+	ARRAY<TV>& S_full = deformable_object.S_full;
+	ARRAY_RANGE<ARRAY<TV> > S(deformable_object.S_full,particle_range);
+	double & S_dot_Q=(*helper.S_dot_Q_partial)(partition_id);
+
+	deformable_object.Force_Differential (S_full, negative_Q_full, partition_id);
+	deformable_object.external_forces_and_velocities->Zero_Out_Enslaved_Position_Nodes (negative_Q_full, helper.time, deformable_object.id_number, partition_id);
+	S_dot_Q = -ARRAY<TV>::template Vector_Dot_Product<double> (S, negative_Q_full.Range (particle_range));
+	cilk_void_return;
+}
+#else
 template<class T,class TV> void DEFORMABLE_OBJECT<T,TV>::
 One_Newton_Step_Toward_Steady_State_CG_Helper_II(long thread_id, void * helper_raw)
 {
@@ -164,6 +208,44 @@ One_Newton_Step_Toward_Steady_State_CG_Helper_II(long thread_id, void * helper_r
 	deformable_object.external_forces_and_velocities->Zero_Out_Enslaved_Position_Nodes (negative_Q_full, helper.time, deformable_object.id_number, partition_id);
 	S_dot_Q = -ARRAY<TV>::template Vector_Dot_Product<double> (S, negative_Q_full.Range (particle_range));
 }
+#endif
+
+#ifdef ENABLE_TASK
+template<class T, class TV> void DEFORMABLE_OBJECT<T, TV>::
+One_Newton_Step_Toward_Steady_State_CG_Helper_III (void* helper_raw)
+{
+	cilk_begin;
+	CONJUGATE_GRADIENTS_HELPER<T, TV>const& helper = * (CONJUGATE_GRADIENTS_HELPER<T, TV>*) helper_raw;
+	DEFORMABLE_OBJECT<T, TV>& deformable_object = *helper.deformable_object;
+	int partition_id = helper.partition_id;
+	VECTOR_2D<int>& particle_range = (*deformable_object.particles.particle_ranges) (partition_id);
+	T alpha = helper.alpha;
+	ARRAY_RANGE<ARRAY<TV> > dX (*helper.dX_full, particle_range);
+	ARRAY_RANGE<ARRAY<TV> > S (deformable_object.S_full, particle_range);
+	ARRAY_RANGE<ARRAY<TV> > R (deformable_object.R_full, particle_range);
+	ARRAY_RANGE<ARRAY<TV> > negative_Q (deformable_object.F_full, particle_range);
+	double& rho_new = (*helper.rho_new_partial) (partition_id);
+	double& supnorm = (*helper.supnorm_partial) (partition_id);
+	double local_rho_new = rho_new;
+	double local_supnorm = supnorm;
+
+	for (int i = 1; i <= dX.m; i++)
+	{
+		dX (i) += alpha * S (i);
+		R (i) += alpha * negative_Q (i);
+		double s2 = R (i).Magnitude_Squared();
+		local_rho_new += s2;
+		local_supnorm = max (local_supnorm, s2);
+	}
+
+	rho_new = local_rho_new;
+	supnorm = local_supnorm;
+	cilk_void_return;
+
+// False sharing version
+//    for(int i=1;i<=dX.m;i++){dX(i)+=alpha*S(i);R(i)+=alpha*negative_Q(i);double s2=R(i).Magnitude_Squared();rho_new+=s2;supnorm=max(supnorm,s2);}
+}
+#else
 template<class T, class TV> void DEFORMABLE_OBJECT<T, TV>::
 One_Newton_Step_Toward_Steady_State_CG_Helper_III (long thread_id, void* helper_raw)
 {
@@ -196,6 +278,8 @@ One_Newton_Step_Toward_Steady_State_CG_Helper_III (long thread_id, void* helper_
 // False sharing version
 //    for(int i=1;i<=dX.m;i++){dX(i)+=alpha*S(i);R(i)+=alpha*negative_Q(i);double s2=R(i).Magnitude_Squared();rho_new+=s2;supnorm=max(supnorm,s2);}
 }
+#endif
+
 template<class T, class TV> bool DEFORMABLE_OBJECT<T, TV>::
 One_Newton_Step_Toward_Steady_State (const T convergence_tolerance, const int max_iterations, const T time, ARRAY<TV>& dX_full, const bool balance_external_forces_only,
 				     int* iterations_used, const bool update_positions_and_state)
@@ -275,7 +359,11 @@ One_Newton_Step_Toward_Steady_State (const T convergence_tolerance, const int ma
 		{
 			typedef CONJUGATE_GRADIENTS_HELPER<T, TV> T_CG_HELPER;
 			ARRAY<double> S_dot_Q_partial (particles.particle_ranges->m);
+#ifdef ENABLE_TASK
+			mk_task_group;
+#else
 			THREAD_POOL& pool = *THREAD_POOL::Singleton();
+#endif
 			ARRAY<T_CG_HELPER> helpers (particles.particle_ranges->m);
 
 			for (int p = 1; p <= particles.particle_ranges->m; p++)
@@ -285,14 +373,31 @@ One_Newton_Step_Toward_Steady_State (const T convergence_tolerance, const int ma
 				helpers (p).time = time;
 				helpers (p).beta = beta;
 				helpers (p).S_dot_Q_partial = &S_dot_Q_partial;
+#ifdef ENABLE_TASK
+				create_task0(One_Newton_Step_Toward_Steady_State_CG_Helper_I(&helpers(p)));
+#else
 				pool.Add_Task (One_Newton_Step_Toward_Steady_State_CG_Helper_I, &helpers (p));
+#endif
 			}
 
+#ifdef ENABLE_TASK
+			wait_tasks;
+#else
 			pool.Wait_For_Completion();
+#endif
 
 		        for(int p = 1; p <= particles.particle_ranges->m; p++){
-				pool.Add_Task(One_Newton_Step_Toward_Steady_State_CG_Helper_II,&helpers(p));}
+#ifdef ENABLE_TASK
+				create_task0(One_Newton_Step_Toward_Steady_State_CG_Helper_II(&helpers(p)));
+#else
+				pool.Add_Task(One_Newton_Step_Toward_Steady_State_CG_Helper_II,&helpers(p));
+#endif
+			}
+#ifdef ENABLE_TASK
+			wait_tasks;
+#else
 			pool.Wait_For_Completion();
+#endif
 
 			S_dot_Q = ARRAY<double>::sum (S_dot_Q_partial);
 		}
@@ -332,7 +437,11 @@ One_Newton_Step_Toward_Steady_State (const T convergence_tolerance, const int ma
 			typedef CONJUGATE_GRADIENTS_HELPER<T, TV> T_CG_HELPER;
 			ARRAY<double> rho_new_partial (particles.particle_ranges->m);
 			ARRAY<double> supnorm_partial (particles.particle_ranges->m);
+#ifdef ENABLE_TASK
+			mk_task_group;
+#else
 			THREAD_POOL& pool = *THREAD_POOL::Singleton();
+#endif
 			ARRAY<T_CG_HELPER> helpers (particles.particle_ranges->m);
 
 			for (int p = 1; p <= particles.particle_ranges->m; p++)
@@ -343,10 +452,18 @@ One_Newton_Step_Toward_Steady_State (const T convergence_tolerance, const int ma
 				helpers (p).dX_full = &dX_full;
 				helpers (p).rho_new_partial = &rho_new_partial;
 				helpers (p).supnorm_partial = &supnorm_partial;
+#ifdef ENABLE_TASK
+				create_task0(One_Newton_Step_Toward_Steady_State_CG_Helper_III(&helpers(p)));
+#else
 				pool.Add_Task (One_Newton_Step_Toward_Steady_State_CG_Helper_III, &helpers (p));
+#endif
 			}
 
+#ifdef ENABLE_TASK
+			wait_tasks;
+#else
 			pool.Wait_For_Completion();
+#endif
 			rho_new = ARRAY<double>::sum (rho_new_partial);
 			supnorm = ARRAY<double>::max (supnorm_partial);
 		}

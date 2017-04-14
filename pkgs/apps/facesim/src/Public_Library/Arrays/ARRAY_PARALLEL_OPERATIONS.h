@@ -71,7 +71,11 @@ template<class T, class TS, class TV>
 class ARRAY_PARALLEL_OPERATIONS
 {
 public:
+#ifdef ENABLE_TASK
+	static void Array_Parallel_Operations_Helper (void* helper_raw);
+#else
 	static void Array_Parallel_Operations_Helper (long thread_id, void* helper_raw);
+#endif
 	static void Clear_Parallel (ARRAY<T>& array_output, const ARRAY<VECTOR_2D<int> >& ranges);
 	static void Copy_Array_Parallel (const ARRAY<T>& array_input_1, ARRAY<T>& array_output, const ARRAY<VECTOR_2D<int> >& ranges);
 	static void Scaled_Array_Plus_Array_Parallel (const ARRAY<T>& array_input_1, const ARRAY<T>& array_input_2, const TS scalar_element_input, ARRAY<T>& array_output,

@@ -14,15 +14,20 @@
 #include <hooks.h>
 #endif
 
+#ifdef ENABLE_TASK
+#include <tpswitch/tpswitch.h>
+#endif
+
+#ifdef TO_OMP
+#include <omp.h>
+#endif
 using namespace PhysBAM;
 
-#ifdef ENABLE_PTHREADS
-//Use serial code
+#if defined(ENABLE_PTHREADS) || defined(ENABLE_TASK)
 bool PHYSBAM_THREADED_RUN = true;
 # else
-//Use multi-threaded code
 bool PHYSBAM_THREADED_RUN = false;
-#endif //ENABLE_PTHREADS
+#endif
 
 int main (int argc, char* argv[])
 {
@@ -39,6 +44,16 @@ int main (int argc, char* argv[])
 	__parsec_bench_begin (__parsec_facesim);
 #endif
 
+#ifdef ENABLE_TASK
+	tp_init();
+#endif
+
+#ifdef TO_OMP
+#pragma omp parallel
+{
+#pragma omp master
+{
+#endif
 	PARSE_ARGS parse_args;
 	parse_args.Add_Integer_Argument ("-restart", 0);
 	parse_args.Add_Integer_Argument ("-lastframe", 300);
@@ -90,6 +105,11 @@ int main (int argc, char* argv[])
 	driver.Execute_Main_Program();
 
 	delete (THREAD_POOL::Singleton());
+
+#ifdef TO_OMP
+}
+}
+#endif
 
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_bench_end();

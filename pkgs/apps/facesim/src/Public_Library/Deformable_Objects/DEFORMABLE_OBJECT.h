@@ -102,9 +102,15 @@ public:
 	bool Backward_Euler_Step_Velocity (const T dt, const T time, const T convergence_tolerance = 1e-6, const int max_iterations = 50, const bool use_forward_euler_initial_guess = false, int* iterations_used = 0,
 					   const bool damping_only = false);
 #ifdef AGGREGATE_CG_OPERATIONS
+#ifdef ENABLE_TASK
+	static void One_Newton_Step_Toward_Steady_State_CG_Helper_I (void* helper_raw);
+	static void One_Newton_Step_Toward_Steady_State_CG_Helper_II (void* helper_raw);
+	static void One_Newton_Step_Toward_Steady_State_CG_Helper_III (void* helper_raw);
+#else
 	static void One_Newton_Step_Toward_Steady_State_CG_Helper_I (long thread_id, void* helper_raw);
 	static void One_Newton_Step_Toward_Steady_State_CG_Helper_II (long thread_id, void* helper_raw);
 	static void One_Newton_Step_Toward_Steady_State_CG_Helper_III (long thread_id, void* helper_raw);
+#endif
 #endif
 	bool One_Newton_Step_Toward_Steady_State (const T convergence_tolerance, const int max_iterations, const T time, ARRAY<TV>& dX, const bool balance_external_forces_only = false,
 			int* iterations_used = 0, const bool update_positions_and_state = true);

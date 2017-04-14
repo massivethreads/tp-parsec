@@ -16,6 +16,9 @@
 #include "LANDMARK_3D.h"
 #include "../../Public_Library/Utilities/LOG.h"
 #include "../../Public_Library/Thread_Utilities/THREAD_POOL.h"
+#ifdef ENABLE_TASK
+#include <tpswitch/tpswitch.h>
+#endif
 
 extern bool PHYSBAM_THREADED_RUN;
 
@@ -375,7 +378,8 @@ public:
 		ARRAY<VECTOR_3D<T2> >* X;
 		LIST_ARRAY<int>const* partition_attached_nodes;
 	};
-	static void Zero_Out_Enslaved_Position_Nodes_Helper (long thread_id, void* helper_raw)
+#ifdef ENABLE_TASK
+	static void Zero_Out_Enslaved_Position_Nodes_Helper (void* helper_raw)
 	{
 		ZERO_OUT_ENSLAVED_POSITION_NODES_HELPER<T>& helper = * (ZERO_OUT_ENSLAVED_POSITION_NODES_HELPER<T>*) helper_raw;
 		ARRAY<VECTOR_3D<T> >&X = *helper.X;
@@ -383,6 +387,17 @@ public:
 
 		for (int i = 1; i <= partition_attached_nodes.m; i++) X (partition_attached_nodes (i)) = VECTOR_3D<T>();
 	}
+#else
+		static void Zero_Out_Enslaved_Position_Nodes_Helper (long thread_id, void* helper_raw)
+	{
+		ZERO_OUT_ENSLAVED_POSITION_NODES_HELPER<T>& helper = * (ZERO_OUT_ENSLAVED_POSITION_NODES_HELPER<T>*) helper_raw;
+		ARRAY<VECTOR_3D<T> >&X = *helper.X;
+		LIST_ARRAY<int>const& partition_attached_nodes = *helper.partition_attached_nodes;
+
+		for (int i = 1; i <= partition_attached_nodes.m; i++) X (partition_attached_nodes (i)) = VECTOR_3D<T>();
+	}
+#endif
+
 	void Zero_Out_Enslaved_Position_Nodes (ARRAY<VECTOR_3D<T> >& X, const T time, const int id_number)
 	{
 		//LOG::Time("Zero out enslaved position nodes");
@@ -392,17 +407,30 @@ public:
 
 			if (PHYSBAM_THREADED_RUN)
 			{
+#ifdef ENABLE_TASK
+				mk_task_group;
+#endif
 				THREAD_POOL& pool = *THREAD_POOL::Singleton();
 				ARRAY<ZERO_OUT_ENSLAVED_POSITION_NODES_HELPER<T> > helpers (pool.number_of_threads);
+
+
 
 				for (int i = 1; i <= helpers.m; i++)
 				{
 					helpers (i).X = &X;
 					helpers (i).partition_attached_nodes = & ( (*attached_nodes_parallel) (i));
+#ifdef ENABLE_TASK
+					create_task0(spawn Zero_Out_Enslaved_Position_Nodes_Helper(&helpers(i)));
+#else
 					pool.Add_Task (Zero_Out_Enslaved_Position_Nodes_Helper, (void*) &helpers (i));
+#endif
 				}
 
+#ifdef ENABLE_TASK
+				wait_tasks;
+#else
 				pool.Wait_For_Completion();
+#endif
 			}
 
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
