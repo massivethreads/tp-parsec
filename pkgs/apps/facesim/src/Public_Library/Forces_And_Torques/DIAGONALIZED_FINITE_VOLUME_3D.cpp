@@ -614,6 +614,7 @@ Update_Position_Based_State_Helper (long thread_id, void* helper_raw)
 template<class T> void DIAGONALIZED_FINITE_VOLUME_3D<T>::
 Update_Position_Based_State_Parallel()
 {
+	cilk_begin;
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 	THREAD_POOL& pool = *THREAD_POOL::Singleton();
 #endif
@@ -696,7 +697,7 @@ Update_Position_Based_State_Parallel()
 		helpers (i).extended_tetrahedron_range = (*threading_auxiliary_structures->extended_tetrahedron_ranges) (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(Update_Position_Based_State_Helper(&helpers(i)));
+		create_task0(spawn Update_Position_Based_State_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Update_Position_Based_State_Helper, (void*) &helpers (i));
 #endif
@@ -727,7 +728,7 @@ Update_Position_Based_State_Parallel()
 		helpers (i).edge_locks = &edge_locks;
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(Update_Position_Based_State_Helper(&helpers(i)));
+		create_task0(spawn Update_Position_Based_State_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Update_Position_Based_State_Helper, (void*) &helpers (i));
 #endif
@@ -755,6 +756,7 @@ Update_Position_Based_State_Parallel()
 	FILE_UTILITIES::Write_To_File<T> (STRING_UTILITIES::string_sprintf ("extended_edge_stiffness_%d.dat", 1), *threading_auxiliary_structures->extended_edge_stiffness);
 #endif
 #endif
+	cilk_void_return;
 }
 template<class T> void DIAGONALIZED_FINITE_VOLUME_3D<T>::
 Update_Position_Based_State_Serial()
@@ -1145,6 +1147,7 @@ Add_Velocity_Independent_Forces_Helper (long thread_id, void* helper_raw)
 template<class T> void DIAGONALIZED_FINITE_VOLUME_3D<T>::
 Add_Velocity_Independent_Forces_Parallel (ARRAY<VECTOR_3D<T> >& F) const
 {
+	cilk_begin;
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
 	mk_task_group;
@@ -1181,7 +1184,7 @@ Add_Velocity_Independent_Forces_Parallel (ARRAY<VECTOR_3D<T> >& F) const
 		helpers (i).F = &F;
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(Add_Velocity_Independent_Forces_Helper(&helpers(i)));
+		create_task0(spawn Add_Velocity_Independent_Forces_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Add_Velocity_Independent_Forces_Helper, (void*) &helpers (i));
 #endif
@@ -1207,7 +1210,7 @@ Add_Velocity_Independent_Forces_Parallel (ARRAY<VECTOR_3D<T> >& F) const
 		helpers (i).F = &F;
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(Add_Velocity_Independent_Forces_Helper(&helpers(i)));
+		create_task0(spawn Add_Velocity_Independent_Forces_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Add_Velocity_Independent_Forces_Helper, (void*) &helpers (i));
 #endif
@@ -1448,6 +1451,7 @@ Add_Force_Differential_Helper (long thread_id, void* helper_raw)
 template<class T> void DIAGONALIZED_FINITE_VOLUME_3D<T>::
 Add_Force_Differential_Parallel (const ARRAY<VECTOR_3D<T> >& dX, ARRAY<VECTOR_3D<T> >& dF) const
 {
+	cilk_begin;
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
 	mk_task_group;
@@ -1497,7 +1501,7 @@ Add_Force_Differential_Parallel (const ARRAY<VECTOR_3D<T> >& dX, ARRAY<VECTOR_3D
 		helpers (i).dF = &dF;
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(Add_Force_Differential_Helper(&helpers(i)));
+		create_task0(spawn Add_Force_Differential_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Add_Force_Differential_Helper, (void*) &helpers (i));
 #endif
@@ -1514,6 +1518,7 @@ Add_Force_Differential_Parallel (const ARRAY<VECTOR_3D<T> >& dX, ARRAY<VECTOR_3D
 #endif
 #endif
 	LOG::Stop_Time();
+	cilk_void_return;
 }
 template<class T> void DIAGONALIZED_FINITE_VOLUME_3D<T>::
 Add_Force_Differential (const ARRAY<VECTOR_3D<T> >& dX_full, ARRAY<VECTOR_3D<T> >& dF_full, const int partition_id) const

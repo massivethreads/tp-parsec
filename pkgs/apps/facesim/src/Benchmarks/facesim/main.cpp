@@ -44,7 +44,7 @@ int main (int argc, char* argv[])
 	__parsec_bench_begin (__parsec_facesim);
 #endif
 
-#ifdef ENABLE_TASK
+#if defined ENABLE_TASK && !defined TO_CILKPLUS
 	tp_init();
 #endif
 

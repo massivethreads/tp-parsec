@@ -284,6 +284,7 @@ template<class T, class TV> bool DEFORMABLE_OBJECT<T, TV>::
 One_Newton_Step_Toward_Steady_State (const T convergence_tolerance, const int max_iterations, const T time, ARRAY<TV>& dX_full, const bool balance_external_forces_only,
 				     int* iterations_used, const bool update_positions_and_state)
 {
+	cilk_begin;
 	LOG::Push_Scope ("NRS", "NRS");
 	int i, N = particles.number;
 	LOG::Time ("NRS - Initialize");
@@ -374,7 +375,7 @@ One_Newton_Step_Toward_Steady_State (const T convergence_tolerance, const int ma
 				helpers (p).beta = beta;
 				helpers (p).S_dot_Q_partial = &S_dot_Q_partial;
 #ifdef ENABLE_TASK
-				create_task0(One_Newton_Step_Toward_Steady_State_CG_Helper_I(&helpers(p)));
+				create_task0(spawn One_Newton_Step_Toward_Steady_State_CG_Helper_I(&helpers(p)));
 #else
 				pool.Add_Task (One_Newton_Step_Toward_Steady_State_CG_Helper_I, &helpers (p));
 #endif
@@ -388,7 +389,7 @@ One_Newton_Step_Toward_Steady_State (const T convergence_tolerance, const int ma
 
 		        for(int p = 1; p <= particles.particle_ranges->m; p++){
 #ifdef ENABLE_TASK
-				create_task0(One_Newton_Step_Toward_Steady_State_CG_Helper_II(&helpers(p)));
+				create_task0(spawn One_Newton_Step_Toward_Steady_State_CG_Helper_II(&helpers(p)));
 #else
 				pool.Add_Task(One_Newton_Step_Toward_Steady_State_CG_Helper_II,&helpers(p));
 #endif
@@ -453,7 +454,7 @@ One_Newton_Step_Toward_Steady_State (const T convergence_tolerance, const int ma
 				helpers (p).rho_new_partial = &rho_new_partial;
 				helpers (p).supnorm_partial = &supnorm_partial;
 #ifdef ENABLE_TASK
-				create_task0(One_Newton_Step_Toward_Steady_State_CG_Helper_III(&helpers(p)));
+				create_task0(spawn One_Newton_Step_Toward_Steady_State_CG_Helper_III(&helpers(p)));
 #else
 				pool.Add_Task (One_Newton_Step_Toward_Steady_State_CG_Helper_III, &helpers (p));
 #endif
@@ -528,6 +529,7 @@ One_Newton_Step_Toward_Steady_State (const T convergence_tolerance, const int ma
 	}
 
 	LOG::Pop_Scope();
+	cilk_void_return;
 }
 #endif
 //#####################################################################

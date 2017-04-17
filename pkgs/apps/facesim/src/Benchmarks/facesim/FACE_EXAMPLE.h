@@ -381,14 +381,16 @@ public:
 #ifdef ENABLE_TASK
 	static void Zero_Out_Enslaved_Position_Nodes_Helper (void* helper_raw)
 	{
+		cilk_begin;
 		ZERO_OUT_ENSLAVED_POSITION_NODES_HELPER<T>& helper = * (ZERO_OUT_ENSLAVED_POSITION_NODES_HELPER<T>*) helper_raw;
 		ARRAY<VECTOR_3D<T> >&X = *helper.X;
 		LIST_ARRAY<int>const& partition_attached_nodes = *helper.partition_attached_nodes;
 
 		for (int i = 1; i <= partition_attached_nodes.m; i++) X (partition_attached_nodes (i)) = VECTOR_3D<T>();
+		cilk_void_return;
 	}
 #else
-		static void Zero_Out_Enslaved_Position_Nodes_Helper (long thread_id, void* helper_raw)
+	static void Zero_Out_Enslaved_Position_Nodes_Helper (long thread_id, void* helper_raw)
 	{
 		ZERO_OUT_ENSLAVED_POSITION_NODES_HELPER<T>& helper = * (ZERO_OUT_ENSLAVED_POSITION_NODES_HELPER<T>*) helper_raw;
 		ARRAY<VECTOR_3D<T> >&X = *helper.X;
@@ -400,6 +402,7 @@ public:
 
 	void Zero_Out_Enslaved_Position_Nodes (ARRAY<VECTOR_3D<T> >& X, const T time, const int id_number)
 	{
+		cilk_begin;
 		//LOG::Time("Zero out enslaved position nodes");
 		switch (id_number)
 		{
@@ -454,6 +457,7 @@ public:
 			std::cout << "Unrecognized deformable object id number" << std::endl;
 			exit (1);
 		}
+		cilk_void_return;
 	}
 	void Zero_Out_Enslaved_Position_Nodes (ARRAY<VECTOR_3D<T> >& X, const T time, const int id_number, const int partition_id)
 	{

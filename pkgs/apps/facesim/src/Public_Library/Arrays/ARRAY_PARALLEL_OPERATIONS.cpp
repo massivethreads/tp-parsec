@@ -276,6 +276,7 @@ Array_Parallel_Operations_Helper (long thread_id, void* helper_raw)
 template<class T, class TS, class TV> void ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Clear_Parallel (ARRAY<T>& array_output, const ARRAY<VECTOR_2D<int> >& ranges)
 {
+	cilk_begin;
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -310,6 +311,7 @@ Clear_Parallel (ARRAY<T>& array_output, const ARRAY<VECTOR_2D<int> >& ranges)
 	pool.Wait_For_Completion();
 #endif
 #endif
+	cilk_void_return;
 }
 //#####################################################################
 // Function Copy_Array_Parallel
@@ -317,6 +319,7 @@ Clear_Parallel (ARRAY<T>& array_output, const ARRAY<VECTOR_2D<int> >& ranges)
 template<class T, class TS, class TV> void ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Copy_Array_Parallel (const ARRAY<T>& array_input_1, ARRAY<T>& array_output, const ARRAY<VECTOR_2D<int> >& ranges)
 {
+	cilk_begin;
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -336,7 +339,7 @@ mk_task_group;
 		helpers (i).range = ranges (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(Array_Parallel_Operations_Helper(&helpers(i)));
+		create_task0(spawn Array_Parallel_Operations_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Array_Parallel_Operations_Helper, &helpers (i));
 #endif
@@ -352,6 +355,7 @@ mk_task_group;
 	pool.Wait_For_Completion();
 #endif
 #endif
+	cilk_void_return;
 }
 //#####################################################################
 // Function Scaled_Array_Plus_Array_Parallel
@@ -359,6 +363,7 @@ mk_task_group;
 template<class T, class TS, class TV> void ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Scaled_Array_Plus_Array_Parallel (const ARRAY<T>& array_input_1, const ARRAY<T>& array_input_2, const TS scalar_element_input, ARRAY<T>& array_output, const ARRAY<VECTOR_2D<int> >& ranges)
 {
+	cilk_begin;
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -380,7 +385,7 @@ mk_task_group;
 		helpers (i).range = ranges (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(Array_Parallel_Operations_Helper(&helpers(i)));
+		create_task0(spawn Array_Parallel_Operations_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Array_Parallel_Operations_Helper, &helpers (i));
 #endif
@@ -396,6 +401,7 @@ mk_task_group;
 	pool.Wait_For_Completion();
 #endif
 #endif
+	cilk_void_return;
 }
 //#####################################################################
 // Function Scaled_Normalized_Array_Plus_Array_Parallel
@@ -404,6 +410,7 @@ template<class T, class TS, class TV> void ARRAY_PARALLEL_OPERATIONS<T, TS, TV>:
 Scaled_Normalized_Array_Plus_Array_Parallel (const ARRAY<T>& array_input_1, const ARRAY<T>& array_input_2, const ARRAY<TS>& scalar_array_input_3, const TS scalar_element_input,
 		ARRAY<T>& array_output, const ARRAY<VECTOR_2D<int> >& ranges)
 {
+	cilk_begin;
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -426,7 +433,7 @@ mk_task_group;
 		helpers (i).range = ranges (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(Array_Parallel_Operations_Helper(&helpers(i)));
+		create_task0(spawn Array_Parallel_Operations_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Array_Parallel_Operations_Helper, &helpers (i));
 #endif
@@ -442,6 +449,7 @@ mk_task_group;
 	pool.Wait_For_Completion();
 #endif
 #endif
+	cilk_void_return;
 }
 //#####################################################################
 // Function Add_Scaled_Array_Plus_Array_Parallel
@@ -449,6 +457,7 @@ mk_task_group;
 template<class T, class TS, class TV> void ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Add_Scaled_Array_Plus_Array_Parallel (const ARRAY<T>& array_input_1, const ARRAY<T>& array_input_2, const TS scalar_element_input, ARRAY<T>& array_output, const ARRAY<VECTOR_2D<int> >& ranges)
 {
+	cilk_begin;
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -470,7 +479,7 @@ mk_task_group;
 		helpers (i).range = ranges (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(Array_Parallel_Operations_Helper(&helpers(i)));
+		create_task0(spawn Array_Parallel_Operations_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Array_Parallel_Operations_Helper, &helpers (i));
 #endif
@@ -486,6 +495,7 @@ mk_task_group;
 	pool.Wait_For_Completion();
 #endif
 #endif
+	cilk_void_return;
 }
 //#####################################################################
 // Function Add_Scaled_Array_Parallel
@@ -493,6 +503,7 @@ mk_task_group;
 template<class T, class TS, class TV> void ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Add_Scaled_Array_Parallel (const ARRAY<T>& array_input_1, const TS scalar_element_input, ARRAY<T>& array_output, const ARRAY<VECTOR_2D<int> >& ranges)
 {
+	cilk_begin;
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -513,7 +524,7 @@ mk_task_group;
 		helpers (i).range = ranges (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(Array_Parallel_Operations_Helper(&helpers(i)));
+		create_task0(spawn Array_Parallel_Operations_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Array_Parallel_Operations_Helper, &helpers (i));
 #endif
@@ -529,6 +540,7 @@ mk_task_group;
 	pool.Wait_For_Completion();
 #endif
 #endif
+	cilk_void_return;
 }
 //#####################################################################
 // Function Add_Scaled_Normalized_Array_Parallel
@@ -536,6 +548,7 @@ mk_task_group;
 template<class T, class TS, class TV> void ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Add_Scaled_Normalized_Array_Parallel (const ARRAY<T>& array_input_1, const ARRAY<TS>& scalar_array_input_2, const TS scalar_element_input, ARRAY<T>& array_output, const ARRAY<VECTOR_2D<int> >& ranges)
 {
+	cilk_begin;
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -557,7 +570,7 @@ mk_task_group;
 		helpers (i).range = ranges (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(Array_Parallel_Operations_Helper(&helpers(i)));
+		create_task0(spawn Array_Parallel_Operations_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Array_Parallel_Operations_Helper, &helpers (i));
 #endif
@@ -573,6 +586,7 @@ mk_task_group;
 	pool.Wait_For_Completion();
 #endif
 #endif
+	cilk_void_return;
 }
 //#####################################################################
 // Function Scale_Normalize_Array_Parallel
@@ -580,6 +594,7 @@ mk_task_group;
 template<class T, class TS, class TV> void ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Scale_Normalize_Array_Parallel (const ARRAY<TS>& scalar_array_input_1, const TS scalar_element_input, ARRAY<T>& array_output, const ARRAY<VECTOR_2D<int> >& ranges)
 {
+	cilk_begin;
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -600,7 +615,7 @@ mk_task_group;
 		helpers (i).range = ranges (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(Array_Parallel_Operations_Helper(&helpers(i)));
+		create_task0(spawn Array_Parallel_Operations_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Array_Parallel_Operations_Helper, &helpers (i));
 #endif
@@ -616,6 +631,7 @@ mk_task_group;
 	pool.Wait_For_Completion();
 #endif
 #endif
+	cilk_void_return;
 }
 //#####################################################################
 // Function Dot_Product_Parallel
@@ -623,6 +639,7 @@ mk_task_group;
 template<class T, class TS, class TV> double ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Dot_Product_Parallel (const ARRAY<TV>& vector_array_input_1, const ARRAY<TV>& vector_array_input_2, const ARRAY<VECTOR_2D<int> >& ranges)
 {
+	cilk_begin;
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -642,7 +659,7 @@ mk_task_group;
 		helpers (i).range = ranges (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(Array_Parallel_Operations_Helper(&helpers(i)));
+		create_task0(spawn Array_Parallel_Operations_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Array_Parallel_Operations_Helper, &helpers (i));
 #endif
@@ -670,6 +687,7 @@ mk_task_group;
 template<class T, class TS, class TV> double ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Scaled_Dot_Product_Parallel (const ARRAY<TV>& vector_array_input_1, const ARRAY<TV>& vector_array_input_2, const ARRAY<TS>& scalar_array_input_3, const ARRAY<VECTOR_2D<int> >& ranges)
 {
+	cilk_begin;
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -690,7 +708,7 @@ mk_task_group;
 		helpers (i).range = ranges (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(Array_Parallel_Operations_Helper(&helpers(i)));
+		create_task0(spawn Array_Parallel_Operations_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Array_Parallel_Operations_Helper, &helpers (i));
 #endif
@@ -710,7 +728,11 @@ mk_task_group;
 
 	for (int i = 1; i <= helpers.m; i++) result += helpers (i).double_output;
 
+#ifdef ENABLE_TASK
+	cilk_return(result);
+#else
 	return result;
+#endif
 }
 //#####################################################################
 // Function Maximum_Magnitude_Squared_Parallel
@@ -718,12 +740,13 @@ mk_task_group;
 template<class T, class TS, class TV> double ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Maximum_Magnitude_Squared_Parallel (const ARRAY<TV>& vector_array_input_1, const ARRAY<VECTOR_2D<int> >& ranges)
 {
+	cilk_begin;
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-mk_task_group;
+	mk_task_group;
 #endif
 	THREAD_POOL& pool = (*THREAD_POOL::Singleton());
 #endif
@@ -736,7 +759,7 @@ mk_task_group;
 		helpers (i).range = ranges (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(Array_Parallel_Operations_Helper(&helpers(i)));
+		create_task0(spawn Array_Parallel_Operations_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Array_Parallel_Operations_Helper, &helpers (i));
 #endif
@@ -755,8 +778,11 @@ mk_task_group;
 	double result = 0;
 
 	for (int i = 1; i <= helpers.m; i++) result = max<double> (result, helpers (i).double_output);
-
+#ifdef ENABLE_TASK
+	cilk_return(result);
+#else
 	return result;
+#endif
 }
 //#####################################################################
 // Function Maximum_Scaled_Magnitude_Squared_Parallel
@@ -764,12 +790,13 @@ mk_task_group;
 template<class T, class TS, class TV> double ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Maximum_Scaled_Magnitude_Squared_Parallel (const ARRAY<TV>& vector_array_input_1, const ARRAY<TS>& scalar_array_input_2, const ARRAY<VECTOR_2D<int> >& ranges)
 {
+	cilk_begin;
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-mk_task_group;
+	mk_task_group;
 #endif
 	THREAD_POOL& pool = (*THREAD_POOL::Singleton());
 #endif
@@ -783,7 +810,7 @@ mk_task_group;
 		helpers (i).range = ranges (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(Array_Parallel_Operations_Helper(&helpers(i)));
+		create_task0(spawn Array_Parallel_Operations_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Array_Parallel_Operations_Helper, &helpers (i));
 #endif
@@ -803,7 +830,11 @@ mk_task_group;
 
 	for (int i = 1; i <= helpers.m; i++) result = max<double> (result, helpers (i).double_output);
 
+#ifdef ENABLE_TASK
+	cilk_return(result);
+#else
 	return result;
+#endif
 }
 //#####################################################################
 template class ARRAY_PARALLEL_OPERATIONS<VECTOR_2D<float>, float, VECTOR_2D<float> >;
