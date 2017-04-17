@@ -17,6 +17,9 @@ if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" =
   CXXFLAGS="${CXXFLAGS} ${cflags}"
   LDFLAGS="${LDFLAGS}"
   LIBS="${LIBS}"
+  if [ "${platform}" == "g" ]; then
+    LIBS="${LIBS} -lcilkrts"
+  fi
 fi
 
 # Options for running
