@@ -284,7 +284,9 @@ template<class T, class TV> bool DEFORMABLE_OBJECT<T, TV>::
 One_Newton_Step_Toward_Steady_State (const T convergence_tolerance, const int max_iterations, const T time, ARRAY<TV>& dX_full, const bool balance_external_forces_only,
 				     int* iterations_used, const bool update_positions_and_state)
 {
+#ifdef ENABLE_TASK
 	cilk_begin;
+#endif
 	LOG::Push_Scope ("NRS", "NRS");
 	int i, N = particles.number;
 	LOG::Time ("NRS - Initialize");
@@ -529,7 +531,9 @@ One_Newton_Step_Toward_Steady_State (const T convergence_tolerance, const int ma
 	}
 
 	LOG::Pop_Scope();
+#ifdef ENABLE_TASK
 	cilk_void_return;
+#endif
 }
 #endif
 //#####################################################################

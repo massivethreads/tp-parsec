@@ -381,6 +381,7 @@ public:
 #ifdef ENABLE_TASK
 	static void Zero_Out_Enslaved_Position_Nodes_Helper (void* helper_raw)
 	{
+
 		cilk_begin;
 		ZERO_OUT_ENSLAVED_POSITION_NODES_HELPER<T>& helper = * (ZERO_OUT_ENSLAVED_POSITION_NODES_HELPER<T>*) helper_raw;
 		ARRAY<VECTOR_3D<T> >&X = *helper.X;
@@ -402,7 +403,9 @@ public:
 
 	void Zero_Out_Enslaved_Position_Nodes (ARRAY<VECTOR_3D<T> >& X, const T time, const int id_number)
 	{
+#ifdef ENABLE_TASK
 		cilk_begin;
+#endif
 		//LOG::Time("Zero out enslaved position nodes");
 		switch (id_number)
 		{
@@ -457,7 +460,9 @@ public:
 			std::cout << "Unrecognized deformable object id number" << std::endl;
 			exit (1);
 		}
+#ifdef ENABLE_TASK
 		cilk_void_return;
+#endif
 	}
 	void Zero_Out_Enslaved_Position_Nodes (ARRAY<VECTOR_3D<T> >& X, const T time, const int id_number, const int partition_id)
 	{

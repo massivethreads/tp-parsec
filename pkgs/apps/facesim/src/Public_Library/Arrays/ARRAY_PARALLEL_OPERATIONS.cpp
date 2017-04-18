@@ -276,7 +276,9 @@ Array_Parallel_Operations_Helper (long thread_id, void* helper_raw)
 template<class T, class TS, class TV> void ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Clear_Parallel (ARRAY<T>& array_output, const ARRAY<VECTOR_2D<int> >& ranges)
 {
+#ifdef ENABLE_TASK
 	cilk_begin;
+#endif
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -311,7 +313,9 @@ Clear_Parallel (ARRAY<T>& array_output, const ARRAY<VECTOR_2D<int> >& ranges)
 	pool.Wait_For_Completion();
 #endif
 #endif
+#ifdef ENABLE_TASK
 	cilk_void_return;
+#endif
 }
 //#####################################################################
 // Function Copy_Array_Parallel
@@ -319,7 +323,9 @@ Clear_Parallel (ARRAY<T>& array_output, const ARRAY<VECTOR_2D<int> >& ranges)
 template<class T, class TS, class TV> void ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Copy_Array_Parallel (const ARRAY<T>& array_input_1, ARRAY<T>& array_output, const ARRAY<VECTOR_2D<int> >& ranges)
 {
+#ifdef ENABLE_TASK
 	cilk_begin;
+#endif
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -355,7 +361,9 @@ mk_task_group;
 	pool.Wait_For_Completion();
 #endif
 #endif
+#ifdef ENABLE_TASK
 	cilk_void_return;
+#endif
 }
 //#####################################################################
 // Function Scaled_Array_Plus_Array_Parallel
@@ -363,7 +371,9 @@ mk_task_group;
 template<class T, class TS, class TV> void ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Scaled_Array_Plus_Array_Parallel (const ARRAY<T>& array_input_1, const ARRAY<T>& array_input_2, const TS scalar_element_input, ARRAY<T>& array_output, const ARRAY<VECTOR_2D<int> >& ranges)
 {
+#ifdef ENABLE_TASK
 	cilk_begin;
+#endif
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -401,7 +411,10 @@ mk_task_group;
 	pool.Wait_For_Completion();
 #endif
 #endif
+	
+#ifdef ENABLE_TASK
 	cilk_void_return;
+#endif
 }
 //#####################################################################
 // Function Scaled_Normalized_Array_Plus_Array_Parallel
@@ -410,7 +423,9 @@ template<class T, class TS, class TV> void ARRAY_PARALLEL_OPERATIONS<T, TS, TV>:
 Scaled_Normalized_Array_Plus_Array_Parallel (const ARRAY<T>& array_input_1, const ARRAY<T>& array_input_2, const ARRAY<TS>& scalar_array_input_3, const TS scalar_element_input,
 		ARRAY<T>& array_output, const ARRAY<VECTOR_2D<int> >& ranges)
 {
+#ifdef ENABLE_TASK
 	cilk_begin;
+#endif
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -449,7 +464,10 @@ mk_task_group;
 	pool.Wait_For_Completion();
 #endif
 #endif
+	
+#ifdef ENABLE_TASK
 	cilk_void_return;
+#endif
 }
 //#####################################################################
 // Function Add_Scaled_Array_Plus_Array_Parallel
@@ -457,7 +475,9 @@ mk_task_group;
 template<class T, class TS, class TV> void ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Add_Scaled_Array_Plus_Array_Parallel (const ARRAY<T>& array_input_1, const ARRAY<T>& array_input_2, const TS scalar_element_input, ARRAY<T>& array_output, const ARRAY<VECTOR_2D<int> >& ranges)
 {
+#ifdef ENABLE_TASK
 	cilk_begin;
+#endif
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -495,7 +515,10 @@ mk_task_group;
 	pool.Wait_For_Completion();
 #endif
 #endif
+	
+#ifdef ENABLE_TASK
 	cilk_void_return;
+#endif
 }
 //#####################################################################
 // Function Add_Scaled_Array_Parallel
@@ -503,7 +526,10 @@ mk_task_group;
 template<class T, class TS, class TV> void ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Add_Scaled_Array_Parallel (const ARRAY<T>& array_input_1, const TS scalar_element_input, ARRAY<T>& array_output, const ARRAY<VECTOR_2D<int> >& ranges)
 {
+  
+#ifdef ENABLE_TASK
 	cilk_begin;
+#endif
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -540,7 +566,10 @@ mk_task_group;
 	pool.Wait_For_Completion();
 #endif
 #endif
+	
+#ifdef ENABLE_TASK
 	cilk_void_return;
+#endif
 }
 //#####################################################################
 // Function Add_Scaled_Normalized_Array_Parallel
@@ -548,7 +577,9 @@ mk_task_group;
 template<class T, class TS, class TV> void ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Add_Scaled_Normalized_Array_Parallel (const ARRAY<T>& array_input_1, const ARRAY<TS>& scalar_array_input_2, const TS scalar_element_input, ARRAY<T>& array_output, const ARRAY<VECTOR_2D<int> >& ranges)
 {
+#ifdef ENABLE_TASK
 	cilk_begin;
+#endif
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -586,7 +617,10 @@ mk_task_group;
 	pool.Wait_For_Completion();
 #endif
 #endif
+	
+#ifdef ENABLE_TASK
 	cilk_void_return;
+#endif
 }
 //#####################################################################
 // Function Scale_Normalize_Array_Parallel
@@ -594,7 +628,9 @@ mk_task_group;
 template<class T, class TS, class TV> void ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Scale_Normalize_Array_Parallel (const ARRAY<TS>& scalar_array_input_1, const TS scalar_element_input, ARRAY<T>& array_output, const ARRAY<VECTOR_2D<int> >& ranges)
 {
+#ifdef ENABLE_TASK
 	cilk_begin;
+#endif
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -631,7 +667,10 @@ mk_task_group;
 	pool.Wait_For_Completion();
 #endif
 #endif
+	
+#ifdef ENABLE_TASK
 	cilk_void_return;
+#endif
 }
 //#####################################################################
 // Function Dot_Product_Parallel
@@ -639,7 +678,9 @@ mk_task_group;
 template<class T, class TS, class TV> double ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Dot_Product_Parallel (const ARRAY<TV>& vector_array_input_1, const ARRAY<TV>& vector_array_input_2, const ARRAY<VECTOR_2D<int> >& ranges)
 {
+#ifdef ENABLE_TASK
 	cilk_begin;
+#endif
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -679,7 +720,11 @@ mk_task_group;
 
 	for (int i = 1; i <= helpers.m; i++) result += helpers (i).double_output;
 
+#ifdef ENABLE_TASK
+	cilk_return(result);
+#else
 	return result;
+#endif
 }
 //#####################################################################
 // Function Scaled_Dot_Product_Parallel
@@ -687,7 +732,9 @@ mk_task_group;
 template<class T, class TS, class TV> double ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Scaled_Dot_Product_Parallel (const ARRAY<TV>& vector_array_input_1, const ARRAY<TV>& vector_array_input_2, const ARRAY<TS>& scalar_array_input_3, const ARRAY<VECTOR_2D<int> >& ranges)
 {
+#ifdef ENABLE_TASK
 	cilk_begin;
+#endif
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -740,7 +787,9 @@ mk_task_group;
 template<class T, class TS, class TV> double ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Maximum_Magnitude_Squared_Parallel (const ARRAY<TV>& vector_array_input_1, const ARRAY<VECTOR_2D<int> >& ranges)
 {
+#ifdef ENABLE_TASK
 	cilk_begin;
+#endif
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -790,7 +839,9 @@ Maximum_Magnitude_Squared_Parallel (const ARRAY<TV>& vector_array_input_1, const
 template<class T, class TS, class TV> double ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Maximum_Scaled_Magnitude_Squared_Parallel (const ARRAY<TV>& vector_array_input_1, const ARRAY<TS>& scalar_array_input_2, const ARRAY<VECTOR_2D<int> >& ranges)
 {
+#ifdef ENABLE_TASK
 	cilk_begin;
+#endif
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
