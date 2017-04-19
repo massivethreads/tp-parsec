@@ -1,4 +1,3 @@
 #!/bin/bash
 
-source ${PARSECDIR}/pkgs/apps/facesim/parsec/gcc.bldconf
-
+build_env="PHYSBAM=${PARSECDIR}/pkgs/apps/facesim/obj/${PARSECPLAT} CXXFLAGS=\"${CXXFLAGS} -fexceptions\""
