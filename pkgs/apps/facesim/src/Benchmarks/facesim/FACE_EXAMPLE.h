@@ -426,7 +426,7 @@ public:
 					helpers (i).X = &X;
 					helpers (i).partition_attached_nodes = & ( (*attached_nodes_parallel) (i));
 #ifdef ENABLE_TASK
-					create_task0(spawn Zero_Out_Enslaved_Position_Nodes_Helper(&helpers(i)));
+					create_task1(helpers,spawn Zero_Out_Enslaved_Position_Nodes_Helper(&helpers(i)));
 #else
 					pool.Add_Task (Zero_Out_Enslaved_Position_Nodes_Helper, (void*) &helpers (i));
 #endif

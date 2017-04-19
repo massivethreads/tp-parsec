@@ -699,7 +699,7 @@ Update_Position_Based_State_Parallel()
 		helpers (i).extended_tetrahedron_range = (*threading_auxiliary_structures->extended_tetrahedron_ranges) (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(spawn Update_Position_Based_State_Helper(&helpers(i)));
+		create_task1(helpers,spawn Update_Position_Based_State_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Update_Position_Based_State_Helper, (void*) &helpers (i));
 #endif
@@ -730,7 +730,7 @@ Update_Position_Based_State_Parallel()
 		helpers (i).edge_locks = &edge_locks;
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(spawn Update_Position_Based_State_Helper(&helpers(i)));
+		create_task1(helpers,spawn Update_Position_Based_State_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Update_Position_Based_State_Helper, (void*) &helpers (i));
 #endif
@@ -1191,7 +1191,7 @@ Add_Velocity_Independent_Forces_Parallel (ARRAY<VECTOR_3D<T> >& F) const
 		helpers (i).F = &F;
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(spawn Add_Velocity_Independent_Forces_Helper(&helpers(i)));
+		create_task1(helpers,spawn Add_Velocity_Independent_Forces_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Add_Velocity_Independent_Forces_Helper, (void*) &helpers (i));
 #endif
@@ -1217,7 +1217,7 @@ Add_Velocity_Independent_Forces_Parallel (ARRAY<VECTOR_3D<T> >& F) const
 		helpers (i).F = &F;
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(spawn Add_Velocity_Independent_Forces_Helper(&helpers(i)));
+		create_task1(helpers,spawn Add_Velocity_Independent_Forces_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Add_Velocity_Independent_Forces_Helper, (void*) &helpers (i));
 #endif
@@ -1513,7 +1513,7 @@ Add_Force_Differential_Parallel (const ARRAY<VECTOR_3D<T> >& dX, ARRAY<VECTOR_3D
 		helpers (i).dF = &dF;
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(spawn Add_Force_Differential_Helper(&helpers(i)));
+		create_task1(helpers,spawn Add_Force_Differential_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Add_Force_Differential_Helper, (void*) &helpers (i));
 #endif

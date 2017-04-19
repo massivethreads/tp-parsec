@@ -297,7 +297,7 @@ Clear_Parallel (ARRAY<T>& array_output, const ARRAY<VECTOR_2D<int> >& ranges)
 		helpers (i).range = ranges (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(spawn Array_Parallel_Operations_Helper(&helpers(i)));
+		create_task1(helpers,spawn Array_Parallel_Operations_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Array_Parallel_Operations_Helper, &helpers (i));
 #endif
@@ -345,7 +345,7 @@ mk_task_group;
 		helpers (i).range = ranges (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(spawn Array_Parallel_Operations_Helper(&helpers(i)));
+		create_task1(helpers,spawn Array_Parallel_Operations_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Array_Parallel_Operations_Helper, &helpers (i));
 #endif
@@ -395,7 +395,7 @@ mk_task_group;
 		helpers (i).range = ranges (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(spawn Array_Parallel_Operations_Helper(&helpers(i)));
+		create_task1(helpers,spawn Array_Parallel_Operations_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Array_Parallel_Operations_Helper, &helpers (i));
 #endif
@@ -448,7 +448,7 @@ mk_task_group;
 		helpers (i).range = ranges (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(spawn Array_Parallel_Operations_Helper(&helpers(i)));
+		create_task1(helpers,spawn Array_Parallel_Operations_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Array_Parallel_Operations_Helper, &helpers (i));
 #endif
@@ -499,7 +499,7 @@ mk_task_group;
 		helpers (i).range = ranges (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(spawn Array_Parallel_Operations_Helper(&helpers(i)));
+		create_task1(helpers,spawn Array_Parallel_Operations_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Array_Parallel_Operations_Helper, &helpers (i));
 #endif
@@ -550,7 +550,7 @@ mk_task_group;
 		helpers (i).range = ranges (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(spawn Array_Parallel_Operations_Helper(&helpers(i)));
+		create_task1(helpers,spawn Array_Parallel_Operations_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Array_Parallel_Operations_Helper, &helpers (i));
 #endif
@@ -601,7 +601,7 @@ mk_task_group;
 		helpers (i).range = ranges (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(spawn Array_Parallel_Operations_Helper(&helpers(i)));
+		create_task1(helpers,spawn Array_Parallel_Operations_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Array_Parallel_Operations_Helper, &helpers (i));
 #endif
@@ -651,7 +651,7 @@ mk_task_group;
 		helpers (i).range = ranges (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(spawn Array_Parallel_Operations_Helper(&helpers(i)));
+		create_task1(helpers,spawn Array_Parallel_Operations_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Array_Parallel_Operations_Helper, &helpers (i));
 #endif
@@ -700,7 +700,7 @@ mk_task_group;
 		helpers (i).range = ranges (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(spawn Array_Parallel_Operations_Helper(&helpers(i)));
+		create_task1(helpers,spawn Array_Parallel_Operations_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Array_Parallel_Operations_Helper, &helpers (i));
 #endif
@@ -755,7 +755,7 @@ mk_task_group;
 		helpers (i).range = ranges (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(spawn Array_Parallel_Operations_Helper(&helpers(i)));
+		create_task1(helpers,spawn Array_Parallel_Operations_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Array_Parallel_Operations_Helper, &helpers (i));
 #endif
@@ -808,7 +808,7 @@ Maximum_Magnitude_Squared_Parallel (const ARRAY<TV>& vector_array_input_1, const
 		helpers (i).range = ranges (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(spawn Array_Parallel_Operations_Helper(&helpers(i)));
+		create_task1(helpers,spawn Array_Parallel_Operations_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Array_Parallel_Operations_Helper, &helpers (i));
 #endif
@@ -861,7 +861,7 @@ Maximum_Scaled_Magnitude_Squared_Parallel (const ARRAY<TV>& vector_array_input_1
 		helpers (i).range = ranges (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 #ifdef ENABLE_TASK
-		create_task0(spawn Array_Parallel_Operations_Helper(&helpers(i)));
+		create_task1(helpers,spawn Array_Parallel_Operations_Helper(&helpers(i)));
 #else
 		pool.Add_Task (Array_Parallel_Operations_Helper, &helpers (i));
 #endif
