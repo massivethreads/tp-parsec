@@ -304,7 +304,7 @@ test_facesim_gcc_job:
     stage: test
     script:
         - cd bin
-        - ${PARSEC_RUN_COMMAND} -p facesim -c gcc
+        - ${PARSEC_RUN_COMMAND} -p facesim -c gcc-pthreads
 
 test_facesim_gcc_mth_job:
     stage: test
