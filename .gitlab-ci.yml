@@ -353,3 +353,79 @@ test_bodytrack_gcc_cilkplus_job:
     script:
         - cd bin
         - ${PARSEC_RUN_COMMAND} -p bodytrack -c gcc-task_cilkplus
+        
+# swaptions
+
+test_swaptions_gcc_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p swaptions -c gcc
+
+test_swaptions_gcc_mth_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p swaptions -c gcc-task_mth
+
+test_swaptions_gcc_qth_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p swaptions -c gcc-task_qth
+
+test_swaptions_gcc_tbb_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p swaptions -c gcc-task_tbb
+
+test_swaptions_gcc_omp_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p swaptions -c gcc-task_omp
+        
+test_swaptions_gcc_cilkplus_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p swaptions -c gcc-task_cilkplus
+        
+# freqmine
+
+test_freqmine_gcc_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p freqmine -c gcc
+
+test_freqmine_gcc_mth_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p freqmine -c gcc-task_mth
+
+test_freqmine_gcc_qth_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p freqmine -c gcc-task_qth
+
+test_freqmine_gcc_tbb_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p freqmine -c gcc-task_tbb
+
+test_freqmine_gcc_omp_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p freqmine -c gcc-task_omp
+        
+test_freqmine_gcc_cilkplus_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p freqmine -c gcc-task_cilkplus
