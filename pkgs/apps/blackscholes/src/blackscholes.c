@@ -306,7 +306,7 @@ void bs_thread(void *tid_ptr) {
 
 /*
 void bs_thread_void(void *tid_ptr) {
-    cilk_begin;
+    task_begin;
     int j;
     int tid = *(int *)tid_ptr;
     int start = tid * (numOptions / nThreads);
@@ -317,7 +317,7 @@ void bs_thread_void(void *tid_ptr) {
         call_task(spawn bs_task(start + (end-start)/2, end));
         wait_tasks;
     }
-    cilk_void_return;
+    task_void_return;
 }
 int bs_thread(void *tid_ptr) {
     bs_thread_void(tid_ptr);
@@ -523,7 +523,9 @@ int main (int argc, char **argv)
 #ifdef ENABLE_TASK
     //serial version
     int tid=0;
-    bs_thread(&tid);
+    task_parallel_region(
+      bs_thread(&tid);
+    );
 #else
     //serial version
     int tid=0;

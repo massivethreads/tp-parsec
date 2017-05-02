@@ -126,11 +126,13 @@ int main(int argc, char **argv)
         printf("PARSEC Benchmark Suite\n");
 	fflush(NULL);
 #endif //PARSEC_VERSION
-#ifdef ENABLE_PARSEC_HOOKS
-	__parsec_bench_begin(__parsec_freqmine);
-#endif
+
 #if defined(ENABLE_TASK)
 	tp_init();
+#endif
+
+#ifdef ENABLE_PARSEC_HOOKS
+	__parsec_bench_begin(__parsec_freqmine);
 #endif
 
 	if (argc < 3)
@@ -160,10 +162,20 @@ int main(int argc, char **argv)
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_roi_begin();
 #endif
-	fptree -> scan1_DB(fdat);
+
+#if defined(ENABLE_TASK)
+	task_parallel_region(fptree->scan1_DB(fdat););
+#else
+	fptree->scan1_DB(fdat);
+#endif
 	wtime(&tdatap);
 
+#if defined(ENABLE_TASK)
+	task_parallel_region(fptree->scan2_DB(workingthread););
+#else
 	fptree->scan2_DB(workingthread);
+#endif
+
 	fdat->close();
 	if(fptree->itemno==0)return 0;
 	FSout* fout;
@@ -186,13 +198,22 @@ int main(int argc, char **argv)
 		}
 
 		if (fout)
+#if defined(ENABLE_TASK)
+			task_parallel_region(fptree->generate_all(fptree->itemno, 0, fout););
+#else
 			fptree->generate_all(fptree->itemno, 0, fout);
+#endif
 
 		printLen();
 		return 0;
 	}
 
+#if defined(ENABLE_TASK)
+	task_parallel_region(fptree->FP_growth_first(fout););
+#else
 	fptree->FP_growth_first(fout);
+#endif
+
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_roi_end();
 #endif
@@ -216,6 +237,5 @@ int main(int argc, char **argv)
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_bench_end();
 #endif
-
 	return 0;
 }
