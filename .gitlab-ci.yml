@@ -79,12 +79,6 @@ test_raytrace_gcc_omp_job:
         - cd bin
         - ${PARSEC_RUN_COMMAND} -p raytrace -c gcc-task_omp
         
-test_raytrace_gcc_cilkplus_job:
-    stage: test
-    script:
-        - cd bin
-        - ${PARSEC_RUN_COMMAND} -p raytrace -c gcc-task_cilkplus
-
 # fluidanimate
 
 test_fluidanimate_gcc_pthreads_job:
@@ -117,13 +111,6 @@ test_fluidanimate_gcc_omp_job:
         - cd bin
         - ${PARSEC_RUN_COMMAND} -p fluidanimate -c gcc-task_omp
         
-test_fluidanimate_gcc_cilkplus_job:
-    stage: test
-    script:
-        - cd bin
-        - ${PARSEC_RUN_COMMAND} -p fluidanimate -c gcc-task_cilkplus
-
-
 # dedup
 
 test_dedup_gcc_pthreads_job:
@@ -156,13 +143,6 @@ test_dedup_gcc_omp_job:
         - cd bin
         - ${PARSEC_RUN_COMMAND} -p dedup -c gcc-task_omp
         
-test_dedup_gcc_cilkplus_job:
-    stage: test
-    script:
-        - cd bin
-        - ${PARSEC_RUN_COMMAND} -p dedup -c gcc-task_cilkplus
-
-
 # streamcluster
 
 test_streamcluster_gcc_pthreads_job:
@@ -195,13 +175,6 @@ test_streamcluster_gcc_omp_job:
         - cd bin
         - ${PARSEC_RUN_COMMAND} -p streamcluster -c gcc-task_omp
         
-test_streamcluster_gcc_cilkplus_job:
-    stage: test
-    script:
-        - cd bin
-        - ${PARSEC_RUN_COMMAND} -p streamcluster -c gcc-task_cilkplus
-
-
 # ferret
 
 test_ferret_gcc_pthreads_job:
@@ -348,49 +321,37 @@ test_bodytrack_gcc_omp_job:
         - cd bin
         - ${PARSEC_RUN_COMMAND} -p bodytrack -c gcc-task_omp
         
-test_bodytrack_gcc_cilkplus_job:
-    stage: test
-    script:
-        - cd bin
-        - ${PARSEC_RUN_COMMAND} -p bodytrack -c gcc-task_cilkplus
-        
 # swaptions
 
 test_swaptions_gcc_job:
     stage: test
     script:
         - cd bin
-        - ${PARSEC_RUN_COMMAND} -p swaptions -c gcc
+        - ./parsecmgmt2 -a build run -n 2 -i simdev -p swaptions -c gcc
 
 test_swaptions_gcc_mth_job:
     stage: test
     script:
         - cd bin
-        - ${PARSEC_RUN_COMMAND} -p swaptions -c gcc-task_mth
+        - ./parsecmgmt2 -a build run -n 2 -i simdev -p swaptions -c gcc-task_mth
 
 test_swaptions_gcc_qth_job:
     stage: test
     script:
         - cd bin
-        - ${PARSEC_RUN_COMMAND} -p swaptions -c gcc-task_qth
+        - ./parsecmgmt2 -a build run -n 2 -i simdev -p swaptions -c gcc-task_qth
 
 test_swaptions_gcc_tbb_job:
     stage: test
     script:
         - cd bin
-        - ${PARSEC_RUN_COMMAND} -p swaptions -c gcc-task_tbb
+        - ./parsecmgmt2 -a build run -n 2 -i simdev -p swaptions -c gcc-task_tbb
 
 test_swaptions_gcc_omp_job:
     stage: test
     script:
         - cd bin
-        - ${PARSEC_RUN_COMMAND} -p swaptions -c gcc-task_omp
-        
-test_swaptions_gcc_cilkplus_job:
-    stage: test
-    script:
-        - cd bin
-        - ${PARSEC_RUN_COMMAND} -p swaptions -c gcc-task_cilkplus
+        - ./parsecmgmt2 -a build run -n 2 -i simdev -p swaptions -c gcc-task_omp
         
 # freqmine
 
