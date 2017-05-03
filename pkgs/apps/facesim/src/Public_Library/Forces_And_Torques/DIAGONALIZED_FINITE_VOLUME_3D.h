@@ -215,17 +215,29 @@ public:
 	void Update_Threading_Auxiliary_Structures();
 	void Read_Threading_Auxiliary_Structures();
 	void Update_Position_Based_State();
+#ifdef ENABLE_TASK
+	static void Update_Position_Based_State_Helper (void* helper_raw);
+#else
 	static void Update_Position_Based_State_Helper (long thread_id, void* helper_raw);
+#endif
 	void Update_Position_Based_State_Parallel();
 	void Update_Position_Based_State_Serial();
 	void Delete_Position_Based_State();
 	void Add_Velocity_Independent_Forces (ARRAY<VECTOR_3D<T> >& F) const;
+#ifdef ENABLE_TASK
+	static void Add_Velocity_Independent_Forces_Helper (void* helper_raw);
+#else
 	static void Add_Velocity_Independent_Forces_Helper (long thread_id, void* helper_raw);
+#endif
 	void Add_Velocity_Independent_Forces_Parallel (ARRAY<VECTOR_3D<T> >& F) const;
 	void Add_Velocity_Independent_Forces_Serial (ARRAY<VECTOR_3D<T> >& F) const;
 	void Add_Velocity_Dependent_Forces (ARRAY<VECTOR_3D<T> >& F) const;
 	void Add_Force_Differential (const ARRAY<VECTOR_3D<T> >& dX, ARRAY<VECTOR_3D<T> >& dF) const;
+#ifdef ENABLE_TASK
+	static void Add_Force_Differential_Helper (void* helper_raw);
+#else
 	static void Add_Force_Differential_Helper (long thread_id, void* helper_raw);
+#endif
 	void Add_Force_Differential_Parallel (const ARRAY<VECTOR_3D<T> >& dX, ARRAY<VECTOR_3D<T> >& dF) const;
 	void Add_Force_Differential (const ARRAY<VECTOR_3D<T> >& dX_full, ARRAY<VECTOR_3D<T> >& dF_full, const int partition_id) const;
 	void Add_Force_Differential_Serial (const ARRAY<VECTOR_3D<T> >& dX, ARRAY<VECTOR_3D<T> >& dF) const;

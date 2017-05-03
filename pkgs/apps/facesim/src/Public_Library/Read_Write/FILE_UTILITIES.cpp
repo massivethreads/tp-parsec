@@ -98,7 +98,8 @@ int Compare_File_Times_Ignoring_Compression_Suffix (const std::string& filename1
 
 bool Directory_Exists (const std::string& dirname)
 {
-	return std::ifstream (dirname.c_str()) != 0;
+	std::ifstream a(dirname.c_str());
+	return a.good();
 }
 
 bool Create_Directory (const std::string& dirname, bool exit_on_fail)

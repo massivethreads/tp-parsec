@@ -78,6 +78,16 @@ Worker (void* pointer)
 //#####################################################################
 // Function THREAD_POOL
 //#####################################################################
+#ifdef ENABLE_TASK
+THREAD_POOL::
+THREAD_POOL()
+{
+	std::cout << "THREAD_POOL: Initializing condition variables" << std::endl;
+	char* threads_environment = getenv ("PHYSBAM_THREADS");
+	if (threads_environment) number_of_threads = atoi (threads_environment);
+	else number_of_threads = 2;
+}
+#else
 THREAD_POOL::
 THREAD_POOL()
 {
@@ -109,9 +119,18 @@ THREAD_POOL()
 #endif //ENABLE_PTHREADS
 	std::cout << std::endl;
 }
+
+#endif
 //#####################################################################
 // Function ~THREAD_POOL
 //#####################################################################
+#ifdef ENABLE_TASK
+THREAD_POOL::
+~THREAD_POOL()
+{
+  // do nothing for task version
+}
+#else
 THREAD_POOL::
 ~THREAD_POOL()
 {
@@ -127,9 +146,18 @@ THREAD_POOL::
 	ALAMERE_END();
 #endif
 }
+#endif
 //#####################################################################
 // Function Add_Task
 //#####################################################################
+#ifdef ENABLE_TASK
+void THREAD_POOL::
+Add_Task (CALLBACK callback_input, void* data_input)
+{
+        //Must not be called in task version
+        assert(0);
+}
+#else
 void THREAD_POOL::
 Add_Task (CALLBACK callback_input, void* data_input)
 {
@@ -140,6 +168,8 @@ Add_Task (CALLBACK callback_input, void* data_input)
 	data->queue.Enqueue (PAIR<CALLBACK, void*> (callback_input, data_input));
 	data->lock.Unlock();
 }
+
+#endif
 //#####################################################################
 // Function Add_TaskGrid
 //#####################################################################
@@ -152,6 +182,14 @@ Add_Task (CALLBACK callback_input, int numTasks)
 //#####################################################################
 // Function Wait_For_Completion
 //#####################################################################
+#ifdef ENABLE_TASK
+void THREAD_POOL::
+Wait_For_Completion()
+{
+        //Must not be called in task version
+        assert(0);
+}
+#else
 void THREAD_POOL::
 Wait_For_Completion()
 {
@@ -161,6 +199,8 @@ Wait_For_Completion()
 
 	data->lock.Unlock();
 }
+
+#endif
 //#####################################################################
 // Function Exit_Thread
 //#####################################################################

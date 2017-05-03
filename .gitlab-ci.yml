@@ -297,3 +297,35 @@ test_bodytrack_gcc_omp_job:
     script:
         - cd bin
         - ${PARSEC_RUN_COMMAND} -p bodytrack -c gcc-task_omp
+
+# facesim
+
+test_facesim_gcc_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p facesim -c gcc-pthreads
+
+test_facesim_gcc_mth_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p facesim -c gcc-task_mth
+
+test_facesim_gcc_qth_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p facesim -c gcc-task_qth
+
+test_facesim_gcc_tbb_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p facesim -c gcc-task_tbb
+
+test_facesim_gcc_omp_job:
+    stage: test
+    script:
+        - cd bin
+        - ${PARSEC_RUN_COMMAND} -p facesim -c gcc-task_omp

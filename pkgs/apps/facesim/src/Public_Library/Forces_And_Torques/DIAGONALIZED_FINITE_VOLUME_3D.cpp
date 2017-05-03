@@ -12,6 +12,9 @@
 #include "../Arrays/ARRAY_PARALLEL_OPERATIONS.h"
 #include "../Thread_Utilities/THREAD_ARRAY_LOCK.h"
 #endif
+#ifdef ENABLE_TASK
+#include <tpswitch/tpswitch.h>
+#endif
 using namespace PhysBAM;
 extern bool PHYSBAM_THREADED_RUN;
 //#define OUTPUT_THREADING_AUXILIARY_STRUCTURES
@@ -257,6 +260,183 @@ Update_Position_Based_State()
 #endif
 }
 
+#ifdef ENABLE_TASK
+template<class T> void DIAGONALIZED_FINITE_VOLUME_3D<T>::
+Update_Position_Based_State_Helper (void* helper_raw)
+{
+	cilk_begin;
+#ifndef USE_REDUCTION_ROUTINES
+	UPDATE_POSITION_BASED_STATE_HELPER<T>const& helper = * (UPDATE_POSITION_BASED_STATE_HELPER<T>*) helper_raw;
+	DIAGONALIZED_FINITE_VOLUME_3D<T>const& diagonalized_finite_volume_3d = *helper.diagonalized_finite_volume_3d;
+	DIAGONALIZED_FINITE_VOLUME_3D_THREADING_AUXILIARY_STRUCTURES<T>const& threading_auxiliary_structures = *helper.diagonalized_finite_volume_3d->threading_auxiliary_structures;
+	LIST_ARRAYS<int>const& extended_edges = *threading_auxiliary_structures.extended_edges;
+	LIST_ARRAYS<int>const& extended_tetrahedrons = *threading_auxiliary_structures.extended_tetrahedrons;
+	LIST_ARRAY<SYMMETRIC_MATRIX_3X3<T> >& node_stiffness = *diagonalized_finite_volume_3d.node_stiffness;
+	LIST_ARRAY<MATRIX_3X3<T> >& extended_edge_stiffness = *threading_auxiliary_structures.extended_edge_stiffness;
+	VECTOR_2D<int>const& node_range = helper.node_range;
+	VECTOR_2D<int>const& internal_edge_range = helper.internal_edge_range;
+	VECTOR_2D<int>const& external_edge_range = helper.external_edge_range;
+	VECTOR_2D<int>const& extended_tetrahedron_range = helper.extended_tetrahedron_range;
+	STRAIN_MEASURE_3D<T>const& strain_measure = diagonalized_finite_volume_3d.strain_measure;
+	DIAGONALIZED_CONSTITUTIVE_MODEL_3D<T>& constitutive_model = diagonalized_finite_volume_3d.constitutive_model;
+	LIST_ARRAY<T>const& Be_scales = diagonalized_finite_volume_3d.Be_scales;
+	LIST_ARRAYS<int>const& extended_tetrahedron_extended_edges = *threading_auxiliary_structures.extended_tetrahedron_extended_edges;
+	LIST_ARRAY<int>const& extended_tetrahedron_parents = *threading_auxiliary_structures.extended_tetrahedron_parents;
+	LIST_ARRAY<MATRIX_3X3<T> >& extended_U = *threading_auxiliary_structures.extended_U;
+	LIST_ARRAY<MATRIX_3X3<T> >& extended_De_inverse_hat = *threading_auxiliary_structures.extended_De_inverse_hat;
+	LIST_ARRAY<DIAGONAL_MATRIX_3X3<T> >& extended_Fe_hat = *threading_auxiliary_structures.extended_Fe_hat;
+	LIST_ARRAY<DIAGONALIZED_ISOTROPIC_STRESS_DERIVATIVE_3D<T> >& extended_dP_dFe = *threading_auxiliary_structures.extended_dP_dFe;
+	LIST_ARRAY<MATRIX_3X3<T> >& extended_V = *threading_auxiliary_structures.extended_V;
+	MATRIX_3X3<T> V_local;
+	ARRAYS_2D<MATRIX_3X3<T> > dF_dX_local (1, 4, 1, 4);
+	ARRAY<int> vertex (4), edge (6);
+
+	for (int i = node_range.x; i <= node_range.y; i++) node_stiffness (i) = SYMMETRIC_MATRIX_3X3<T>();
+
+	for (int e = internal_edge_range.x; e <= external_edge_range.y; e++) extended_edge_stiffness (e) = MATRIX_3X3<T>();
+
+	for (int t = extended_tetrahedron_range.x; t <= extended_tetrahedron_range.y; t++)
+	{
+		int t_parent = extended_tetrahedron_parents (t);
+		strain_measure.F (t_parent).Fast_Singular_Value_Decomposition (extended_U (t), extended_Fe_hat (t), V_local);
+		constitutive_model.Isotropic_Stress_Derivative (extended_Fe_hat (t), extended_dP_dFe (t), t_parent);
+
+		if (constitutive_model.anisotropic) constitutive_model.Update_State_Dependent_Auxiliary_Variables (extended_Fe_hat (t), V_local, t_parent);
+
+		extended_De_inverse_hat (t) = strain_measure.Dm_inverse (t_parent) * V_local;
+		extended_V (t) = V_local;
+
+		for (int k = 1; k <= 3; k++) for (int l = 1; l <= 3; l++)
+			{
+				MATRIX_3X3<T> dDs, dG;
+				dDs (k, l) = (T) 1;
+
+				if (constitutive_model.anisotropic)
+					dG = extended_U (t) * constitutive_model.dP_From_dF (extended_U (t).Transposed() * dDs * extended_De_inverse_hat (t), extended_Fe_hat (t), extended_V (t), extended_dP_dFe (t), Be_scales (t_parent), t_parent).Multiply_With_Transpose (extended_De_inverse_hat (t));
+				else dG = extended_U (t) * constitutive_model.dP_From_dF (extended_U (t).Transposed() * dDs * extended_De_inverse_hat (t), extended_dP_dFe (t), Be_scales (t_parent), t_parent).Multiply_With_Transpose (extended_De_inverse_hat (t));
+
+				for (int i = 1; i <= 3; i++) for (int j = 1; j <= 3; j++) dF_dX_local (l + 1, j + 1) (k, i) = dG (i, j);
+			}
+
+		for (int i = 2; i <= 4; i++)
+		{
+			dF_dX_local (i, 1) = MATRIX_3X3<T>();
+
+			for (int j = 2; j <= 4; j++) dF_dX_local (i, 1) -= dF_dX_local (i, j);
+		}
+
+		for (int j = 1; j <= 4; j++)
+		{
+			dF_dX_local (1, j) = MATRIX_3X3<T>();
+
+			for (int i = 2; i <= 4; i++) dF_dX_local (1, j) -= dF_dX_local (i, j);
+		}
+
+		extended_tetrahedrons.Get (t, vertex (1), vertex (2), vertex (3), vertex (4));
+
+		for (int v = 1; v <= 4; v++) if (vertex (v) >= node_range.x && vertex (v) <= node_range.y) node_stiffness (vertex (v)) += dF_dX_local (v, v).Symmetric_Part();
+
+		extended_tetrahedron_extended_edges.Get (t, edge (1), edge (2), edge (3), edge (4), edge (5), edge (6));
+
+		for (int e = 1; e <= 6; e++) if (edge (e))
+			{
+				int i, j;
+				extended_edges.Get (edge (e), i, j);
+				int m, n;
+
+				for (m = 1; m <= 4; m++) if (i == vertex (m)) break;
+
+				for (n = 1; n <= 4; n++) if (j == vertex (n)) break;
+
+				assert (m <= 4 && n <= 4 && m != n);
+				extended_edge_stiffness (edge (e)) += dF_dX_local (m, n);
+			}
+	}
+
+#else
+	UPDATE_POSITION_BASED_STATE_HELPER<T>& helper = * (UPDATE_POSITION_BASED_STATE_HELPER<T>*) helper_raw;
+	DIAGONALIZED_FINITE_VOLUME_3D<T>& diagonalized_finite_volume_3d = *helper.diagonalized_finite_volume_3d;
+	LIST_ARRAY<SYMMETRIC_MATRIX_3X3<T> >* node_stiffness = diagonalized_finite_volume_3d.node_stiffness;
+	LIST_ARRAY<MATRIX_3X3<T> >* edge_stiffness = diagonalized_finite_volume_3d.edge_stiffness;
+	VECTOR_2D<int>const& element_range = helper.element_range;
+	STRAIN_MEASURE_3D<T>const& strain_measure = diagonalized_finite_volume_3d.strain_measure;
+	DIAGONALIZED_CONSTITUTIVE_MODEL_3D<T>& constitutive_model = diagonalized_finite_volume_3d.constitutive_model;
+	LIST_ARRAY<T>const& Be_scales = diagonalized_finite_volume_3d.Be_scales;
+	LIST_ARRAY<MATRIX_3X3<T> >& U = diagonalized_finite_volume_3d.U;
+	LIST_ARRAY<MATRIX_3X3<T> >& De_inverse_hat = diagonalized_finite_volume_3d.De_inverse_hat;
+	LIST_ARRAY<DIAGONAL_MATRIX_3X3<T> >& Fe_hat = diagonalized_finite_volume_3d.Fe_hat;
+	LIST_ARRAY<DIAGONALIZED_ISOTROPIC_STRESS_DERIVATIVE_3D<T> >* dP_dFe = diagonalized_finite_volume_3d.dP_dFe;
+	LIST_ARRAY<MATRIX_3X3<T> >* V = diagonalized_finite_volume_3d.V;
+	MATRIX_3X3<T> V_local;
+	THREAD_ARRAY_LOCK<int>& node_locks = *helper.node_locks;
+	THREAD_ARRAY_LOCK<int>& edge_locks = *helper.edge_locks;
+
+	for (int t = element_range.x; t <= element_range.y; t++)
+	{
+		strain_measure.F (t).Fast_Singular_Value_Decomposition (U (t), Fe_hat (t), V_local);
+
+		if (dP_dFe) constitutive_model.Isotropic_Stress_Derivative (Fe_hat (t), (*dP_dFe) (t), t);
+
+		if (dP_dFe && constitutive_model.anisotropic) constitutive_model.Update_State_Dependent_Auxiliary_Variables (Fe_hat (t), V_local, t);
+
+		De_inverse_hat (t) = strain_measure.Dm_inverse (t) * V_local;
+
+		if (V) (*V) (t) = V_local;
+
+		if (node_stiffness && edge_stiffness)
+		{
+			ARRAYS_2D<MATRIX_3X3<T> > dfdx (1, 4, 1, 4);
+
+			for (int k = 1; k <= 3; k++) for (int l = 1; l <= 3; l++)
+				{
+					MATRIX_3X3<T> dDs, dG;
+					dDs (k, l) = (T) 1;
+
+					if (constitutive_model.anisotropic) dG = U (t) * constitutive_model.dP_From_dF (U (t).Transposed() * dDs * De_inverse_hat (t), Fe_hat (t), (*V) (t), (*dP_dFe) (t), Be_scales (t), t).Multiply_With_Transpose (De_inverse_hat (t));
+					else dG = U (t) * constitutive_model.dP_From_dF (U (t).Transposed() * dDs * De_inverse_hat (t), (*dP_dFe) (t), Be_scales (t), t).Multiply_With_Transpose (De_inverse_hat (t));
+
+					for (int i = 1; i <= 3; i++) for (int j = 1; j <= 3; j++) dfdx (l + 1, j + 1) (k, i) = dG (i, j);
+				}
+
+			for (int i = 2; i <= 4; i++) for (int j = 2; j <= 4; j++) dfdx (i, 1) -= dfdx (i, j);
+
+			for (int j = 1; j <= 4; j++) for (int i = 2; i <= 4; i++) dfdx (1, j) -= dfdx (i, j);
+
+			ARRAY<int> vertex (4);
+			strain_measure.tetrahedron_mesh.tetrahedrons.Get (t, vertex (1), vertex (2), vertex (3), vertex (4));
+
+			for (int v = 1; v <= 4; v++)
+			{
+				node_locks.Lock (vertex (v));
+				(*node_stiffness) (vertex (v)) += dfdx (v, v).Symmetric_Part();
+				node_locks.Unlock (vertex (v));
+			}
+
+			ARRAY<int> edge (6);
+			strain_measure.tetrahedron_mesh.tetrahedron_edges->Get (t, edge (1), edge (2), edge (3), edge (4), edge (5), edge (6));
+
+			for (int e = 1; e <= 6; e++)
+			{
+				int i, j;
+				strain_measure.tetrahedron_mesh.segment_mesh->segments.Get (edge (e), i, j);
+				int m, n;
+
+				for (m = 1; m <= 4; m++) if (i == vertex (m)) break;
+
+				for (n = 1; n <= 4; n++) if (j == vertex (n)) break;
+
+				assert (m <= 4 && n <= 4 && m != n);
+				edge_locks.Lock (edge (e));
+				(*edge_stiffness) (edge (e)) += dfdx (m, n);
+				edge_locks.Unlock (edge (e));
+			}
+		}
+	}
+
+#endif
+	cilk_void_return;
+}
+#else
 template<class T> void DIAGONALIZED_FINITE_VOLUME_3D<T>::
 Update_Position_Based_State_Helper (long thread_id, void* helper_raw)
 {
@@ -430,9 +610,13 @@ Update_Position_Based_State_Helper (long thread_id, void* helper_raw)
 
 #endif
 }
+#endif
 template<class T> void DIAGONALIZED_FINITE_VOLUME_3D<T>::
 Update_Position_Based_State_Parallel()
 {
+#ifdef ENABLE_TASK
+	cilk_begin;
+#endif
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
 	THREAD_POOL& pool = *THREAD_POOL::Singleton();
 #endif
@@ -498,6 +682,9 @@ Update_Position_Based_State_Parallel()
 #endif
 #ifndef USE_REDUCTION_ROUTINES
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
+#ifdef ENABLE_TASK
+	mk_task_group;
+#endif
 	ARRAY<UPDATE_POSITION_BASED_STATE_HELPER<T> > helpers (pool.number_of_threads);
 #else
 	ARRAY<UPDATE_POSITION_BASED_STATE_HELPER<T> > helpers (1);
@@ -511,14 +698,22 @@ Update_Position_Based_State_Parallel()
 		helpers (i).external_edge_range = (*threading_auxiliary_structures->external_edge_ranges) (i);
 		helpers (i).extended_tetrahedron_range = (*threading_auxiliary_structures->extended_tetrahedron_ranges) (i);
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
+#ifdef ENABLE_TASK
+		create_task1(helpers,spawn Update_Position_Based_State_Helper(&helpers(i)));
+#else
 		pool.Add_Task (Update_Position_Based_State_Helper, (void*) &helpers (i));
+#endif
 #else
 		Update_Position_Based_State_Helper (i, (void*) &helpers (i));
 #endif
 	}
 
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
+#ifdef ENABLE_TASK
+	wait_tasks;
+#else
 	pool.Wait_For_Completion();
+#endif
 #endif
 #else
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
@@ -534,14 +729,22 @@ Update_Position_Based_State_Parallel()
 		helpers (i).node_locks = &node_locks;
 		helpers (i).edge_locks = &edge_locks;
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
+#ifdef ENABLE_TASK
+		create_task1(helpers,spawn Update_Position_Based_State_Helper(&helpers(i)));
+#else
 		pool.Add_Task (Update_Position_Based_State_Helper, (void*) &helpers (i));
+#endif
 #else
 		Update_Position_Based_State_Helper (i, (void*) &helpers (i));
 #endif
 	}
 
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
+#ifdef ENABLE_TASK
+	wait_tasks
+#else
 	pool.Wait_For_Completion();
+#endif
 #endif
 #endif
 	LOG::Stop_Time();
@@ -554,6 +757,9 @@ Update_Position_Based_State_Parallel()
 	FILE_UTILITIES::Write_To_File<T> (STRING_UTILITIES::string_sprintf ("node_stiffness_%d.dat", 1), *node_stiffness);
 	FILE_UTILITIES::Write_To_File<T> (STRING_UTILITIES::string_sprintf ("extended_edge_stiffness_%d.dat", 1), *threading_auxiliary_structures->extended_edge_stiffness);
 #endif
+#endif
+#ifdef ENABLE_TASK
+	cilk_void_return;
 #endif
 }
 template<class T> void DIAGONALIZED_FINITE_VOLUME_3D<T>::
@@ -681,6 +887,138 @@ Add_Velocity_Independent_Forces (ARRAY<VECTOR_3D<T> >& F) const
 
 #endif
 }
+
+#ifdef ENABLE_TASK
+template<class T> void DIAGONALIZED_FINITE_VOLUME_3D<T>::
+Add_Velocity_Independent_Forces_Helper (void* helper_raw)
+{
+	cilk_begin;
+#ifndef USE_REDUCTION_ROUTINES
+	ADD_VELOCITY_INDEPENDENT_FORCES_HELPER<T>& helper = * (ADD_VELOCITY_INDEPENDENT_FORCES_HELPER<T>*) helper_raw;
+	DIAGONALIZED_FINITE_VOLUME_3D<T>const& diagonalized_finite_volume_3d = *helper.diagonalized_finite_volume_3d;
+	DIAGONALIZED_FINITE_VOLUME_3D_THREADING_AUXILIARY_STRUCTURES<T>const& threading_auxiliary_structures = *helper.diagonalized_finite_volume_3d->threading_auxiliary_structures;
+	LIST_ARRAYS<int>const& extended_tetrahedrons = *threading_auxiliary_structures.extended_tetrahedrons;
+	VECTOR_2D<int>const& node_range = helper.node_range;
+	VECTOR_2D<int>const& extended_tetrahedron_range = helper.extended_tetrahedron_range;
+	DIAGONALIZED_CONSTITUTIVE_MODEL_3D<T>const& constitutive_model = diagonalized_finite_volume_3d.constitutive_model;
+	LIST_ARRAY<T>const& Be_scales = diagonalized_finite_volume_3d.Be_scales;
+	LIST_ARRAY<int>const& extended_tetrahedron_parents = *threading_auxiliary_structures.extended_tetrahedron_parents;
+	LIST_ARRAY<MATRIX_3X3<T> >const& extended_U = *threading_auxiliary_structures.extended_U;
+	LIST_ARRAY<MATRIX_3X3<T> >const& extended_De_inverse_hat = *threading_auxiliary_structures.extended_De_inverse_hat;
+	LIST_ARRAY<DIAGONAL_MATRIX_3X3<T> >const& extended_Fe_hat = *threading_auxiliary_structures.extended_Fe_hat;
+	LIST_ARRAY<MATRIX_3X3<T> >const& extended_V = *threading_auxiliary_structures.extended_V;
+	ARRAY<VECTOR_3D<T> >& F = *helper.F;
+
+	if (constitutive_model.anisotropic)
+	{
+		for (int t = extended_tetrahedron_range.x; t <= extended_tetrahedron_range.y; t++)
+		{
+			int t_parent = extended_tetrahedron_parents (t);
+			MATRIX_3X3<T> forces = extended_U (t) * constitutive_model.P_From_Strain (extended_Fe_hat (t), extended_V (t), Be_scales (t_parent), t_parent).Multiply_With_Transpose (extended_De_inverse_hat (t));
+			int node1;
+			int node2;
+			int node3;
+			int node4;
+			extended_tetrahedrons.Get (t, node1, node2, node3, node4);
+
+			if (node1 >= node_range.x && node1 <= node_range.y) F (node1) -= VECTOR_3D<T> (forces.x[0] + forces.x[3] + forces.x[6], forces.x[1] + forces.x[4] + forces.x[7], forces.x[2] + forces.x[5] + forces.x[8]);
+
+			if (node2 >= node_range.x && node2 <= node_range.y) F (node2) += VECTOR_3D<T> (forces.x[0], forces.x[1], forces.x[2]);
+
+			if (node3 >= node_range.x && node3 <= node_range.y) F (node3) += VECTOR_3D<T> (forces.x[3], forces.x[4], forces.x[5]);
+
+			if (node4 >= node_range.x && node4 <= node_range.y) F (node4) += VECTOR_3D<T> (forces.x[6], forces.x[7], forces.x[8]);
+		}
+	}
+	else
+	{
+		for (int t = extended_tetrahedron_range.x; t <= extended_tetrahedron_range.y; t++)
+		{
+			int t_parent = extended_tetrahedron_parents (t);
+			MATRIX_3X3<T> forces = extended_U (t) * constitutive_model.P_From_Strain (extended_Fe_hat (t), Be_scales (t_parent)).Multiply_With_Transpose (extended_De_inverse_hat (t));
+			int node1;
+			int node2;
+			int node3;
+			int node4;
+			extended_tetrahedrons.Get (t, node1, node2, node3, node4);
+
+			if (node1 >= node_range.x && node1 <= node_range.y) F (node1) -= VECTOR_3D<T> (forces.x[0] + forces.x[3] + forces.x[6], forces.x[1] + forces.x[4] + forces.x[7], forces.x[2] + forces.x[5] + forces.x[8]);
+
+			if (node2 >= node_range.x && node2 <= node_range.y) F (node2) += VECTOR_3D<T> (forces.x[0], forces.x[1], forces.x[2]);
+
+			if (node3 >= node_range.x && node3 <= node_range.y) F (node3) += VECTOR_3D<T> (forces.x[3], forces.x[4], forces.x[5]);
+
+			if (node4 >= node_range.x && node4 <= node_range.y) F (node4) += VECTOR_3D<T> (forces.x[6], forces.x[7], forces.x[8]);
+		}
+	}
+
+#else
+	ADD_VELOCITY_INDEPENDENT_FORCES_HELPER<T>& helper = * (ADD_VELOCITY_INDEPENDENT_FORCES_HELPER<T>*) helper_raw;
+	DIAGONALIZED_FINITE_VOLUME_3D<T>const& diagonalized_finite_volume_3d = *helper.diagonalized_finite_volume_3d;
+	VECTOR_2D<int>const& element_range = helper.element_range;
+	ARRAY<VECTOR_3D<T> >& F = *helper.F;
+	STRAIN_MEASURE_3D<T>const& strain_measure = diagonalized_finite_volume_3d.strain_measure;
+	DIAGONALIZED_CONSTITUTIVE_MODEL_3D<T>& constitutive_model = diagonalized_finite_volume_3d.constitutive_model;
+	LIST_ARRAY<T>const& Be_scales = diagonalized_finite_volume_3d.Be_scales;
+	LIST_ARRAY<MATRIX_3X3<T> >const& U = diagonalized_finite_volume_3d.U;
+	LIST_ARRAY<MATRIX_3X3<T> >const& De_inverse_hat = diagonalized_finite_volume_3d.De_inverse_hat;
+	LIST_ARRAY<DIAGONAL_MATRIX_3X3<T> >const& Fe_hat = diagonalized_finite_volume_3d.Fe_hat;
+	LIST_ARRAY<MATRIX_3X3<T> >const* V = diagonalized_finite_volume_3d.V;
+	THREAD_ARRAY_LOCK<int>& node_locks = *helper.node_locks;
+
+	if (constitutive_model.anisotropic)
+	{
+		for (int t = element_range.x; t <= element_range.y; t++)
+		{
+			MATRIX_3X3<T> forces = U (t) * constitutive_model.P_From_Strain (Fe_hat (t), (*V) (t), Be_scales (t), t).Multiply_With_Transpose (De_inverse_hat (t));
+			int node1;
+			int node2;
+			int node3;
+			int node4;
+			strain_measure.tetrahedron_mesh.tetrahedrons.Get (t, node1, node2, node3, node4);
+			node_locks.Lock (node1);
+			F (node1) -= VECTOR_3D<T> (forces.x[0] + forces.x[3] + forces.x[6], forces.x[1] + forces.x[4] + forces.x[7], forces.x[2] + forces.x[5] + forces.x[8]);
+			node_locks.Unlock (node1);
+			node_locks.Lock (node2);
+			F (node2) += VECTOR_3D<T> (forces.x[0], forces.x[1], forces.x[2]);
+			node_locks.Unlock (node2);
+			node_locks.Lock (node3);
+			F (node3) += VECTOR_3D<T> (forces.x[3], forces.x[4], forces.x[5]);
+			node_locks.Unlock (node3);
+			node_locks.Lock (node4);
+			F (node4) += VECTOR_3D<T> (forces.x[6], forces.x[7], forces.x[8]);
+			node_locks.Unlock (node4);
+		}
+	}
+	else
+	{
+		for (int t = element_range.x; t <= element_range.y; t++)
+		{
+			MATRIX_3X3<T> forces = U (t) * constitutive_model.P_From_Strain (Fe_hat (t), Be_scales (t)).Multiply_With_Transpose (De_inverse_hat (t));
+			int node1;
+			int node2;
+			int node3;
+			int node4;
+			strain_measure.tetrahedron_mesh.tetrahedrons.Get (t, node1, node2, node3, node4);
+			node_locks.Lock (node1);
+			F (node1) -= VECTOR_3D<T> (forces.x[0] + forces.x[3] + forces.x[6], forces.x[1] + forces.x[4] + forces.x[7], forces.x[2] + forces.x[5] + forces.x[8]);
+			node_locks.Unlock (node1);
+			node_locks.Lock (node2);
+			F (node2) += VECTOR_3D<T> (forces.x[0], forces.x[1], forces.x[2]);
+			node_locks.Unlock (node2);
+			node_locks.Lock (node3);
+			F (node3) += VECTOR_3D<T> (forces.x[3], forces.x[4], forces.x[5]);
+			node_locks.Unlock (node3);
+			node_locks.Lock (node4);
+			F (node4) += VECTOR_3D<T> (forces.x[6], forces.x[7], forces.x[8]);
+			node_locks.Unlock (node4);
+		}
+	}
+
+#endif
+	cilk_void_return;
+}
+#else
 template<class T> void DIAGONALIZED_FINITE_VOLUME_3D<T>::
 Add_Velocity_Independent_Forces_Helper (long thread_id, void* helper_raw)
 {
@@ -808,10 +1146,19 @@ Add_Velocity_Independent_Forces_Helper (long thread_id, void* helper_raw)
 
 #endif
 }
+#endif
+
 template<class T> void DIAGONALIZED_FINITE_VOLUME_3D<T>::
 Add_Velocity_Independent_Forces_Parallel (ARRAY<VECTOR_3D<T> >& F) const
 {
+#ifdef ENABLE_TASK
+	cilk_begin;
+#endif
+
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
+#ifdef ENABLE_TASK
+	mk_task_group;
+#endif
 	THREAD_POOL& pool = *THREAD_POOL::Singleton();
 #endif
 
@@ -843,14 +1190,22 @@ Add_Velocity_Independent_Forces_Parallel (ARRAY<VECTOR_3D<T> >& F) const
 		helpers (i).extended_tetrahedron_range = (*threading_auxiliary_structures->extended_tetrahedron_ranges) (i);
 		helpers (i).F = &F;
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
+#ifdef ENABLE_TASK
+		create_task1(helpers,spawn Add_Velocity_Independent_Forces_Helper(&helpers(i)));
+#else
 		pool.Add_Task (Add_Velocity_Independent_Forces_Helper, (void*) &helpers (i));
+#endif
 #else
 		Add_Velocity_Independent_Forces_Helper (i, (void*) &helpers (i));
 #endif
 	}
 
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
+#ifdef ENABLE_TASK
+	wait_tasks;
+#else
 	pool.Wait_For_Completion();
+#endif
 #endif
 #else
 
@@ -861,17 +1216,28 @@ Add_Velocity_Independent_Forces_Parallel (ARRAY<VECTOR_3D<T> >& F) const
 		helpers (i).node_locks = &node_locks;
 		helpers (i).F = &F;
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
+#ifdef ENABLE_TASK
+		create_task1(helpers,spawn Add_Velocity_Independent_Forces_Helper(&helpers(i)));
+#else
 		pool.Add_Task (Add_Velocity_Independent_Forces_Helper, (void*) &helpers (i));
+#endif
 #else
 		Add_Velocity_Independent_Forces_Helper (i, (void*) &helpers (i));
 #endif
 	}
 
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
+#ifdef ENABLE_TASK
+	wait_tasks;
+#else
 	pool.Wait_For_Completion();
 #endif
 #endif
+#endif
 	LOG::Stop_Time();
+#ifdef ENABLE_TASK
+	cilk_void_return;
+#endif
 }
 template<class T> void DIAGONALIZED_FINITE_VOLUME_3D<T>::
 Add_Velocity_Independent_Forces_Serial (ARRAY<VECTOR_3D<T> >& F) const
@@ -953,6 +1319,77 @@ Add_Force_Differential (const ARRAY<VECTOR_3D<T> >& dX, ARRAY<VECTOR_3D<T> >& dF
 
 #endif
 }
+#ifdef ENABLE_TASK
+template<class T> void DIAGONALIZED_FINITE_VOLUME_3D<T>::
+Add_Force_Differential_Helper (void* helper_raw)
+{
+	cilk_begin;
+#ifndef USE_REDUCTION_ROUTINES
+	ADD_FORCE_DIFFERENTIAL_HELPER<T>& helper = * (ADD_FORCE_DIFFERENTIAL_HELPER<T>*) helper_raw;
+	DIAGONALIZED_FINITE_VOLUME_3D<T>const& diagonalized_finite_volume_3d = *helper.diagonalized_finite_volume_3d;
+	DIAGONALIZED_FINITE_VOLUME_3D_THREADING_AUXILIARY_STRUCTURES<T>const& threading_auxiliary_structures = *helper.diagonalized_finite_volume_3d->threading_auxiliary_structures;
+	LIST_ARRAYS<int>const& extended_edges = *threading_auxiliary_structures.extended_edges;
+	LIST_ARRAY<SYMMETRIC_MATRIX_3X3<T> >const& node_stiffness = *diagonalized_finite_volume_3d.node_stiffness;
+	LIST_ARRAY<MATRIX_3X3<T> >const& extended_edge_stiffness = *threading_auxiliary_structures.extended_edge_stiffness;
+	VECTOR_2D<int>const& node_range = helper.node_range;
+	VECTOR_2D<int>const& internal_edge_range = helper.internal_edge_range;
+	VECTOR_2D<int>const& external_edge_range = helper.external_edge_range;
+	ARRAY<VECTOR_3D<T> >const& dX = *helper.dX;
+	ARRAY<VECTOR_3D<T> >& dF = *helper.dF;
+
+	for (int v = node_range.x; v <= node_range.y; v++) dF (v) += node_stiffness (v) * dX (v);
+
+	for (int e = internal_edge_range.x; e <= internal_edge_range.y; e++)
+	{
+		int m, n;
+		extended_edges.Get (e, m, n);
+		dF (m) += extended_edge_stiffness (e) * dX (n);
+		dF (n) += extended_edge_stiffness (e).Transpose_Times (dX (m));
+	}
+
+	for (int e = external_edge_range.x; e <= external_edge_range.y; e++)
+	{
+		int m, n;
+		extended_edges.Get (e, m, n);
+		dF (m) += extended_edge_stiffness (e) * dX (n);
+	}
+
+#else
+	ADD_FORCE_DIFFERENTIAL_HELPER<T>& helper = * (ADD_FORCE_DIFFERENTIAL_HELPER<T>*) helper_raw;
+	DIAGONALIZED_FINITE_VOLUME_3D<T>const& diagonalized_finite_volume_3d = *helper.diagonalized_finite_volume_3d;
+	VECTOR_2D<int>const& node_range = helper.node_range;
+	VECTOR_2D<int>const& edge_range = helper.edge_range;
+	ARRAY<VECTOR_3D<T> >const& dX = *helper.dX;
+	ARRAY<VECTOR_3D<T> >& dF = *helper.dF;
+	STRAIN_MEASURE_3D<T>const& strain_measure = diagonalized_finite_volume_3d.strain_measure;
+	LIST_ARRAY<SYMMETRIC_MATRIX_3X3<T> >const& node_stiffness = *diagonalized_finite_volume_3d.node_stiffness;;
+	LIST_ARRAY<MATRIX_3X3<T> >const& edge_stiffness = *diagonalized_finite_volume_3d.edge_stiffness;
+	THREAD_ARRAY_LOCK<int>& node_locks = *helper.node_locks;
+
+	for (int i = node_range.x; i <= node_range.y; i++)
+	{
+		node_locks.Lock (i);
+		dF (i) += node_stiffness (i) * dX (i);
+		node_locks.Unlock (i);
+	}
+
+	for (int e = edge_range.x; e <= edge_range.y; e++)
+	{
+		int m;
+		int n;
+		strain_measure.tetrahedron_mesh.segment_mesh->segments.Get (e, m, n);
+		node_locks.Lock (m);
+		dF (m) += edge_stiffness (e) * dX (n);
+		node_locks.Unlock (m);
+		node_locks.Lock (n);
+		dF (n) += edge_stiffness (e).Transpose_Times (dX (m));
+		node_locks.Unlock (n);
+	}
+
+#endif
+	cilk_void_return;
+}
+#else
 template<class T> void DIAGONALIZED_FINITE_VOLUME_3D<T>::
 Add_Force_Differential_Helper (long thread_id, void* helper_raw)
 {
@@ -1020,10 +1457,17 @@ Add_Force_Differential_Helper (long thread_id, void* helper_raw)
 
 #endif
 }
+#endif
 template<class T> void DIAGONALIZED_FINITE_VOLUME_3D<T>::
 Add_Force_Differential_Parallel (const ARRAY<VECTOR_3D<T> >& dX, ARRAY<VECTOR_3D<T> >& dF) const
 {
+#ifdef ENABLE_TASK
+	cilk_begin;
+#endif
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
+#ifdef ENABLE_TASK
+	mk_task_group;
+#endif
 	THREAD_POOL& pool = *THREAD_POOL::Singleton();
 #endif
 
@@ -1068,16 +1512,27 @@ Add_Force_Differential_Parallel (const ARRAY<VECTOR_3D<T> >& dX, ARRAY<VECTOR_3D
 		helpers (i).dX = &dX;
 		helpers (i).dF = &dF;
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
+#ifdef ENABLE_TASK
+		create_task1(helpers,spawn Add_Force_Differential_Helper(&helpers(i)));
+#else
 		pool.Add_Task (Add_Force_Differential_Helper, (void*) &helpers (i));
+#endif
 #else
 		Add_Force_Differential_Helper (i, (void*) &helpers (i));
 #endif
 	}
 
 #ifndef NEW_SERIAL_IMPLEMENTATIOM
+#ifdef ENABLE_TASK
+	wait_tasks;
+#else
 	pool.Wait_For_Completion();
 #endif
+#endif
 	LOG::Stop_Time();
+#ifdef ENABLE_TASK
+	cilk_void_return;
+#endif
 }
 template<class T> void DIAGONALIZED_FINITE_VOLUME_3D<T>::
 Add_Force_Differential (const ARRAY<VECTOR_3D<T> >& dX_full, ARRAY<VECTOR_3D<T> >& dF_full, const int partition_id) const

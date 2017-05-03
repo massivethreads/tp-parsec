@@ -2,6 +2,6 @@
 
 # gcc.bldconf - configuration file for PARSEC
 
-# Default parallelization is pthreads
-source ${PARSECDIR}/pkgs/apps/facesim/parsec/gcc-pthreads.bldconf
+build_env="PHYSBAM=${PARSECDIR}/pkgs/apps/facesim/obj/${PARSECPLAT} CXXFLAGS=\"${CXXFLAGS} -fexceptions\""
+
 
