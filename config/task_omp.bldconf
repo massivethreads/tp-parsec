@@ -12,7 +12,6 @@ if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" =
   cflags="${cflags} -DTO_OMP -fopenmp"
   CFLAGS="${CFLAGS} ${cflags}"
   CXXFLAGS="${CXXFLAGS} ${cflags}"
-  LDFLAGS="${LDFLAGS} -openmp"
   LIBS="${LIBS}"
   if [ "${platform}" == "g" ]; then
     LIBS="${LIBS} -lgomp"
