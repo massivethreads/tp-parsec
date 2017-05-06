@@ -13,6 +13,10 @@ ifdef version
     DEF := $(DEF) -DENABLE_THREADS -DTBB_VERSION
     LIBS := $(LIBS) -ltbb
   endif
+  ifeq "$(version)" "task" 
+    DEF := $(DEF) -DENABLE_THREADS -DENABLE_TASK
+    #CXXFLAGS := $(CXXFLAGS) -std=c++11 -x c++
+  endif
 endif
 
 OBJS= CumNormalInv.o MaxFunction.o RanUnif.o nr_routines.o icdf.o \

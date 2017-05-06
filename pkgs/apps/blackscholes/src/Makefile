@@ -5,6 +5,7 @@ TARGET  = blackscholes
 M4_BASE = .
 MACROS  = c.m4.pthreads
 
+#source=simd
 ifdef source
 	ifeq "$(source)" "simd" 
 		SRC = blackscholes.simd.c
@@ -28,7 +29,6 @@ ifdef version
     MT        = -DENABLE_TBB
   endif
   ifeq "$(version)" "task"
-    SRC       = blackscholes.c
     MT        = -std=c++11 -x c++
   endif
 else

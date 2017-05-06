@@ -127,7 +127,7 @@ int HJM_SimPath_Forward_Blocking(FTYPE **ppdHJMPath,	//Matrix that stores genera
 	// =====================================================
 	// shocks to hit various factors for forward curve at t
 
-#ifdef TBB_VERSION
+#ifdef TBB_VERSIONXXX // this parallelization actually slows down tbb version (Huynh 2017/02/27)
 	ParallelB B(pdZ, randZ, BLOCKSIZE, iN);
 	for(l=0;l<=iFactors-1;++l){
 	  B.set_l(l);

@@ -41,7 +41,7 @@ using namespace tbb;
 #ifdef ENABLE_TASK
 
 #if !defined(PFOR_TO_ALLATONCE) && !defined(PFOR_TO_BISECTION) && !defined(PFOR_TO_ORIGINAL)
-  #define PFOR_TO_ORIGINAL 1
+  #define PFOR_TO_BISECTION 1
 #endif
 #define PFOR2_EXPERIMENTAL
 #include <tp_parsec.h>
@@ -236,6 +236,7 @@ struct mainWork {
     int begin = range.begin();
     int end = range.end();
 
+#pragma ivdep          
     for (int i=begin; i!=end; i++) {
       /* Calling main function to calculate option value based on 
        * Black & Scholes's equation.
@@ -280,13 +281,21 @@ int bs_thread(void *tid_ptr) {
 #else //ENABLE_TBB
 #ifdef ENABLE_TASK
 
+#if 0
+/* ivdep inside a lambda closure seems not to be effective,
+   icc failed to auto-vectorize with reasons of anti-dependences
+   & flow dependences between iterations which should have been
+   ignored by the indication of ivdep.
+*/
 void bs_thread(void *tid_ptr) {
     int tid = *(int *)tid_ptr;
     int start = 0;
     int end = numOptions;
-    const int GRAIN_SIZE = 40;
+    const int GRAIN_SIZE = 1024;
     for(int j=0; j<NUM_RUNS; j++) {
         pfor(start, end, 1, GRAIN_SIZE, [](int first, int last) {
+            cilk_begin;
+#pragma ivdep
             for (int i = first; i < last;i++) {
                 fptype price = BlkSchlsEqEuroNoDiv( sptprice[i], strike[i], rate[i],
                                                     volatility[i], otime[i], otype[i], 0);
@@ -300,7 +309,44 @@ void bs_thread(void *tid_ptr) {
                 }
 #endif
             }
+            cilk_void_return;
 	});
+    }
+}
+#endif
+
+/* by moving the lambda closure to a separate function, ivdep indication
+   now seems to be effective.
+   icc succeeded in auto-vectorization without concerns of anti-dependences
+   & flow dependences anymore.
+   Notice: gcc still failed to auto-vectorize even with these ivdep indications.
+*/
+void pfor_func(int first, int last) {
+  cilk_begin;
+#pragma ivdep
+  for (int i = first; i < last;i++) {
+    fptype price = BlkSchlsEqEuroNoDiv( sptprice[i], strike[i], rate[i],
+                                        volatility[i], otime[i], otype[i], 0);
+    prices[i] = price;
+#ifdef ERR_CHK
+    fptype priceDelta = data[i].DGrefval - price;
+    if( fabs(priceDelta) >= 1e-4 ) {
+      printf("Error on %d. Computed=%.5f, Ref=%.5f, Delta=%.5f\n",
+             i, price, data[i].DGrefval, priceDelta);
+      numError ++;
+    }
+#endif
+  }
+  cilk_void_return;
+}
+
+void bs_thread(void *tid_ptr) {
+    int tid = *(int *)tid_ptr;
+    int start = 0;
+    int end = numOptions;
+    const int GRAIN_SIZE = 1024;
+    for(int j=0; j<NUM_RUNS; j++) {
+        pfor(start, end, 1, GRAIN_SIZE, pfor_func);
     }
 }
 
@@ -341,8 +387,10 @@ int bs_thread(void *tid_ptr) {
     for (j=0; j<NUM_RUNS; j++) {
 #ifdef ENABLE_OPENMP
 #pragma omp parallel for private(i, price, priceDelta)
+#pragma ivdep          
         for (i=0; i<numOptions; i++) {
 #else  //ENABLE_OPENMP
+#pragma ivdep          
         for (i=start; i<end; i++) {
 #endif //ENABLE_OPENMP
             /* Calling main function to calculate option value based on 
@@ -523,9 +571,9 @@ int main (int argc, char **argv)
 #ifdef ENABLE_TASK
     //serial version
     int tid=0;
-    task_parallel_region(
-      bs_thread(&tid);
-    );
+    pragma_omp_parallel_single(nowait, {
+        bs_thread(&tid);
+      });
 #else
     //serial version
     int tid=0;

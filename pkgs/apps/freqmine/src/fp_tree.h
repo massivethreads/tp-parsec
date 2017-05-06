@@ -43,11 +43,9 @@ THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef ENABLE_TASK
 #if !defined(PFOR_TO_ALLATONCE) && !defined(PFOR_TO_BISECTION) && !defined(PFOR_TO_ORIGINAL)
-  #define PFOR_TO_ORIGINAL 1
+  #define PFOR_TO_BISECTION 1
 #endif
 #define GRAIN_SIZE 1
-//pfor2 is an experimental version, yet.
-#define PFOR2_EXPERIMENTAL
 #include <tp_parsec.h>
 #endif  // ENABLE_TASK
 

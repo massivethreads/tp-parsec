@@ -64,8 +64,8 @@ static unsigned long long roi_clock;   /* unit: clock cycle */
 
 #if DAG_RECORDER == 2
 //#include <dag_recorder.h>
-#include <tpswitch/tpswitch.h>
-//#include <tp_parsec.h>
+//#include <tpswitch/tpswitch.h>
+#include <tp_parsec.h>
 #endif
 
 /** Enable debugging code */

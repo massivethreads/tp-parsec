@@ -23,7 +23,9 @@
 
 #if USE_PFOR
   //use pfor
-  #define PFOR_TO_ORIGINAL 1
+#if !defined(PFOR_TO_ALLATONCE) && !defined(PFOR_TO_BISECTION) && !defined(PFOR_TO_ORIGINAL)
+  #define PFOR_TO_BISECTION 1
+#endif
   #define PFOR2_EXPERIMENTAL 1
   #include <tp_parsec.h>
   #define PFOR2_REDUCE_EXPERIMENTAL 1
@@ -189,6 +191,7 @@ public:
 
 void
 center_table_count(int pid, int stride, Points * points, double * work_mem) {
+  cilk_begin;
   long bsize = points->num / ((NUM_DIVISIONS));
   long k1 = bsize * pid;
   long k2 = k1 + bsize;
@@ -202,10 +205,12 @@ center_table_count(int pid, int stride, Points * points, double * work_mem) {
     }
   }
   work_mem[pid * stride] = count;
+  cilk_void_return;
 }
 
 void
 fix_center(int pid, int stride, Points * points, double * work_mem) {
+  cilk_begin;
   long bsize = points->num / ((NUM_DIVISIONS));
   long k1 = bsize * pid;
   long k2 = k1 + bsize;
@@ -217,10 +222,12 @@ fix_center(int pid, int stride, Points * points, double * work_mem) {
       center_table[i] += (int) work_mem[pid * stride];
     }
   }
+  cilk_void_return;
 }
 
 void
 lower_cost(int pid, int stride, Points * points, long x, double * work_mem, int K) {
+  cilk_begin;
   long bsize = points->num / ((NUM_DIVISIONS));
   long k1 = bsize * pid;
   long k2 = k1 + bsize;
@@ -262,10 +269,12 @@ lower_cost(int pid, int stride, Points * points, long x, double * work_mem, int 
   }
     
   *cost_of_opening_x = local_cost_of_opening_x;
+  cilk_void_return;
 }
 
 void
 center_close(int pid, int stride, Points * points, double * work_mem, int K, double z) {
+  cilk_begin;
   long bsize = points->num / ((NUM_DIVISIONS));
   long k1 = bsize * pid;
   long k2 = k1 + bsize;
@@ -298,10 +307,12 @@ center_close(int pid, int stride, Points * points, double * work_mem, int K, dou
     }
   }
   *number_of_centers_to_close = (double) local_number_of_centers_to_close;
+  cilk_void_return;
 }
 
 void
 save_money(int pid, int stride, Points * points, long x, double * work_mem) {
+  cilk_begin;
   long bsize = points->num / ((NUM_DIVISIONS));
   long k1 = bsize * pid;
   long k2 = k1 + bsize;
@@ -329,6 +340,7 @@ save_money(int pid, int stride, Points * points, long x, double * work_mem) {
   if (x >= k1 && x < k2) {
     is_center[x] = true;
   }
+  cilk_void_return;
 }
 
 /********************************************/
@@ -374,8 +386,9 @@ dist(Point p1, Point p2, int dim) {
 }
 
 /* run speedy on the points, return total cost of solution */
-float
+cilk float
 pspeedy(Points * points, float z, long * kcenter) {
+  cilk_begin;
   static double totalcost;
   static bool open = false;
   static double * costs; //cost for each thread.
@@ -438,7 +451,7 @@ pspeedy(Points * points, float z, long * kcenter) {
       totalcost += c.getTotalCost();
     #endif
   }
-  return totalcost;
+  cilk_return(totalcost);
 }
 
 
@@ -459,7 +472,7 @@ pspeedy(Points * points, float z, long * kcenter) {
    points */
 
 //double
-void
+cilk void
 pgain(long x, Points * points, double z, long int * numcenters, double * result) {
   task_begin;
   int i;
@@ -501,8 +514,7 @@ pgain(long x, Points * points, double z, long int * numcenters, double * result)
     mk_task_group;
     for (p = 0; p < (NUM_DIVISIONS) - 1; p++)
       create_task0(spawn center_table_count(p, stride, points, work_mem));
-    call_task(spawn center_table_count(p, stride, points, work_mem));
-    wait_tasks;
+    create_task_and_wait(mit_spawn center_table_count(p, stride, points, work_mem));
     
     int accum = 0;
     for (p = 0; p < (NUM_DIVISIONS); p++) {
@@ -517,8 +529,7 @@ pgain(long x, Points * points, double z, long int * numcenters, double * result)
     mk_task_group;
     for (p = 0; p < (NUM_DIVISIONS) - 1; p++)
       create_task0(spawn fix_center(p, stride, points, work_mem));
-    call_task(spawn fix_center(p, stride, points, work_mem));
-    wait_tasks;
+    create_task_and_wait(mit_spawn fix_center(p, stride, points, work_mem));
   }    
 
   /***************/
@@ -532,8 +543,7 @@ pgain(long x, Points * points, double z, long int * numcenters, double * result)
     mk_task_group;
     for (p = 0; p < (NUM_DIVISIONS) - 1; p++)
       create_task0(spawn lower_cost(p, stride, points, x, work_mem, K));
-    call_task(spawn lower_cost(p, stride, points, x, work_mem, K));
-    wait_tasks;
+    create_task_and_wait(mit_spawn lower_cost(p, stride, points, x, work_mem, K));
   }    
 
   /* LoopC */
@@ -541,8 +551,7 @@ pgain(long x, Points * points, double z, long int * numcenters, double * result)
     mk_task_group;
     for (p = 0; p < (NUM_DIVISIONS) - 1; p++)
       create_task0(spawn center_close(p, stride, points, work_mem, K, z));
-    call_task(spawn center_close(p, stride, points, work_mem, K, z));
-    wait_tasks;
+    create_task_and_wait(mit_spawn center_close(p, stride, points, work_mem, K, z));
   }    
 
 
@@ -564,8 +573,7 @@ pgain(long x, Points * points, double z, long int * numcenters, double * result)
     mk_task_group;
     for (p = 0; p < (NUM_DIVISIONS) - 1; p++)
       create_task0(spawn save_money(p, stride, points, x, work_mem));
-    call_task(spawn save_money(p, stride, points, x, work_mem));
-    wait_tasks;
+    create_task_and_wait(mit_spawn save_money(p, stride, points, x, work_mem));
 
     *numcenters = *numcenters + 1 - gl_number_of_centers_to_close;
     
@@ -590,8 +598,9 @@ pgain(long x, Points * points, double z, long int * numcenters, double * result)
 /* halt if there is < e improvement after iter calls to gain */
 /* feasible is an array of numfeasible points which may be centers */
 
-float
+cilk float
 pFL(Points * points, int * feasible, int numfeasible, double z, long * k, double cost, long iter, double e) {
+  cilk_begin;
   long i;
   long x;
   double change;
@@ -617,7 +626,7 @@ pFL(Points * points, int * feasible, int numfeasible, double z, long * k, double
       x = i % numfeasible;
       //fprintf(stderr,"Iteration %d z=%lf, change=%lf\n",i,z,change);
       //change += pgain(feasible[x], points, z, k);
-      pgain(feasible[x], points, z, k, changes + i);
+      call_task(mit_spawn pgain(feasible[x], points, z, k, changes + i));
       //create_task0(spawn pgain(feasible[x], points, z, k, changes + i));
       //fprintf(stderr,"*** change: %lf, z=%lf\n",change,z);
     }
@@ -632,7 +641,7 @@ pFL(Points * points, int * feasible, int numfeasible, double z, long * k, double
   free(changes);
 #endif  
 
-  return cost;
+  cilk_return(cost);
 }
 
 
@@ -710,7 +719,7 @@ selectfeasible_fast(Points * points, int ** feasible, int kmin) {
 }
 
 /* compute approximate kmedian on the points */
-float
+cilk float
 pkmedian(Points * points, long kmin, long kmax, long * kfinal, int pid, pthread_barrier_t * barrier) {
   task_begin;
   int i;
@@ -775,21 +784,17 @@ pkmedian(Points * points, long kmin, long kmax, long * kfinal, int pid, pthread_
     cost = 0;
     *kfinal = k;
 
-    task_return(cost);
+    return cost;
   }
 
-  mk_task_group;
-
   shuffle(points);
-  create_task1( cost, spawn [&](){ cost = pspeedy(points, z, &k); }() );
-  wait_tasks;
+  call_task(cost = mit_spawn pspeedy(points, z, &k));
 
   i=0;
 
   /* give speedy SP chances to get at least kmin/2 facilities */
   while ((k < kmin) && (i < SP)) {
-	create_task1( cost, spawn [&](){ cost = pspeedy(points, z, &k); }() );
-    wait_tasks;
+    call_task(cost = mit_spawn pspeedy(points, z, &k));
     i++;
   }
 
@@ -802,8 +807,7 @@ pkmedian(Points * points, long kmin, long kmax, long * kfinal, int pid, pthread_
     }
     
     shuffle(points);
-    create_task1( cost, spawn [&](){ cost =  pspeedy(points, z, &k); }() );
-    wait_tasks;
+    call_task(cost = mit_spawn pspeedy(points, z, &k));
     i++;
   }
 
@@ -820,12 +824,9 @@ pkmedian(Points * points, long kmin, long kmax, long * kfinal, int pid, pthread_
 
 
   while (1) {
-    mk_task_group;
-    
     /* first get a rough estimate on the FL solution */
     lastcost = cost;
-    create_task1( cost, spawn [&](){ cost = pFL(points, feasible, numfeasible, z, &k, cost, (long) (ITER * kmax * log((double) kmax)), 0.1); }() );
-    wait_tasks;
+    call_task(cost = mit_spawn pFL(points, feasible, numfeasible, z, &k, cost, (long) (ITER * kmax * log((double) kmax)), 0.1));
 
     /* if number of centers seems good, try a more accurate FL */
     if (((k <= (1.1) * kmax) && (k >= (0.9) * kmin)) ||
@@ -833,8 +834,7 @@ pkmedian(Points * points, long kmin, long kmax, long * kfinal, int pid, pthread_
       
       /* may need to run a little longer here before halting without
          improvement */
-      create_task1( cost, spawn [&](){ cost = pFL(points, feasible, numfeasible, z, &k, cost, (long) (ITER * kmax * log((double) kmax)), 0.001); }() );
-      wait_tasks;
+      call_task(cost = mit_spawn pFL(points, feasible, numfeasible, z, &k, cost, (long) (ITER * kmax * log((double) kmax)), 0.001));
     }
 
     if (k > kmax) {
@@ -929,22 +929,25 @@ struct pkmedian_arg_t {
   pthread_barrier_t * barrier;
 };
 
-void *
+cilk void *
 localSearchSub(void * arg_) {
+  cilk_begin;
   pkmedian_arg_t * arg= (pkmedian_arg_t *) arg_;
-  pkmedian(arg->points, arg->kmin, arg->kmax, arg->kfinal, arg->pid, arg->barrier);
-  return NULL;
+  call_task(mit_spawn pkmedian(arg->points, arg->kmin, arg->kmax, arg->kfinal, arg->pid, arg->barrier));
+  cilk_return_t(void *, NULL);
 }
 
-void
+cilk void
 localSearch(Points * points, long kmin, long kmax, long * kfinal) {
+  cilk_begin;
   pkmedian_arg_t arg;
   arg.points = points;
   arg.kmin = kmin;
   arg.kmax = kmax;
   arg.pid = 0;
   arg.kfinal = kfinal;
-  localSearchSub(&arg);
+  call_task(mit_spawn localSearchSub(&arg));
+  cilk_void_return;
 }
 
 
@@ -1034,7 +1037,7 @@ void outcenterIDs( Points* centers, long* centerIDs, char* outfile ) {
   fclose(fp);
 }
 
-void
+cilk void
 streamCluster(PStream * stream, long kmin, long kmax, int dim, long chunksize, long centersize, char * outfile) {
   task_begin;
 #if USE_TBBMALLOC
@@ -1111,9 +1114,7 @@ streamCluster(PStream * stream, long kmin, long kmax, int dim, long chunksize, l
     //fprintf(stderr,"center_table = 0x%08x\n",(int)center_table);
     //fprintf(stderr,"is_center = 0x%08x\n",(int)is_center);
 
-    mk_task_group;
-    create_task2( points, kfinal, spawn localSearch( &points, kmin, kmax, &kfinal ) );
-    wait_tasks;
+    localSearch( &points, kmin, kmax, &kfinal );
 
     //fprintf(stderr,"finish local search\n");
     contcenters( &points ); /* sequential */
@@ -1152,9 +1153,7 @@ streamCluster(PStream * stream, long kmin, long kmax, int dim, long chunksize, l
   center_table = (int*)malloc(centers.num*sizeof(int));
 #endif
 
-  mk_task_group;
-  create_task2( centers, kfinal, spawn localSearch( &centers, kmin, kmax, &kfinal ) ); // parallel
-  wait_tasks;
+  localSearch( &centers, kmin, kmax, &kfinal );
   contcenters( &centers );
   outcenterIDs( &centers, centerIDs, outfile );
   task_void_return;
@@ -1166,7 +1165,7 @@ long parsec_usecs() {
    return t.tv_sec * 1000000 + t.tv_usec;
 }
 
-int
+cilk int
 main(int argc, char ** argv) {
   
   char * outfilename = new char[MAXNAMESIZE];
@@ -1174,6 +1173,8 @@ main(int argc, char ** argv) {
   long kmin, kmax, n, chunksize, clustersize;
   int dim;
 
+  tp_init();
+  
 #ifdef PARSEC_VERSION
 #define __PARSEC_STRING(x) #x
 #define __PARSEC_XSTRING(x) __PARSEC_STRING(x)
@@ -1235,12 +1236,12 @@ main(int argc, char ** argv) {
 #ifdef ENABLE_PARSEC_HOOKS
   __parsec_roi_begin();
 #endif
-  
+
   double time = (double) parsec_usecs();
   
-  task_parallel_region({
-    streamCluster(stream, kmin, kmax, dim, chunksize, clustersize, outfilename);
-  });
+  pragma_omp_parallel_single(nowait, {
+      call_task(mit_spawn streamCluster(stream, kmin, kmax, dim, chunksize, clustersize, outfilename));
+    });
   
   time = (((double) parsec_usecs()) - time) / 1000000.0;
   printf("kernel_execution_time = %lf seconds\n", time);

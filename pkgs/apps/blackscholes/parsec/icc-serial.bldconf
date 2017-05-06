@@ -2,3 +2,6 @@
 
 source ${PARSECDIR}/pkgs/apps/blackscholes/parsec/icc-pthreads.bldconf
 
+# Override build environment
+build_env="version=serial"
+

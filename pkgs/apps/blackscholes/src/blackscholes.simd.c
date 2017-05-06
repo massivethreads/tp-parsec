@@ -45,6 +45,13 @@ using namespace std;
 using namespace tbb;
 #endif //ENABLE_TBB
 
+#ifdef ENABLE_TASK
+#if !defined(PFOR_TO_ALLATONCE) && !defined(PFOR_TO_BISECTION) && !defined(PFOR_TO_ORIGINAL)
+  #define PFOR_TO_BISECTION 1
+#endif
+#include <tp_parsec.h>
+#endif
+
 // Multi-threaded header for Windows
 #ifdef WIN32
 #pragma warning(disable : 4305)
@@ -323,7 +330,7 @@ struct mainWork {
         priceDelta = data[i+k].DGrefval - price[k];
         if( fabs(priceDelta) >= 1e-5 ){
           fprintf(stderr,"Error on %d. Computed=%.5f, Ref=%.5f, Delta=%.5f\n",
-                 i+k, price, data[i+k].DGrefval, priceDelta);
+                 i+k, price[k], data[i+k].DGrefval, priceDelta);
           numError ++;
         }
 #endif
@@ -352,6 +359,36 @@ int bs_thread(void *tid_ptr) {
     return 0;
 }
 #else // !ENABLE_TBB
+
+#ifdef ENABLE_TASK
+void bs_thread() {
+    int start = 0;
+    int end = numOptions;
+    const int GRAIN_SIZE = 1024;
+    for(int j=0; j<NUM_RUNS; j++) {
+        pfor(start, end, 1, GRAIN_SIZE, [](int first, int last) {
+            cilk_begin;
+            fptype price[NCO];
+            for (int i = first; i < last;i+=NCO) {
+              BlkSchlsEqEuroNoDiv(price, NCO, &(sptprice[i]), &(strike[i]),
+                                  &(rate[i]), &(volatility[i]), &(otime[i]), &(otype[i]), 0);
+              for (int k=0; k<NCO; k++) {
+                prices[i+k] = price[k];
+#ifdef ERR_CHK
+                fptype priceDelta = data[i+k].DGrefval - price[k];
+                if( fabs(priceDelta) >= 1e-4 ) {
+	            printf("Error on %d. Computed=%.5f, Ref=%.5f, Delta=%.5f\n",
+                           i+k, price[k], data[i+k].DGrefval, priceDelta);
+                    numError ++;
+                }
+#endif
+              }
+            }
+            cilk_void_return;
+	});
+    }
+}
+#else //ENABLE_TASK
 
 #ifdef WIN32
 DWORD WINAPI bs_thread(LPVOID tid_ptr){
@@ -394,6 +431,8 @@ int bs_thread(void *tid_ptr) {
 
     return 0;
 }
+
+#endif //ENABLE_TASK
 #endif //ENABLE_TBB
 
 int main (int argc, char **argv)
@@ -416,6 +455,10 @@ int main (int argc, char **argv)
 #endif //PARSEC_VERSION
 #ifdef ENABLE_PARSEC_HOOKS
    __parsec_bench_begin(__parsec_blackscholes);
+#endif
+
+#if defined(ENABLE_TASK)
+   tp_init();
 #endif
 
    if (argc != 4)
@@ -449,7 +492,7 @@ int main (int argc, char **argv)
       nThreads = numOptions/NCO;
     }
 
-#if !defined(ENABLE_THREADS) && !defined(ENABLE_OPENMP) && !defined(ENABLE_TBB)
+#if !defined(ENABLE_THREADS) && !defined(ENABLE_OPENMP) && !defined(ENABLE_TBB) && !defined(ENABLE_TASK)
     if(nThreads != 1) {
         printf("Error: <nthreads> must be 1 (serial version)\n");
         exit(1);
@@ -482,15 +525,45 @@ int main (int argc, char **argv)
 #define PAD 256
 #define LINESIZE 64
 
+    /*
     buffer = (fptype *) malloc(5 * numOptions * sizeof(fptype) + PAD);
     sptprice = (fptype *) (((unsigned long long)buffer + PAD) & ~(LINESIZE - 1));
     strike = sptprice + numOptions;
     rate = strike + numOptions;
     volatility = rate + numOptions;
     otime = volatility + numOptions;
+    */
 
+    if (posix_memalign(&sptprice, 64, numOptions * sizeof(fptype)) != 0) {
+      perror("posix_memalign");
+      exit(1);
+    }
+    if (posix_memalign(&strike, 64, numOptions * sizeof(fptype)) != 0) {
+      perror("posix_memalign");
+      exit(1);
+    }
+    if (posix_memalign(&rate, 64, numOptions * sizeof(fptype)) != 0) {
+      perror("posix_memalign");
+      exit(1);
+    }
+    if (posix_memalign(&volatility, 64, numOptions * sizeof(fptype)) != 0) {
+      perror("posix_memalign");
+      exit(1);
+    }
+    if (posix_memalign(&otime, 64, numOptions * sizeof(fptype)) != 0) {
+      perror("posix_memalign");
+      exit(1);
+    }
+
+    /*
     buffer2 = (int *) malloc(numOptions * sizeof(fptype) + PAD);
     otype = (int *) (((unsigned long long)buffer2 + PAD) & ~(LINESIZE - 1));
+    */
+
+    if (posix_memalign(&otype, 64, numOptions * sizeof(fptype)) != 0) {
+      perror("posix_memalign");
+      exit(1);
+    }
 
     for (i=0; i<numOptions; i++) {
         otype[i]      = (data[i].OptionType == 'P') ? 1 : 0;
@@ -546,9 +619,15 @@ int main (int argc, char **argv)
     int tid=0;
     bs_thread(&tid);
 #else //ENABLE_TBB
+#ifdef ENABLE_TASK
+    pragma_omp_parallel_single(nowait, {
+        bs_thread();
+      });
+#else
     //serial version
     int tid=0;
     bs_thread(&tid);
+#endif //ENABLE_TASK
 #endif //ENABLE_TBB
 #endif //ENABLE_OPENMP
 #endif //ENABLE_THREADS
