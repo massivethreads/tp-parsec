@@ -210,6 +210,7 @@ int main(int argc, char **argv)
 	task_parallel_region(fptree->FP_growth_first(fout););
 #else
 	fptree->FP_growth_first(fout);
+#endif
 #ifdef ENABLE_TASK
           });
 #endif        
