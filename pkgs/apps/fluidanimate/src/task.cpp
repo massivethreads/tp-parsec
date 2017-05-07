@@ -1127,36 +1127,36 @@ void AdvanceFrameMT(int tasknum)
   //swap src and dest arrays with particles
   std::swap(cells, cells2);
   std::swap(cnumPars, cnumPars2);
-  pfor(int, 0, tasknum, 1, 1, {
-    ClearParticlesMT(FIRST_);
+  pfor(0, tasknum, 1, 1, [&](const int first, const int /*last*/){
+    ClearParticlesMT(first);
   });
-  pfor(int, 0, tasknum, 1, 1, {
-    RebuildGridMT(FIRST_);
+  pfor(0, tasknum, 1, 1, [&](const int first, const int /*last*/){
+    RebuildGridMT(first);
   });
-  pfor(int, 0, tasknum, 1, 1, {
-    InitDensitiesAndForcesMT(FIRST_);
+  pfor(0, tasknum, 1, 1, [&](const int first, const int /*last*/){
+    InitDensitiesAndForcesMT(first);
   });
-  pfor(int, 0, tasknum, 1, 1, {
-    ComputeDensitiesMT(FIRST_);
+  pfor(0, tasknum, 1, 1, [&](const int first, const int /*last*/){
+    ComputeDensitiesMT(first);
   });
-  pfor(int, 0, tasknum, 1, 1, {
-    ComputeDensities2MT(FIRST_);
+  pfor(0, tasknum, 1, 1, [&](const int first, const int /*last*/){
+    ComputeDensities2MT(first);
   });
-  pfor(int, 0, tasknum, 1, 1, {
-    ComputeForcesMT(FIRST_);
+  pfor(0, tasknum, 1, 1, [&](const int first, const int /*last*/){
+    ComputeForcesMT(first);
   });
-  pfor(int, 0, tasknum, 1, 1, {
-    ProcessCollisionsMT(FIRST_);
+  pfor(0, tasknum, 1, 1, [&](const int first, const int /*last*/){
+    ProcessCollisionsMT(first);
   });
-  pfor(int, 0, tasknum, 1, 1, {
-    AdvanceParticlesMT(FIRST_);
+  pfor(0, tasknum, 1, 1, [&](const int first, const int /*last*/){
+    AdvanceParticlesMT(first);
   });
 #if defined(USE_ImpeneratableWall)
   // N.B. The integration of the position can place the particle
   // outside the domain. We now make a pass on the perimiter cells
   // to account for particle migration beyond domain.
-  pfor(int, 0, tasknum, 1, 1, {
-    ProcessCollisions2MT(FIRST_);
+  pfor(0, tasknum, 1, 1, [&](const int first, const int /*last*/){
+    ProcessCollisions2MT(first);
   });
 #endif
 }
