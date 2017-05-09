@@ -1,0 +1,7 @@
+HJM_Securities.cpp contains the main function, and includes HJM.h, HJM_Securities.h, HJM_type.h, and nr_routines.h.
+
+HJM.h header file contains prototypes of functions declared in CumNormalInv.cpp, HJM_SimPath_Forward_Blocking.cpp, HJM_Swaption_Blocking.cpp, icdf.cpp, RanUnif.cpp, and HJM.cpp.
+
+HJM_Securities.h header file contains prototypes of functions declared in HJM.cpp, and MaxFunction.cpp.
+
+resource.h header file is something only for Microsoft Visual C++.

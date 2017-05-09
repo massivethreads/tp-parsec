@@ -1,4 +1,4 @@
 #!/bin/bash
 
-source ${PARSECDIR}/pkgs/kernels/dedup/parsec/gcc.bldconf
+source ${PARSECDIR}/pkgs/kernels/dedup/parsec/icc-pthreads.bldconf
 

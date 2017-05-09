@@ -59,15 +59,16 @@ using namespace tbb;
 
 /* because autoreconf has not been performed, USE_TP_PARSEC is not set */
 #if defined(ENABLE_TASK) && !defined(USE_TP_PARSEC)
-#define USE_TP_PARSEC 1
+#define USE_TP_PARSEC 2 /* 1, 2: version */
 #endif
 
 #if defined(USE_TP_PARSEC)
 
-#define PFOR2_EXPERIMENTAL 1
 #if !defined(PFOR_TO_ALLATONCE) && !defined(PFOR_TO_BISECTION) && !defined(PFOR_TO_ORIGINAL)
 #define PFOR_TO_BISECTION 1
+//#define PFOR_TO_ALLATONCE 1
 #endif
+
 #include <tp_parsec.h>
 
 #define GRAIN_SIZE 1<<4
@@ -191,6 +192,112 @@ bool ProcessCmdLine(int argc, char **argv, string &path, int &cameras, int &fram
 
 //Body tracking parallelized with task parallelism and tp_parsec
 #if defined(USE_TP_PARSEC)
+
+#if USE_TP_PARSEC == 2
+
+void process_frame(ParticleFilterTP2<TrackingModel> &pf, vector<float> &estimate, int i) {
+  cilk_begin;
+  cout << "Processing frame " << i << endl;
+  if(!pf.Update((float)i)) { //Run particle filter step
+    cout << "Error loading observation data" << endl;
+    exit(1);
+  }    
+  pf.Estimate(estimate); //get average pose of the particle distribution
+  cilk_void_return;
+}
+
+int mainTP_PARSEC(string path, int cameras, int frames, int particles, int layers, int threads, bool OutputBMP) {
+  cout << "Threading with tp_parsec" << endl;
+  if(threads < 1) {
+    cout << "Warning: Illegal or unspecified number of threads, using 1 thread" << endl;
+    threads = 1;
+  }
+  cout << "Number of Threads : " << threads << endl;
+  fprintf(stdout, "Grain size: %d\n", GRAIN_SIZE);
+
+  tp_init();
+
+  TrackingModelTP2 model;
+  if(!model.Initialize(path, cameras, layers)) { //Initialize model parameters
+    cout << endl << "Error loading initialization data." << endl;
+    return 0;
+  }
+
+#if defined(ENABLE_PARSEC_HOOKS)
+  __parsec_roi_begin();
+#endif
+
+  mImageBuffer.resize(0);
+  mFGBuffer.resize(0);
+
+  call_task(mit_spawn load_image(path, cameras, frames, 0));
+  model.SetNumThreads(particles);
+  model.GetObservation(0); //load data for first frame
+  ParticleFilterTP2<TrackingModel> pf; //particle filter (tp_parsec threaded) instantiated with body tracking model type
+  pf.SetModel(model); //set the particle filter model
+  pf.InitializeParticles(particles); //generate initial set of particles and evaluate the log-likelihoods
+
+  cout << "Using dataset : " << path << endl;
+  cout << particles << " particles with " << layers << " annealing layers" << endl << endl;
+  ofstream outputFileAvg((path + "poses.txt").c_str());
+
+  vector<float> estimate; //expected pose from particle distribution
+
+  for(int i = 0; i < frames; i++) { //process each set of frames
+    mk_task_group;
+    
+    /* compute */
+    create_task2(pf, estimate, spawn process_frame(pf, estimate, i));
+    
+    /* output */
+    WritePose(outputFileAvg, estimate);
+    if(OutputBMP && i > 0) {
+      create_task2(pf, estimate, spawn pf.Model().OutputBMP(estimate, i - 1));
+    }
+    
+    /* input */
+    if (i < frames - 1) {
+      create_task0(spawn load_image(path, cameras, frames, i + 1));
+    }
+    
+    wait_tasks;
+  }
+
+#if 0
+  pfor(0, frames, 1, 10, [=,&pf,&estimate,&outputFileAvg] (int from, int to) {
+      for (int i = from; i < to; i++) {
+        mk_task_group;
+        
+        /* input */
+        if (i < frames - 1 && i > 0) {
+          create_task0(spawn load_image(path, cameras, frames, i));
+        }
+        wait_tasks;
+    
+        /* compute */
+        create_task2(pf, estimate, spawn process_frame(pf, estimate, i));
+        wait_tasks;
+    
+        /* output */
+        WritePose(outputFileAvg, estimate);
+        if(OutputBMP && i >= 0) {
+          create_task2(pf, estimate, spawn pf.Model().OutputBMP(estimate, i));
+        }
+    
+        wait_tasks;
+      }
+    });
+#endif
+
+#if defined(ENABLE_PARSEC_HOOKS)
+  __parsec_roi_end();
+#endif
+
+  return 1;
+}
+
+#elif USE_TP_PARSEC == 1
+
 int mainTP_PARSEC(string path, int cameras, int frames, int particles, int layers, int threads, bool OutputBMP) {
 #ifdef COLLECT_LOOP_SIZES
   out_ls = fopen("distribution_of_loop_sizes.gpl", "w");
@@ -220,6 +327,11 @@ int mainTP_PARSEC(string path, int cameras, int frames, int particles, int layer
     cout << endl << "Error loading initialization data." << endl;
     return 0;
   }
+
+#if defined(ENABLE_PARSEC_HOOKS)
+  __parsec_roi_begin();
+#endif
+        
   //model.SetNumThreads(threads);
   model.SetNumThreads(particles);
   model.GetObservation(0); //load data for first frame
@@ -233,10 +345,6 @@ int mainTP_PARSEC(string path, int cameras, int frames, int particles, int layer
 
   vector<float> estimate; //expected pose from particle distribution
 
-#if defined(ENABLE_PARSEC_HOOKS)
-  __parsec_roi_begin();
-#endif
-        
   for(int i = 0; i < frames; i++) { //process each set of frames
     cout << "Processing frame " << i << endl;
     if(!pf.Update((float)i)) { //Run particle filter step
@@ -245,8 +353,10 @@ int mainTP_PARSEC(string path, int cameras, int frames, int particles, int layer
     }    
     pf.Estimate(estimate); //get average pose of the particle distribution
     WritePose(outputFileAvg, estimate);
+    //printf("before output: %llu\n", dr_rdtsc() - GS.start_clock);
     if(OutputBMP)
       pf.Model().OutputBMP(estimate, i); //save output bitmap file
+    //printf("after output: %llu\n", dr_rdtsc() - GS.start_clock);
   }
   
 #if defined(ENABLE_PARSEC_HOOKS)
@@ -255,7 +365,14 @@ int mainTP_PARSEC(string path, int cameras, int frames, int particles, int layer
 
   return 1;
 }
-#endif
+
+#else
+
+#error "Unknown version specified by USE_TP_PARSEC"
+
+#endif  /* USE_TP_PARSEC == 1 or 2 */
+
+#endif  /* USE_TP_PARSEC */
 
 //Body tracking threaded with OpenMP
 #if defined(USE_OPENMP)
@@ -273,6 +390,9 @@ int mainOMP(string path, int cameras, int frames, int particles, int layers, int
   {  cout << endl << "Error loading initialization data." << endl;
     return 0;
   }
+#if defined(ENABLE_PARSEC_HOOKS)
+        __parsec_roi_begin();
+#endif
   model.SetNumThreads(threads);
   model.GetObservation(0); //load data for first frame
   ParticleFilterOMP<TrackingModel> pf; //particle filter (OMP threaded) instantiated with body tracking model type
@@ -285,9 +405,6 @@ int mainOMP(string path, int cameras, int frames, int particles, int layers, int
 
   vector<float> estimate; //expected pose from particle distribution
 
-#if defined(ENABLE_PARSEC_HOOKS)
-        __parsec_roi_begin();
-#endif
   for(int i = 0; i < frames; i++)                            //process each set of frames
   {  cout << "Processing frame " << i << endl;
     if(!pf.Update((float)i))                            //Run particle filter step
@@ -330,6 +447,9 @@ int mainPthreads(string path, int cameras, int frames, int particles, int layers
   {  cout << endl << "Error loading initialization data." << endl;
     return 0;
   }
+#if defined(ENABLE_PARSEC_HOOKS)
+        __parsec_roi_begin();
+#endif
   model.SetNumThreads(threads);
   model.SetNumFrames(frames);
   model.GetObservation(-1); //load data for first frame
@@ -346,9 +466,6 @@ int mainPthreads(string path, int cameras, int frames, int particles, int layers
 
   vector<float> estimate; //expected pose from particle distribution
 
-#if defined(ENABLE_PARSEC_HOOKS)
-        __parsec_roi_begin();
-#endif
   for(int i = 0; i < frames; i++)                            //process each set of frames
   {  cout << "Processing frame " << i << endl;
     if(!pf.Update((float)i))                            //Run particle filter step
@@ -394,6 +511,10 @@ int mainTBB(string path, int cameras, int frames, int particles, int layers, int
     return 0;
   }
 
+#if defined(ENABLE_PARSEC_HOOKS)
+  __parsec_roi_begin();
+#endif
+
   model.SetNumThreads(particles);
   model.SetNumFrames(frames);
   model.GetObservation(0); //load data for first frame
@@ -417,6 +538,10 @@ int mainTBB(string path, int cameras, int frames, int particles, int layers, int
   pipeline.run(1);
   pipeline.clear();
 
+#if defined(ENABLE_PARSEC_HOOKS)
+  __parsec_roi_end();
+#endif
+
   return 1;
 }
 #endif 
@@ -432,6 +557,9 @@ int mainSingleThread(string path, int cameras, int frames, int particles, int la
   {  cout << endl << "Error loading initialization data." << endl;
     return 0;
   }
+#if defined(ENABLE_PARSEC_HOOKS)
+  __parsec_roi_begin();
+#endif
   model.GetObservation(0); //load data for first frame
   ParticleFilter<TrackingModel> pf; //particle filter instantiated with body tracking model type
   pf.SetModel(model); //set the particle filter model
@@ -443,9 +571,6 @@ int mainSingleThread(string path, int cameras, int frames, int particles, int la
 
   vector<float> estimate; //expected pose from particle distribution
 
-#if defined(ENABLE_PARSEC_HOOKS)
-        __parsec_roi_begin();
-#endif
   for(int i = 0; i < frames; i++)                            //process each set of frames
   {  cout << "Processing frame " << i << endl;
     if(!pf.Update((float)i))                            //Run particle filter step
@@ -458,16 +583,13 @@ int mainSingleThread(string path, int cameras, int frames, int particles, int la
       pf.Model().OutputBMP(estimate, i); //save output bitmap file
   }
 #if defined(ENABLE_PARSEC_HOOKS)
-        __parsec_roi_end();
+  __parsec_roi_end();
 #endif
 
   return 1;
 }
 
 int main(int argc, char **argv) {
-#ifdef ENABLE_TASK
-  task_begin;
-#endif
   string path;
   bool OutputBMP;
   int cameras, frames, particles, layers, threads, threadModel; //process command line parameters to get path, cameras, and frames
@@ -548,9 +670,9 @@ int main(int argc, char **argv) {
 
   case 5 : 
 #if defined(USE_TP_PARSEC)
-    task_parallel_region(
-        call_task(spawn mainTP_PARSEC(path, cameras, frames, particles, layers, threads, OutputBMP));
-    );
+    pragma_omp_parallel_single(nowait, {
+        call_task(mit_spawn mainTP_PARSEC(path, cameras, frames, particles, layers, threads, OutputBMP));
+      });
     break;
 #else
     cout << "Not compiled with TASK support. " << endl;
@@ -578,8 +700,4 @@ int main(int argc, char **argv) {
   fclose(out_ls);
   printf("exported collected loop sizes to file.\n");
 #endif  
-
-#ifdef ENABLE_TASK
-  task_return(0);
-#endif
 }

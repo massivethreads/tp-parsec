@@ -85,7 +85,7 @@ esac
 case ${task_target} in
   "mth" )
     echo "${oprefix} hooks with dr: added options and links for dr"
-    cflags="-DDAG_RECORDER=2"
+    cflags="-DDAG_RECORDER=2 -I${PARSECDIR}/toolkit/tp_parsec"
     CFLAGS="${CFLAGS} ${cflags}"
     CXXFLAGS="${CXXFLAGS} ${cflags}"
     LDFLAGS="${LDFLAGS}"
@@ -93,7 +93,7 @@ case ${task_target} in
   ;;
   "tbb" | "qth" | "omp" | "cilkplus" | "serial" )
     echo "${oprefix} hooks with dr: added options and links for dr"
-    cflags="-DDAG_RECORDER=2 -I${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/include"
+    cflags="-DDAG_RECORDER=2 -I${PARSECDIR}/toolkit/tp_parsec -I${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/include"
     CFLAGS="${CFLAGS} ${cflags}"
     CXXFLAGS="${CXXFLAGS} ${cflags}"
     LDFLAGS="${LDFLAGS} -L${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/lib"
