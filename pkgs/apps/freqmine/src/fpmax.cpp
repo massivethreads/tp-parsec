@@ -164,9 +164,10 @@ int main(int argc, char **argv)
 #endif
 	FSout* fout;
 #ifdef ENABLE_TASK
-        pragma_omp_parallel_single(nowait, {
-#endif        
+	task_parallel_region(fptree->scan1_DB(fdat););
+#else
 	fptree -> scan1_DB(fdat);
+#endif
 	wtime(&tdatap);
 
 #if defined(ENABLE_TASK)
@@ -211,9 +212,6 @@ int main(int argc, char **argv)
 #else
 	fptree->FP_growth_first(fout);
 #endif
-#ifdef ENABLE_TASK
-          });
-#endif        
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_roi_end();
 #endif
