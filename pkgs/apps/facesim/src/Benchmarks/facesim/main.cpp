@@ -15,12 +15,9 @@
 #endif
 
 #ifdef ENABLE_TASK
-#include <tpswitch/tpswitch.h>
+#include <tp_parsec.h>
 #endif
 
-#ifdef TO_OMP
-#include <omp.h>
-#endif
 using namespace PhysBAM;
 
 #if defined(ENABLE_PTHREADS) || defined(ENABLE_TASK)
@@ -44,16 +41,10 @@ int main (int argc, char* argv[])
 	__parsec_bench_begin (__parsec_facesim);
 #endif
 
-#if defined ENABLE_TASK && !defined TO_CILKPLUS
+#if defined ENABLE_TASK
 	tp_init();
 #endif
 
-#ifdef TO_OMP
-#pragma omp parallel
-{
-#pragma omp master
-{
-#endif
 	PARSE_ARGS parse_args;
 	parse_args.Add_Integer_Argument ("-restart", 0);
 	parse_args.Add_Integer_Argument ("-lastframe", 300);
@@ -99,18 +90,13 @@ int main (int argc, char* argv[])
 
 	THREAD_DIVISION_PARAMETERS<float>& parameters = *THREAD_DIVISION_PARAMETERS<float>::Singleton();
 	parameters.grid_divisions_3d = VECTOR_3D<int> (5, 5, 5);
-
 	FACE_DRIVER<float, float> driver (example);
-
+#ifdef ENABLE_TASK
+	task_parallel_region ({driver.Execute_Main_Program();});
+#else
 	driver.Execute_Main_Program();
-
-	delete (THREAD_POOL::Singleton());
-
-#ifdef TO_OMP
-}
-}
 #endif
-
+	delete (THREAD_POOL::Singleton());
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_bench_end();
 #endif
