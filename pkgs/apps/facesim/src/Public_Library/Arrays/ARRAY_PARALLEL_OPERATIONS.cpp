@@ -678,9 +678,6 @@ mk_task_group;
 template<class T, class TS, class TV> double ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Dot_Product_Parallel (const ARRAY<TV>& vector_array_input_1, const ARRAY<TV>& vector_array_input_2, const ARRAY<VECTOR_2D<int> >& ranges)
 {
-#ifdef ENABLE_TASK
-	cilk_begin;
-#endif
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -720,11 +717,7 @@ mk_task_group;
 
 	for (int i = 1; i <= helpers.m; i++) result += helpers (i).double_output;
 
-#ifdef ENABLE_TASK
-	cilk_return(result);
-#else
 	return result;
-#endif
 }
 //#####################################################################
 // Function Scaled_Dot_Product_Parallel
@@ -732,9 +725,6 @@ mk_task_group;
 template<class T, class TS, class TV> double ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Scaled_Dot_Product_Parallel (const ARRAY<TV>& vector_array_input_1, const ARRAY<TV>& vector_array_input_2, const ARRAY<TS>& scalar_array_input_3, const ARRAY<VECTOR_2D<int> >& ranges)
 {
-#ifdef ENABLE_TASK
-	cilk_begin;
-#endif
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -775,11 +765,7 @@ mk_task_group;
 
 	for (int i = 1; i <= helpers.m; i++) result += helpers (i).double_output;
 
-#ifdef ENABLE_TASK
-	cilk_return(result);
-#else
 	return result;
-#endif
 }
 //#####################################################################
 // Function Maximum_Magnitude_Squared_Parallel
@@ -787,9 +773,6 @@ mk_task_group;
 template<class T, class TS, class TV> double ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Maximum_Magnitude_Squared_Parallel (const ARRAY<TV>& vector_array_input_1, const ARRAY<VECTOR_2D<int> >& ranges)
 {
-#ifdef ENABLE_TASK
-	cilk_begin;
-#endif
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -827,11 +810,7 @@ Maximum_Magnitude_Squared_Parallel (const ARRAY<TV>& vector_array_input_1, const
 	double result = 0;
 
 	for (int i = 1; i <= helpers.m; i++) result = max<double> (result, helpers (i).double_output);
-#ifdef ENABLE_TASK
-	cilk_return(result);
-#else
 	return result;
-#endif
 }
 //#####################################################################
 // Function Maximum_Scaled_Magnitude_Squared_Parallel
@@ -839,9 +818,6 @@ Maximum_Magnitude_Squared_Parallel (const ARRAY<TV>& vector_array_input_1, const
 template<class T, class TS, class TV> double ARRAY_PARALLEL_OPERATIONS<T, TS, TV>::
 Maximum_Scaled_Magnitude_Squared_Parallel (const ARRAY<TV>& vector_array_input_1, const ARRAY<TS>& scalar_array_input_2, const ARRAY<VECTOR_2D<int> >& ranges)
 {
-#ifdef ENABLE_TASK
-	cilk_begin;
-#endif
 	ARRAY_PARALLEL_OPERATIONS_DATA_HELPER<T, TS, TV> data_helper;
 	ARRAY<ARRAY_PARALLEL_OPERATIONS_HELPER<T, TS, TV> > helpers (ranges.m);
 
@@ -881,11 +857,7 @@ Maximum_Scaled_Magnitude_Squared_Parallel (const ARRAY<TV>& vector_array_input_1
 
 	for (int i = 1; i <= helpers.m; i++) result = max<double> (result, helpers (i).double_output);
 
-#ifdef ENABLE_TASK
-	cilk_return(result);
-#else
 	return result;
-#endif
 }
 //#####################################################################
 template class ARRAY_PARALLEL_OPERATIONS<VECTOR_2D<float>, float, VECTOR_2D<float> >;
