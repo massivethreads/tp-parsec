@@ -1492,7 +1492,6 @@ int FP_tree::FP_growth_first(FSout* fout)
     double tstart, tend, temp_time;
     int function_type;
     int workingthread = get_max_threads();
-    std::cout << "maxThread: " << workingthread << std::endl;
 
     wtime(&tstart);
     fp_node_sub_buf = new memory(80, 131072, 2097152 * 4, 2);
