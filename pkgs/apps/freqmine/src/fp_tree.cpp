@@ -42,11 +42,12 @@ THE POSSIBILITY OF SUCH DAMAGE.
 #include "common.h"
 #include "wtime.h"
 
-#ifdef _OPENMP
+
+#if defined(_OPENMP) && !defined(ENABLE_TASK)
 #include <omp.h>
 static int get_max_threads() {return omp_get_max_threads();}
 static int get_thread_num() {return omp_get_thread_num();}
-#elif ENABLE_TASK
+#elif defined(ENABLE_TASK)
 // todo: use tbb/mth specific lock when it becomes available
 // #ifdef TO_TBB
 // tbb::mutex mtx;
@@ -1491,6 +1492,7 @@ int FP_tree::FP_growth_first(FSout* fout)
     double tstart, tend, temp_time;
     int function_type;
     int workingthread = get_max_threads();
+    std::cout << "maxThread: " << workingthread << std::endl;
 
     wtime(&tstart);
     fp_node_sub_buf = new memory(80, 131072, 2097152 * 4, 2);
