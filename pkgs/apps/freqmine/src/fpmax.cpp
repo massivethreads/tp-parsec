@@ -54,7 +54,7 @@ using namespace std;
 
 #include "buffer.h"
 
-#ifdef _OPENMP
+#if defined(_OPENMP) && !defined(ENABLE_TASK)
 #include <omp.h>
 static int get_max_threads() {return omp_get_max_threads();}
 #elif ENABLE_TASK

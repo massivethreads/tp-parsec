@@ -42,11 +42,12 @@ THE POSSIBILITY OF SUCH DAMAGE.
 #include "common.h"
 #include "wtime.h"
 
-#ifdef _OPENMP
+
+#if defined(_OPENMP) && !defined(ENABLE_TASK)
 #include <omp.h>
 static int get_max_threads() {return omp_get_max_threads();}
 static int get_thread_num() {return omp_get_thread_num();}
-#elif ENABLE_TASK
+#elif defined(ENABLE_TASK)
 // todo: use tbb/mth specific lock when it becomes available
 // #ifdef TO_TBB
 // tbb::mutex mtx;
