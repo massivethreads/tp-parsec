@@ -1128,35 +1128,53 @@ void AdvanceFrameMT(int tasknum)
   std::swap(cells, cells2);
   std::swap(cnumPars, cnumPars2);
   pfor(0, tasknum, 1, 1, [&](const int first, const int /*last*/){
+    cilk_begin;  
     ClearParticlesMT(first);
+    cilk_void_return;  
   });
   pfor(0, tasknum, 1, 1, [&](const int first, const int /*last*/){
+    cilk_begin;  
     RebuildGridMT(first);
+    cilk_void_return;  
   });
   pfor(0, tasknum, 1, 1, [&](const int first, const int /*last*/){
+    cilk_begin;  
     InitDensitiesAndForcesMT(first);
+    cilk_void_return;  
   });
   pfor(0, tasknum, 1, 1, [&](const int first, const int /*last*/){
+    cilk_begin;  
     ComputeDensitiesMT(first);
+    cilk_void_return;  
   });
   pfor(0, tasknum, 1, 1, [&](const int first, const int /*last*/){
+    cilk_begin;  
     ComputeDensities2MT(first);
+    cilk_void_return;  
   });
   pfor(0, tasknum, 1, 1, [&](const int first, const int /*last*/){
+    cilk_begin;  
     ComputeForcesMT(first);
+    cilk_void_return;  
   });
   pfor(0, tasknum, 1, 1, [&](const int first, const int /*last*/){
+    cilk_begin;  
     ProcessCollisionsMT(first);
+    cilk_void_return;  
   });
   pfor(0, tasknum, 1, 1, [&](const int first, const int /*last*/){
+    cilk_begin;  
     AdvanceParticlesMT(first);
+    cilk_void_return;  
   });
 #if defined(USE_ImpeneratableWall)
   // N.B. The integration of the position can place the particle
   // outside the domain. We now make a pass on the perimiter cells
   // to account for particle migration beyond domain.
   pfor(0, tasknum, 1, 1, [&](const int first, const int /*last*/){
+    cilk_begin;  
     ProcessCollisions2MT(first);
+    cilk_void_return;  
   });
 #endif
 }
