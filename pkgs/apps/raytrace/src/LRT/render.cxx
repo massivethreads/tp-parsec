@@ -759,8 +759,7 @@ void Context::renderTileTask(LRT::FrameBuffer *frameBuffer,
       int endY2   = endY;
       mk_task_group;
       create_task0(spawn renderTileTaskFunc(MESH,LAYOUT)(frameBuffer,startX,startY1,endX,endY1));
-      call_task   (spawn renderTileTaskFunc(MESH,LAYOUT)(frameBuffer,startX,startY2,endX,endY2));
-      wait_tasks;
+      create_task_and_wait(mit_spawn renderTileTaskFunc(MESH,LAYOUT)(frameBuffer,startX,startY2,endX,endY2));
     } else {
       //Divide X-axis.
       int startX1 = startX;
@@ -769,8 +768,7 @@ void Context::renderTileTask(LRT::FrameBuffer *frameBuffer,
       int endX2   = endX;
       mk_task_group;
       create_task0(spawn renderTileTaskFunc(MESH,LAYOUT)(frameBuffer,startX1,startY,endX1,endY));
-      call_task   (spawn renderTileTaskFunc(MESH,LAYOUT)(frameBuffer,startX2,startY,endX2,endY));
-      wait_tasks;
+      create_task_and_wait(mit_spawn renderTileTaskFunc(MESH,LAYOUT)(frameBuffer,startX2,startY,endX2,endY));
     }
     #undef renderTileTaskFunc
   } else {
