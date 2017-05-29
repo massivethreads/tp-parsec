@@ -1,0 +1,12 @@
+#!/bin/bash
+#
+# icc-pthreads.bldconf - file containing information necessary to build a
+#                        specific program of the PARSEC benchmark suite with
+#                        icc and pthreads
+#
+
+source ${PARSECDIR}/pkgs/apps/ferret/parsec/icc.bldconf
+
+# Environment to use for configure script and Makefile
+build_env="version=\"pthreads\" ${build_env}"
+

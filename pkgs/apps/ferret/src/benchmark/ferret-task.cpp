@@ -37,8 +37,9 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #include <string>
 #include <memory>
 
-#define PFOR_TO_ORIGINAL 1
-#define PFOR2_EXPERIMENTAL
+#if !defined(PFOR_TO_ALLATONCE) && !defined(PFOR_TO_BISECTION) && !defined(PFOR_TO_ORIGINAL)
+#define PFOR_TO_BISECTION 1
+#endif
 #include <tp_parsec.h>
 
 namespace /*unnamed*/ {
@@ -295,13 +296,15 @@ inline void rank_result(all_data* const data)
     cass_dataset_release(data->second.vec.ds);
 }
 
-inline void process_image(all_data* const data, const char* const path)
+inline void process_image(const all_data* const data, const char* const path)
 {
+    task_begin;
     load_image(data, path);
     segment_image(data);
     extract_image(data);
     query_image(data);
     rank_result(data);
+    task_void_return;
 }
 
 inline void output_result(FILE* const fd, all_data* const data)
@@ -335,9 +338,11 @@ inline void output_result(FILE* const fd, all_data* const data)
 template <typename InputIterator>
 inline void output_multiple_results(FILE* const fout, InputIterator first, const InputIterator last)
 {
+    task_begin;
     for ( ; first != last; ++first) {
         output_result(fout, &*first);
     }
+    task_void_return;
 }
 
 #if 1
@@ -358,12 +363,14 @@ inline void exec_ferret(const char* const query_dir, FILE* const fout, const std
     pfor(from, to, 1, grain_size,
         [&] (const int first, const int last)
         {
+            task_begin;
             for (int i = first; i < last; ++i) {
                 const auto* const data = &buf[i];
                 const char* const path = paths[i].c_str();
                 
                 process_image(data, path);
             }
+            task_void_return;
         });
     
     // Save (sequential)
@@ -372,8 +379,6 @@ inline void exec_ferret(const char* const query_dir, FILE* const fout, const std
 #else
 inline void exec_ferret(const char* const query_dir, FILE* const fout, const std::size_t depth)
 {
-    task_begin;
-    
     const auto paths = scan_dir_rec(query_dir);
     
     std::vector<all_data> ongoing_buf;
@@ -421,8 +426,6 @@ inline void exec_ferret(const char* const query_dir, FILE* const fout, const std
     }
     
     output_multiple_results(fout, write_buf.begin(), write_buf.end());
-    
-    task_void_return;
 }
 #endif
 

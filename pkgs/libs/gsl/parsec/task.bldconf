@@ -1,4 +1,12 @@
 #!/bin/bash
 
-source ${PARSECDIR}/pkgs/libs/gsl/parsec/gcc.bldconf
+if [ ${platform} == "g" ]; then
+	# load gcc.bldconf
+	echo "task.bldconf sources gcc.bldconf"
+	source ${PARSECDIR}/pkgs/libs/gsl/parsec/gcc.bldconf
+else
+	# load icc.bldconf
+	echo "task.bldconf sources icc.bldconf"
+	source ${PARSECDIR}/pkgs/libs/gsl/parsec/icc.bldconf
+fi
 
