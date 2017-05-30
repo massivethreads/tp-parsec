@@ -26,7 +26,8 @@ gcc_version=$(gcc -dumpversion)
 # icc version 14.0.2 (gcc version 4.8.0 compatibility)
 # So we need to force the gcc_version to use here back to 4.8
 # it should not affect things on andromeda because andromeda's default gcc is 4.8
-gcc_version=4.8
+# [2017/05/30] icc has been upgraded to version 17, so no longer need to force gcc version
+#gcc_version=4.8
 
 case "${OSTYPE}" in
 *solaris*)
@@ -82,7 +83,9 @@ export MAKE="${GNUTOOL_HOME}/bin/${BINARY_PREFIX}make"
 
 # Arguments to use
 export CFLAGS="-gcc-name=${GCC_HOME}/bin/gcc-${gcc_version} -gcc -I${GCC_HOME}/include/c++/${gcc_version} -I${GCC_HOME}/include/x86_64-linux-gnu/c++/${gcc_version} -O3 -funroll-loops -qopt-prefetch"
-export CXXFLAGS="-gcc-name=${GCC_HOME}/bin/gcc-${gcc_version} -gcc -I${GCC_HOME}/include/c++/${gcc_version} -I${GCC_HOME}/include/x86_64-linux-gnu/c++/${gcc_version} -O3 -funroll-loops -qopt-prefetch -fpermissive -fno-exceptions"
+# On andromeda, gcc_version is 5.4.0, but there is no /usr/bin/g++-5.4.0 (only /usr/bin/g++-5)
+# "-gxx-name=${GCC_HOME}/bin/g++-${gcc_version}"
+export CXXFLAGS="-gcc -I${GCC_HOME}/include/c++/${gcc_version} -I${GCC_HOME}/include/x86_64-linux-gnu/c++/${gcc_version} -funroll-loops -qopt-prefetch -fpermissive -fno-exceptions"
 export CPPFLAGS=""
 export CXXCPPFLAGS=""
 export LDFLAGS="-L${CC_HOME}/lib/intel64 -Wl,-R${CC_HOME}/lib/intel64 -L${CC_HOME}/lib/ia32 -Wl,-R${CC_HOME}/lib/ia32"
