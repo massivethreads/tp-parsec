@@ -57,7 +57,6 @@ using std::endl;
 #ifdef ENABLE_TASK
 void annealer_thread::Run()
 {
-	task_begin;
 	int accepted_good_moves=0;
 	int accepted_bad_moves=-1;
 	double T = _start_temp;
@@ -79,13 +78,11 @@ void annealer_thread::Run()
 		}
 		local_accepted_good_moves.push_back(0);
 		local_accepted_bad_moves.push_back(0);
-		call_task(spawn doMoves(moves_left_in_this_temp,T,local_accepted_good_moves.front(),local_accepted_bad_moves.front()));
-		wait_tasks;
+		create_task_and_wait(mit_spawn doMoves(moves_left_in_this_temp,T,local_accepted_good_moves.front(),local_accepted_bad_moves.front()));
 		accepted_good_moves = std::accumulate(local_accepted_good_moves.begin(),local_accepted_good_moves.end(),0);
 		accepted_bad_moves = std::accumulate(local_accepted_bad_moves.begin(),local_accepted_bad_moves.end(),-1);
 		temp_steps_completed++;
 	}
-	task_void_return;
 }
 #endif
 
@@ -95,6 +92,7 @@ void annealer_thread::Run()
 #ifdef ENABLE_TASK
 void annealer_thread::doMoves(const int numMoves, const double T, int& accepted_good_moves, int& accepted_bad_moves)
 {
+  task_begin;
 	Rng rng;
 	long a_id;
 	long b_id;
@@ -121,7 +119,7 @@ void annealer_thread::doMoves(const int numMoves, const double T, int& accepted_
 			//no need to do anything for a rejected move
 		}
 	}
-	
+  task_void_return;
 }
 #endif
 
