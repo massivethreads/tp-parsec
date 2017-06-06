@@ -66,7 +66,7 @@ void ParticleFilterTP<T>::CalcWeights(std::vector<Vectorf > &particles)
   fprintf(out_ls, "%d\n", np);
   fprintf(stdout, "%d\n", np);
 #endif  
-  pfor(0, np, 1, GRAIN_SIZE,
+  pfor(0, np, 1, GRAIN_SIZE_WEIGHTS,
        [&] (int from, int to) {
          cilk_begin;
          for(int j = from; j < to; j++) {
@@ -117,7 +117,7 @@ void ParticleFilterTP<T>::GenerateNewParticles(int k) {
   fprintf(out_ls, "%d\n", mNParticles);
   fprintf(stdout, "%d\n", np);
 #endif  
-  pfor(0, mNParticles, 1, GRAIN_SIZE,
+  pfor(0, mNParticles, 1, GRAIN_SIZE_NEWPARTICLES,
        [&] (int from, int to) {
          cilk_begin;
          for(int i = from; i < to; i++) { //distribute new particles randomly according to model stdDevs
@@ -171,7 +171,7 @@ void ParticleFilterTP2<T>::CalcWeights(std::vector<Vectorf > &particles) {
   fprintf(out_ls, "%d\n", np);
   fprintf(stdout, "%d\n", np);
 #endif  
-  pfor(0, np, 1, GRAIN_SIZE,
+  pfor(0, np, 1, GRAIN_SIZE_WEIGHTS,
        [&] (int from, int to) {
          cilk_begin;
          for(int j = from; j < to; j++) {
@@ -221,7 +221,7 @@ void ParticleFilterTP2<T>::GenerateNewParticles(int k) {
   fprintf(out_ls, "%d\n", mNParticles);
   fprintf(stdout, "%d\n", np);
 #endif  
-  pfor(0, mNParticles, 1, GRAIN_SIZE,
+  pfor(0, mNParticles, 1, GRAIN_SIZE_NEWPARTICLES,
        [&] (int from, int to) {
          cilk_begin;
          for(int i = from; i < to; i++) { //distribute new particles randomly according to model stdDevs

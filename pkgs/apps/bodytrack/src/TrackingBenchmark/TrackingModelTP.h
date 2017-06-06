@@ -63,7 +63,7 @@ bool FlexFilterRowVTP(FlexImage<T,1> &src, FlexImage<T,1> &dst, T2 *kernel, int 
   fprintf(out_ls, "%d\n", h);
   fprintf(stdout, "%d\n", np);
 #endif  
-  pfor(0, h, 1, GRAIN_SIZE,
+  pfor(0, h, 1, GRAIN_SIZE_FILTERROW,
        [n,&src,&dst,kernel] (int from, int to) {
          cilk_begin;
          for(int y = from; y < to; y++) {
@@ -97,7 +97,7 @@ bool FlexFilterColumnVTP(FlexImage<T,1> &src, FlexImage<T,1> &dst, T2 *kernel, i
   fprintf(out_ls, "%d\n", h - n);
   fprintf(stdout, "%d\n", np);
 #endif  
-  pfor(n, h, 1, GRAIN_SIZE,
+  pfor(n, h, 1, GRAIN_SIZE_FILTERCOLUMN,
        [n,sb,&src,&dst,kernel] (int from, int to) {
          cilk_begin;
          for(int y = from; y < to; y++) {
@@ -136,7 +136,7 @@ inline FlexImage8u GradientMagThresholdTP(FlexImage8u &src, float threshold) {
   fprintf(out_ls, "%d\n", src.Height() - 2);
   fprintf(stdout, "%d\n", np);
 #endif  
-  pfor(1, src.Height() - 1, 1, GRAIN_SIZE,
+  pfor(1, src.Height() - 1, 1, GRAIN_SIZE_GRADIENT,
        [&src,threshold,&r] (int from, int to) {
          cilk_begin;
          for(int y = from; y < to; y++) { //for each pixel

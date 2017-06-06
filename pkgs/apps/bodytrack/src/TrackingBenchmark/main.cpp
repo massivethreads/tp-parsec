@@ -72,6 +72,11 @@ using namespace tbb;
 #include <tp_parsec.h>
 
 #define GRAIN_SIZE 1<<4
+#define GRAIN_SIZE_GRADIENT 8
+#define GRAIN_SIZE_FILTERROW 8
+#define GRAIN_SIZE_FILTERCOLUMN 8
+#define GRAIN_SIZE_NEWPARTICLES 32
+#define GRAIN_SIZE_WEIGHTS 32
 
 #include "ParticleFilterTP.h"
 #include "TrackingModelTP.h"
@@ -213,7 +218,7 @@ int mainTP_PARSEC(string path, int cameras, int frames, int particles, int layer
     threads = 1;
   }
   cout << "Number of Threads : " << threads << endl;
-  fprintf(stdout, "Grain size: %d\n", GRAIN_SIZE);
+  //fprintf(stdout, "Grain size: %d\n", GRAIN_SIZE);
 
   tp_init();
 
@@ -318,7 +323,7 @@ int mainTP_PARSEC(string path, int cameras, int frames, int particles, int layer
     threads = 1;
   }
   cout << "Number of Threads : " << threads << endl;
-  fprintf(stdout, "Grain size: %d\n", GRAIN_SIZE);
+  //fprintf(stdout, "Grain size: %d\n", GRAIN_SIZE);
 
   tp_init();
 
