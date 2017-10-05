@@ -20,6 +20,8 @@
 #include "fluid.hpp"
 #include "cellpool.hpp"
 
+//One leaf task is composed of GRANULARITY * GRANULARITY cells.
+#define TASK_GRANULARITY 1
 
 #if !defined(PFOR_TO_ALLATONCE) && !defined(PFOR_TO_BISECTION) && !defined(PFOR_TO_ORIGINAL)
   #define PFOR_TO_BISECTION 1
@@ -129,26 +131,12 @@ unsigned int GetPow2(unsigned int tasknum)
   // failed.
   assert(false);
 }
-void InitSim(char const *fileName, unsigned int tasknum)
+void InitSim(char const *fileName, unsigned int& tasknum)
 {
   //Compute partitioning based on square root of number of threads
   //NOTE: Other partition sizes are possible as long as XDIVS * ZDIVS == tasknum,
   //      but communication is minimal (and hence optimal) if XDIVS == ZDIVS
   int lsb;
-
-  if(hmgweight(tasknum, &lsb) != 1) {
-    std::cerr << "Number of threads must be a power of 2" << std::endl;
-    exit(1);
-  }
-  XDIVS = 1<<(lsb/2);
-  ZDIVS = 1<<(lsb/2);
-  if(XDIVS*ZDIVS != tasknum) XDIVS*=2;
-  assert(XDIVS * ZDIVS == tasknum);
-  grids = new struct Grid[NUM_GRIDS];
-  assert(sizeof(Grid) <= CACHELINE_SIZE); // as we put and aligh grid on the cacheline size to avoid false-sharing
-                                          // if asserts fails - increase pp union member in Grid declarationi
-                                          // and change this macro 
-  pools = new cellpool[NUM_GRIDS];
 
   //Load input particles
   std::cout << "tasknum = " << tasknum << std::endl;
@@ -171,7 +159,6 @@ void InitSim(char const *fileName, unsigned int tasknum)
     restParticlesPerMeter = restParticlesPerMeter_le;
     numParticles          = numParticles_le;
   }
-  for(int i=0; i<NUM_GRIDS; i++) cellpool_init(&pools[i], numParticles/NUM_GRIDS);
 
   h = kernelRadiusMultiplier / restParticlesPerMeter;
   hSq = h*h;
@@ -201,6 +188,39 @@ void InitSim(char const *fileName, unsigned int tasknum)
   delta.y = range.y / ny;
   delta.z = range.z / nz;
   assert(delta.x >= h && delta.y >= h && delta.z >= h);
+
+  if (tasknum != 0) {
+    if(hmgweight(tasknum, &lsb) != 1) {
+      std::cerr << "Number of threads must be a power of 2" << std::endl;
+      exit(1);
+    }
+    XDIVS = 1<<(lsb/2);
+    ZDIVS = 1<<(lsb/2);
+    if(XDIVS*ZDIVS != tasknum) XDIVS*=2;
+    assert(XDIVS * ZDIVS == tasknum);
+  } else {
+    XDIVS = nx / TASK_GRANULARITY;
+    ZDIVS = nz / TASK_GRANULARITY;
+    int nx_mask = 1;
+    while( (XDIVS & ~nx_mask) != 0 ) {
+      XDIVS &= ~nx_mask;
+      nx_mask <<= 1;
+    }
+    int nz_mask = 1;
+    while( (ZDIVS & ~nz_mask) != 0 ) {
+      ZDIVS &= ~nz_mask;
+      nz_mask <<= 1;
+    }
+    tasknum = XDIVS * ZDIVS;
+  }
+  std::cout << "nz: " << nx << ", nz: " << nz << ", XDIVS: " << XDIVS << ", ZDIVS: " << ZDIVS << " (total # of tasks : " << tasknum << ")" << std::endl;
+
+  grids = new struct Grid[NUM_GRIDS];
+  assert(sizeof(Grid) <= CACHELINE_SIZE); // as we put and aligh grid on the cacheline size to avoid false-sharing
+                                          // if asserts fails - increase pp union member in Grid declarationi
+                                          // and change this macro 
+  pools = new cellpool[NUM_GRIDS];
+  for(int i=0; i<NUM_GRIDS; i++) cellpool_init(&pools[i], numParticles/NUM_GRIDS);
 
   std::cout << "Grids steps over x, y, z: " << delta.x << " " << delta.y << " " << delta.z << std::endl;
   
@@ -1240,7 +1260,9 @@ int main(int argc, char *argv[])
 #ifdef ENABLE_CFL_CHECK
   std::cout << "WARNING: Check for Courant窶擢riedrichs窶鏑ewy condition enabled. Do not use for performance measurements." << std::endl;
 #endif
-  unsigned int tasknum = GetPow2(threadnum * 40);
+  // unsigned int tasknum = GetPow2(threadnum * 40);
+  unsigned int tasknum = 0;
+  // tasknum will be updated by InitSim when tasknum is 0.
   InitSim(argv[3], tasknum);
 #ifdef ENABLE_VISUALIZATION
   InitVisualizationMode(&argc, argv, &AdvanceFrameVisualization, &numCells, &cells, &cnumPars);
