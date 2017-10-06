@@ -344,7 +344,7 @@ void bs_thread(void *tid_ptr) {
     int tid = *(int *)tid_ptr;
     int start = 0;
     int end = numOptions;
-    const int GRAIN_SIZE = 1024;
+    const int GRAIN_SIZE = 10000;
     for(int j=0; j<NUM_RUNS; j++) {
         pfor(start, end, 1, GRAIN_SIZE, pfor_func);
     }
