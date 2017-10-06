@@ -11,6 +11,6 @@ if [ "${pkg_group}" == "apps" -o "${pkg_group}" == "kernels" -o "${pkg_group}" =
   # for ENABLE_TASK macro
   cflags="-DENABLE_TASK -I${PARSECDIR}/toolkit/tp_parsec"
   CFLAGS="${CFLAGS} ${cflags}"
-  CXXFLAGS="${CXXFLAGS} ${cflags} -std=c++0x"
+  CXXFLAGS="${CXXFLAGS} -std=c++11 ${cflags}"
 fi
 

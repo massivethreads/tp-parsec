@@ -21,7 +21,8 @@
 # Get default gcc version in order to include the right c++ libs
 gcc_version=$(gcc -dumpversion)
 
-# On comet, the default gcc version (5.4.0) is too new for our current icc version (14.0.2)
+# Sometines we need to indicate a specific version of gcc to use:
+# on comet, the default gcc version (5.4.0) is too new for our current icc version (14.0.2)
 # $ icc -v
 # icc version 14.0.2 (gcc version 4.8.0 compatibility)
 # So we need to force the gcc_version to use here back to 4.8
@@ -52,7 +53,8 @@ case "${OSTYPE}" in
   # Linux + default case
 
   # CC_HOME is installation root of the C compiler
-  export CC_HOME="/opt/intel"
+  #export CC_HOME="/opt/intel"
+  export CC_HOME="/opt/intel/compilers_and_libraries_2017.1.132/linux"
   # GCC_HOME is installation root of the GNU C compiler
   export GCC_HOME="/usr"
   # BINUTIL_HOME is installation root of the GNU binutils
@@ -65,9 +67,9 @@ case "${OSTYPE}" in
 esac
 
 # Compilers and preprocessors
-export CC="${CC_HOME}/bin/icc"
-export CXX="${CC_HOME}/bin/icpc"
-export CPP="${CC_HOME}/bin/icpc -E"
+export CC="${CC_HOME}/bin/intel64/icc"
+export CXX="${CC_HOME}/bin/intel64/icpc"
+export CPP="${CC_HOME}/bin/intel64/icpc -E"
 export CXXCPP=""
 
 # GNU Binutils
@@ -82,13 +84,18 @@ export M4="${GNUTOOL_HOME}/bin/${BINARY_PREFIX}m4"
 export MAKE="${GNUTOOL_HOME}/bin/${BINARY_PREFIX}make"
 
 # Arguments to use
-export CFLAGS="-gcc-name=${GCC_HOME}/bin/gcc-${gcc_version} -gcc -I${GCC_HOME}/include/c++/${gcc_version} -I${GCC_HOME}/include/x86_64-linux-gnu/c++/${gcc_version} -O3 -funroll-loops -qopt-prefetch"
-# On andromeda, gcc_version is 5.4.0, but there is no /usr/bin/g++-5.4.0 (only /usr/bin/g++-5)
-# "-gxx-name=${GCC_HOME}/bin/g++-${gcc_version}"
-export CXXFLAGS="-gcc -I${GCC_HOME}/include/c++/${gcc_version} -I${GCC_HOME}/include/x86_64-linux-gnu/c++/${gcc_version} -funroll-loops -qopt-prefetch -fpermissive -fno-exceptions"
+
+# For using the default gcc
+export CFLAGS="-O3 -funroll-loops -qopt-prefetch"
+export CXXFLAGS="-O3 -funroll-loops -qopt-prefetch -fpermissive -fno-exceptions"
+
+# For using a specified version of gcc, indicate gcc_version above
+#export CFLAGS="-gcc-name=${GCC_HOME}/bin/gcc-${gcc_version} -gcc -I${GCC_HOME}/include/c++/${gcc_version} -I${GCC_HOME}/include/x86_64-linux-gnu/c++/${gcc_version} -O3 -funroll-loops -qopt-prefetch"
+#export CXXFLAGS="-gxx-name=${GCC_HOME}/bin/g++-${gcc_version} -gcc -I${GCC_HOME}/include/c++/${gcc_version} -I${GCC_HOME}/include/x86_64-linux-gnu/c++/${gcc_version} -O3 -funroll-loops -qopt-prefetch -fpermissive -fno-exceptions"
+
 export CPPFLAGS=""
 export CXXCPPFLAGS=""
-export LDFLAGS="-L${CC_HOME}/lib/intel64 -Wl,-R${CC_HOME}/lib/intel64 -L${CC_HOME}/lib/ia32 -Wl,-R${CC_HOME}/lib/ia32"
+export LDFLAGS="-L${CC_HOME}/compiler/lib/intel64 -Wl,-R${CC_HOME}/compiler/lib/intel64"
 export LIBS=""
 export EXTRA_LIBS=""
 
@@ -121,4 +128,4 @@ JAVAC_ver=$(${JAVAC} -version 2>&1)
 export platform=i
 
 # Some packages like tbblib need icc to be found in PATH
-PATH="${CC_HOME}/bin:${PATH}"
+PATH="${CC_HOME}/bin/intel64:${PATH}"
