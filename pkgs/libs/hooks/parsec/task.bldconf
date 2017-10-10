@@ -1,6 +1,3 @@
 #!/bin/bash
 
 source ${PARSECDIR}/pkgs/libs/hooks/parsec/gcc.bldconf
-
-cflags="-std=c++11"
-CFLAGS="${CFLAGS} ${cflags}"

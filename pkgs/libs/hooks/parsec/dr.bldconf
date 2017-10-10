@@ -17,9 +17,9 @@ case ${task_target} in
   "mth" )
     echo "${oprefix} hooks with dr: added options and links for task_target=mth"
     # for mth
-    cflags="-I${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/include -DTO_MTHREAD_NATIVE -pthread"
-    CFLAGS="${CFLAGS} ${cflags} -x c++"
-    CXXFLAGS="${CXXFLAGS} ${cflags} -std=c++0x"
+    cflags="-I${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/include -DTO_MTHREAD_NATIVE -pthread -x c++ -std=c++11"
+    CFLAGS="${CFLAGS} ${cflags}"
+    CXXFLAGS="${CXXFLAGS} ${cflags}"
     LDFLAGS="${LDFLAGS} -L${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/mth/inst/${PARSECPLAT}/lib"
     LIBS="${LIBS} -lmyth -lpthread"
   ;;
@@ -27,9 +27,9 @@ case ${task_target} in
     echo "${oprefix} hooks with dr: added options and links for task_target=tbb"
     build_deps="${build_deps} tbb"
     # for tbb
-    cflags="${cflags} -I${PARSECDIR}/pkgs/libs/tbb/inst/${PARSECPLAT}/include -DTO_TBB -pthread"
-    CFLAGS="${CFLAGS} ${cflags} -x c++"
-    CXXFLAGS="${CXXFLAGS} ${cflags} -std=c++0x"
+    cflags="${cflags} -I${PARSECDIR}/pkgs/libs/tbb/inst/${PARSECPLAT}/include -DTO_TBB -pthread -x c++ -std=c++11"
+    CFLAGS="${CFLAGS} ${cflags}"
+    CXXFLAGS="${CXXFLAGS} ${cflags}"
     LDFLAGS="${LDFLAGS} -L${PARSECDIR}/pkgs/libs/tbb/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/tbb/inst/${PARSECPLAT}/lib"
     LIBS="${LIBS} -ltbb -lpthread"
   ;;
@@ -38,8 +38,8 @@ case ${task_target} in
     build_deps="${build_deps} qth"
     # for qth
     cflags="${cflags} -I${PARSECDIR}/pkgs/libs/qth/inst/${PARSECPLAT}/include -DTO_QTHREAD -pthread"
-    CFLAGS="${CFLAGS} ${cflags} -x c++"
-    CXXFLAGS="${CXXFLAGS} ${cflags} -std=c++0x"
+    CFLAGS="${CFLAGS} ${cflags} -x c++ -std=c++11"
+    CXXFLAGS="${CXXFLAGS} ${cflags} -std=c++11"
     LDFLAGS="${LDFLAGS} -L${PARSECDIR}/pkgs/libs/qth/inst/${PARSECPLAT}/lib -Wl,-R${PARSECDIR}/pkgs/libs/qth/inst/${PARSECPLAT}/lib"
     LIBS="${LIBS} -lqthread -lpthread"
   ;;
@@ -47,7 +47,7 @@ case ${task_target} in
     echo "${oprefix} hooks with dr: added options and links for task_target=omp"
     build_deps="${build_deps}"
     # for omp
-    cflags="${cflags} -DTO_OMP -fopenmp"
+    cflags="${cflags} -DTO_OMP -fopenmp -x c++ -std=c++11"
     CFLAGS="${CFLAGS} ${cflags}"
     CXXFLAGS="${CXXFLAGS} ${cflags}"
     LDFLAGS="${LDFLAGS}"
@@ -57,7 +57,7 @@ case ${task_target} in
     echo "${oprefix} hooks with dr: added options and links for task_target=cilkplus"
     build_deps="${build_deps}"
     # for cilkplus
-    cflags="${cflags} -DTO_CILKPLUS"
+    cflags="${cflags} -DTO_CILKPLUS -x c++ -std=c++11"
     if [ "${platform}" == "g" ]; then
         cflags="${cflags} -fcilkplus"  
     fi
@@ -70,7 +70,7 @@ case ${task_target} in
     echo "${oprefix} hooks with dr: added options and links for task_target=serial"
     build_deps="${build_deps}"
     # for serial
-    cflags="${cflags} -DTO_SERIAL"
+    cflags="${cflags} -DTO_SERIAL -x c++ -std=c++11"
     CFLAGS="${CFLAGS} ${cflags}"
     CXXFLAGS="${CXXFLAGS} ${cflags}"
     LDFLAGS="${LDFLAGS}"
