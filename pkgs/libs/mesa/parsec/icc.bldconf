@@ -13,4 +13,5 @@ build_env=""
 build_inplace="TRUE"
 
 # Arguments to pass to the configure script, if it exists
-build_conf="--with-driver=xlib --enable-glut --enable-static --disable-shared CC=${CC_HOME}/bin/icc CXX=${CC_HOME}/bin/icpc CPP=cpp LIBS="
+#build_conf="--with-driver=xlib --enable-glut --enable-static --disable-shared CC=${CC_HOME}/bin/icc CXX=${CC_HOME}/bin/icpc CPP=cpp LIBS="
+build_conf="--with-driver=xlib --enable-glut --enable-static --disable-shared"
