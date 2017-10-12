@@ -4,3 +4,11 @@
 
 source ${PARSECDIR}/pkgs/libs/gsl/parsec/icc.bldconf
 
+# TODO: workaround only for icc-tbb
+#  See also: https://lists.cs.princeton.edu/pipermail/parsec-users/2013-January/001490.html
+# Because -ltbbmalloc seems to depend on -ltbb,
+# -ltbb should succeed -ltbbmalloc.
+# We cannot understand why this problem only happens in ferret + icc-tbb.
+# The same problem is observed in libjpeg.
+build_env="LIBS=\"${LIBS} -ltbb -lm\""
+
