@@ -72,6 +72,8 @@ struct Grid
 bool *border;      // flags which cells lie on grid boundaries
 tbbMutex **mutex;  // used to lock cells in RebuildGrid and also particles in other functions
 
+#define DISABLE_PARTICLE_TRAVEL_SMALL_ASSUMPTION
+
 ////////////////////////////////////////////////////////////////////////////////
 
 /*
@@ -636,7 +638,9 @@ public:
             int index = (ck*ny + cj)*nx + ci;
             { //NOTE: Braces are important for scoped lock
               // this assumes that particles cannot travel more than one grid cell per time step
+              #ifndef DISABLE_PARTICLE_TRAVEL_SMALL_ASSUMPTION
               if(border[index])
+              #endif
                 tbbMutex::scoped_lock lock(mutex[index][CELL_MUTEX_ID]);
               cell = last_cells[index];
               np = cnumPars[index];
