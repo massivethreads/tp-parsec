@@ -45,6 +45,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 namespace /*unnamed*/ {
 
 int g_top_K = 10;
+int g_query_chunk_size = 100;
 
 const char* const extra_params = "-L 8 - T 20";
 
@@ -359,6 +360,25 @@ inline void exec_ferret(const char* const query_dir, FILE* const fout, const std
     const int to = static_cast<int>(size);
     const int grain_size = 1;
     
+    #if 1
+    // Process (parallel, dividing to chunks)
+    for (int f = from; f < to; f += g_query_chunk_size) {
+        const int t = std::min(f + g_query_chunk_size, to);
+        pfor(f, t, 1, grain_size,
+            [&] (const int first, const int last)
+            {
+                task_begin;
+                for (int i = first; i < last; ++i) {
+                    const auto* const data = &buf[i];
+                    const char* const path = paths[i].c_str();
+                    
+                    process_image(data, path);
+                }
+                task_void_return;
+            });
+    }
+    
+    #else
     // Process (parallel)
     pfor(from, to, 1, grain_size,
         [&] (const int first, const int last)
@@ -372,6 +392,7 @@ inline void exec_ferret(const char* const query_dir, FILE* const fout, const std
             }
             task_void_return;
         });
+    #endif
     
     // Save (sequential)
     output_multiple_results(fout, std::begin(buf), std::end(buf));
