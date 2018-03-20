@@ -180,12 +180,12 @@ fi
 
 * A brief summary of supported build configurations is shown in the table below.
 
-       | Pthreads | OpenMP | TBB | Serial | Task\_mth | Task\_tbb | Task\_qth | Task\_omp | Task\_cilkplus | Task\_serial
------- | -------- | ------ | --- | ------ | --------- | --------- | --------- | --------- | -------------- | ------------
-gcc    | mgmt/**mgmt2** | mgmt/**mgmt2** | mgmt/**mgmt2** | mgmt/**mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2**
-icc    | mgmt/**mgmt2** | mgmt/**mgmt2** | mgmt/**mgmt2** | mgmt/**mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2**
-gcc-**dr** | n/a        | n/a        | n/a        | n/a        | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** 
-icc-**dr** | n/a        | n/a        | n/a        | n/a        | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2**
+|       | Pthreads | OpenMP | TBB | Serial | Task\_mth | Task\_tbb | Task\_qth | Task\_omp | Task\_cilkplus | Task\_serial |
+|------ | -------- | ------ | --- | ------ | --------- | --------- | --------- | --------- | -------------- | ------------ |
+|gcc    | mgmt/**mgmt2** | mgmt/**mgmt2** | mgmt/**mgmt2** | mgmt/**mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** |
+|icc    | mgmt/**mgmt2** | mgmt/**mgmt2** | mgmt/**mgmt2** | mgmt/**mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** |
+|gcc-**dr** | n/a        | n/a        | n/a        | n/a        | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2**  |
+|icc-**dr** | n/a        | n/a        | n/a        | n/a        | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** | **mgmt2** |
 
 Some examples are:
 - How to build MassiveThreads-based task version of streamcluster using gcc?
