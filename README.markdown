@@ -54,6 +54,7 @@ The repository of our TP-PARSEC (task parallel PARSEC) is on the [internal Gitla
 tp-parsec $ git submodule update --init pkgs/libs/mth/src
 tp-parsec $ git submodule update --init pkgs/libs/qth/src
 tp-parsec $ git submodule update --init pkgs/libs/papi/src
+tp-parsec $ git submodule update --init toolkit/tp_parsec/mth_tpswitch
 ```
 7. Jump into ```bin```, try building some benchmark and run it:
 ```
@@ -123,6 +124,7 @@ When TP-PARSEC is first cloned, these three submodules need to be initialized an
 tp-parsec $ git submodule update --init pkgs/libs/mth/src
 tp-parsec $ git submodule update --init pkgs/libs/qth/src
 tp-parsec $ git submodule update --init pkgs/libs/papi/src
+tp-parsec $ git submodule update --init toolkit/tp_parsec/mth_tpswitch
 ```
 
 Note that ```git submodule update``` does not pull the latest source code of the submodule from its remote repository, but only the revision (commit) registered in the supermodule TP-PARSEC. If you want to use a submodule latest source code, go straight to its path (e.g., ```pkgs/libs/mth/src``` for MassiveThreads) and run ```git pull``` directly.
