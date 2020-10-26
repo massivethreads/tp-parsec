@@ -9,7 +9,8 @@ Following is a short description about the original PARSEC and then our task-par
 
 -------------------------------
 
-# Original PARSEC
+Original PARSEC
+-------------------------------
 
 1. Download: you can either
  * download [all-in-one package](http://parsec.cs.princeton.edu/download/3.0/parsec-3.0.tar.gz) (2.9 GB) which contains everything
@@ -42,9 +43,9 @@ parsec/bin $ ./parsecmgmt -a build -p all
 
 The repository of our TP-PARSEC (task parallel PARSEC) is on the [internal Gitlab](https://gitlab.eidos.ic.i.u-tokyo.ac.jp/parallel/tp-parsec). Our TP-PARSEC is based on PARSEC 3.0, the latest version. It is equivalent to the PARSEC's core package, which means it does not include simulation inputs and native inputs for the benchmark programs, you need to download them separately via the links above.
 
-## A quick start
+## Quick start guide to Task-Parallel PARSEC
 
-1. Clone the repository: ```git clone git@gitlab.eidos.ic.i.u-tokyo.ac.jp:parallel/tp-parsec.git```
+1. Clone the repository: ```git clone https://github.com/massivethreads/tp-parsec.git```
 2. Download simulation inputs: ```wget http://parsec.cs.princeton.edu/download/3.0/parsec-3.0-input-sim.tar.gz```
 3. Extract simulation inputs: ```tar xvzf parsec-3.0-input-sim.tar.gz```
 4. Import simulation inputs: ```rsync -a parsec-3.0/* tp-parsec/```
@@ -207,7 +208,6 @@ tp-parsec/bin $ ./parsecmgmt2 -a build -p dedup -c icc-task_qth-dr
 tp-parsec/bin $ ./parsecmgmt2 -a run -p fluidanimate -c icc-task_tbb-dr -i native -n 32
 ```
 
-
 ## How to take part in developing TP-PARSEC?
 
 There are two things to consider when converting an existing application into task parallelism: compilation and source code.
@@ -326,3 +326,4 @@ It is strongly demanded to develop methods to check it.
 ## Tips
 
 * You can 'clean' (remove objects), 'uninstall' (remove executables), and re-'build' a package by ```./parsecmgmt2 -a clean uninstall build -p {package} ...```. Actually 'clean' is not needed, the 'uninstall' makes the 'build' recompile all object files.
+* How to run a workload with a different input? You can view all available inputs for a specific workload under ```tp-parsec/pkgs/apps/<workload>/inputs Eg: tp-parsec/pkgs/apps/blackscholes/inputs```
