@@ -327,3 +327,5 @@ It is strongly demanded to develop methods to check it.
 
 * You can 'clean' (remove objects), 'uninstall' (remove executables), and re-'build' a package by ```./parsecmgmt2 -a clean uninstall build -p {package} ...```. Actually 'clean' is not needed, the 'uninstall' makes the 'build' recompile all object files.
 * How to run a workload with a different input? You can view all available inputs for a specific workload under ```tp-parsec/pkgs/apps/<workload>/inputs Eg: tp-parsec/pkgs/apps/blackscholes/inputs```
+* Outputs/results (and DAG recorder outputs) are in the run folder. ```tp-parsec/pkgs/apps/<workload>/run Eg: tp-parsec/pkgs/apps/blackscholes/run```
+* To view the DAG outputs, you need to install [DAGViz](https://github.com/massivethreads/dagviz) and open the \*.dag files
